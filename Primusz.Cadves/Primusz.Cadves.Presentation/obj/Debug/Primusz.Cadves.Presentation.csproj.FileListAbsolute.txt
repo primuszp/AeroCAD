@@ -1,0 +1,15 @@
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\bin\Debug\Primusz.Cadves.Presentation.exe.config
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\bin\Debug\Primusz.Cadves.Presentation.exe
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\bin\Debug\Primusz.Cadves.Presentation.pdb
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation.csprojResolveAssemblyReference.cache
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\MainWindow.baml
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\MainWindow.g.cs
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\App.g.cs
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation_MarkupCompile.cache
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation.g.resources
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation.Properties.Resources.resources
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation.csproj.GenerateResource.Cache
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation.exe
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\obj\Debug\Primusz.Cadves.Presentation.pdb
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\bin\Debug\Primusz.Cadves.Core.dll
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Presentation\bin\Debug\Primusz.Cadves.Core.pdb

@@ -1,0 +1,5 @@
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Core\bin\Debug\Primusz.Cadves.Core.dll
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Core\bin\Debug\Primusz.Cadves.Core.pdb
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Core\obj\Debug\Primusz.Cadves.Core.dll
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Core\obj\Debug\Primusz.Cadves.Core.pdb
+\\psf\Home\Desktop\Primusz.Cadves\Primusz.Cadves.Core\obj\Debug\Primusz.Cadves.Core.csprojResolveAssemblyReference.cache
