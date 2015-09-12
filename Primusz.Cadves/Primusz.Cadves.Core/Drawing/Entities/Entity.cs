@@ -5,7 +5,7 @@ using Primusz.Cadves.Core.Drawing.Handles;
 
 namespace Primusz.Cadves.Core.Drawing.Entities
 {
-    public abstract class Entity : DrawingVisual
+    public abstract class Entity : DrawingVisual, ISelectable
     {
         #region Members
 
@@ -37,18 +37,7 @@ namespace Primusz.Cadves.Core.Drawing.Entities
             }
         }
 
-        public bool Selected
-        {
-            get { return selected; }
-            set
-            {
-                if (value != selected)
-                {
-                    selected = value;
-                    Render();
-                }
-            }
-        }
+        public bool IsSelected { get; private set; }
 
         protected Pen Pen { get; set; }
 
@@ -61,7 +50,7 @@ namespace Primusz.Cadves.Core.Drawing.Entities
 
         public virtual void Render(Transform transform = null)
         {
-            Pen.DashStyle = !Selected ? DashStyles.Solid : DashStyles.Dash;
+            Pen.DashStyle = !IsSelected ? DashStyles.Solid : DashStyles.Dash;
         }
 
         #region From HitTest
@@ -78,11 +67,26 @@ namespace Primusz.Cadves.Core.Drawing.Entities
 
         #endregion
 
-        public abstract GripList GetGrips();
-
         /// <summary>
         /// Get grip point by index
         /// </summary>
         public abstract Point GetGripPoint(int index);
+
+
+        #region From ISelectable interface
+
+        public void Select()
+        {
+            IsSelected = true;
+            Render();
+        }
+
+        public void Unselect()
+        {
+            IsSelected = false;
+            Render();
+        }
+
+        #endregion
     }
 }

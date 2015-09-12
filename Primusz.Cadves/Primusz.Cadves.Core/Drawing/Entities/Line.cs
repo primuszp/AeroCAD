@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Media;
-using Primusz.Cadves.Core.Drawing.Handles;
 using Primusz.Cadves.Core.Drawing.Layers;
 
 namespace Primusz.Cadves.Core.Drawing.Entities
@@ -23,17 +22,6 @@ namespace Primusz.Cadves.Core.Drawing.Entities
             EndPoint = end;
         }
 
-        public override GripList GetGrips()
-        {
-            GripList grips = new GripList
-            {
-                new Grip(this, 0), 
-                new Grip(this, 1)
-            };
-
-            return grips;
-        }
-
         /// <summary>
         /// Get grip point by index
         /// </summary>
@@ -41,6 +29,14 @@ namespace Primusz.Cadves.Core.Drawing.Entities
         {
             return index == 0 ? StartPoint : EndPoint;
         }
+
+        //public override void PutGrips()
+        //{
+        //    if (Children.Count > 0) return;
+
+        //    Children.Add(new Grip(0));
+        //    Children.Add(new Grip(1));
+        //}
 
         public override void Render(Transform transform = null)
         {

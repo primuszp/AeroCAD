@@ -21,7 +21,8 @@ namespace Primusz.Cadves.Core.Drawing
             services = new Dictionary<Type, object>
             {
                 { typeof(ToolService), new ToolService(this, viewport) },
-                { typeof(RubberObject), new RubberObject(viewport) }
+                { typeof(RubberObject), new RubberObject(viewport) },
+                { typeof(Overlay), new Overlay(viewport) }
             };
 
             var service = GetService<ToolService>();

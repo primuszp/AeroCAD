@@ -195,6 +195,11 @@ namespace Primusz.Cadves.Core.Tools
 
         #region From IServiceProvider interface
 
+        public T GetService<T>() where T : class
+        {
+            return GetService(typeof(T)) as T;
+        }
+
         public object GetService(Type serviceType)
         {
             return provider.GetService(serviceType);

@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
+using System.Collections.Generic;
+using System.Windows.Input;
 using Primusz.Cadves.Core.Drawing.Entities;
 using Primusz.Cadves.Core.Drawing.Layers;
 
@@ -88,7 +88,7 @@ namespace Primusz.Cadves.Core.Drawing
 
             FrameworkElement element = visualAdded as FrameworkElement;
 
-            if (element != null)
+            if (element != null && !(element is Overlay))
             {
                 element.RenderTransform = ViewTransform;
             }
@@ -162,35 +162,5 @@ namespace Primusz.Cadves.Core.Drawing
         }
 
         #endregion
-
-        //private void UpdateOverlay()
-        //{
-        //    overlay.Clear();
-
-        //    if (grips.Count == 0)
-        //    {
-        //        foreach (var child in Children)
-        //        {
-        //            if (child is Layer)
-        //            {
-        //                Layer layer = child as Layer;
-
-        //                foreach (var visual in layer.Visuals)
-        //                {
-        //                    Line line = visual as Line;
-
-        //                    grips.AddRange(line.GetGrips());
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    grips.Draw(Project);
-
-        //    foreach (Grip grip in grips)
-        //    {
-        //        overlay.Visuals.Add(grip);
-        //    }
-        //}
     }
 }

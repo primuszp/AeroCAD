@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 
-namespace Primusz.Cadves.Core.Tools
+namespace Primusz.Cadves.Core
 {
     /// <summary>
     /// Provides binding keyboard events support for tools

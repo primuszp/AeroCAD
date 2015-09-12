@@ -58,7 +58,8 @@ namespace Primusz.Cadves.Core.Tools
                 }
             }
 
-            e.Handled = true;
+            ToolService.GetService<Overlay>().Update();
+            e.Handled = false;
         }
 
         public void MouseMove(MouseEventArgs e)
@@ -101,18 +102,22 @@ namespace Primusz.Cadves.Core.Tools
                 {
                     foreach (Entity entity in layer.Entities)
                     {
-                        if (entity.Selected)
+                        if (entity.IsSelected)
                         {
-                            entity.Selected = false;
+                            entity.Unselect();
                         }
                     }
                 }
+
+                ToolService.GetService<Overlay>().Update();
+                e.Handled = true;
             }
         }
 
         public void KeyUp(KeyEventArgs e)
         {
             if (!IsActive) return;
+            e.Handled = true;
         }
 
         #endregion

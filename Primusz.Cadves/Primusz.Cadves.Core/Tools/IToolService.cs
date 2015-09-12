@@ -28,5 +28,7 @@ namespace Primusz.Cadves.Core.Tools
         void DeactivateAll();
 
         bool DeactivateTool(ITool tool);
+
+        T GetService<T>() where T : class;
     }
 }

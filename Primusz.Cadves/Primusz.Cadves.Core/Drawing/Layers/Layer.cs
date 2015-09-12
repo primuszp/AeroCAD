@@ -99,7 +99,7 @@ namespace Primusz.Cadves.Core.Drawing.Layers
 
         public bool HitTest(Point point)
         {
-            Rect rectangle = new Rect(point.X - 6 * Scale, point.Y - 6 * Scale, 12 * Scale, 12 * Scale);
+            Rect rectangle = new Rect(point.X - 4 * Scale, point.Y - 4 * Scale, 8 * Scale, 8 * Scale);
             return HitTest(rectangle);
         }
 
@@ -117,10 +117,11 @@ namespace Primusz.Cadves.Core.Drawing.Layers
         private HitTestResultBehavior HitTestResult(HitTestResult result)
         {
             Entity entity = result.VisualHit as Entity;
-
-            if (entity != null && entity.Selected == false)
+           
+            if (entity != null && 
+                entity.IsSelected == false)
             {
-                entity.Selected = true;
+                entity.Select();
                 Selection.Add(result.VisualHit);
             }
 

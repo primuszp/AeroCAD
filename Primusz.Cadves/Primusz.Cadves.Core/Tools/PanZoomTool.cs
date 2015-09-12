@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using Primusz.Cadves.Core.Drawing;
+using Primusz.Cadves.Core.Drawing.Layers;
 
 namespace Primusz.Cadves.Core.Tools
 {
@@ -80,6 +81,8 @@ namespace Primusz.Cadves.Core.Tools
                         viewport.Translate.Y = currentPoint.Y - startPoint.Y + startOffset.Y;
                     }
                 }
+
+                ToolService.GetService<Overlay>().Update();
             }
         }
 
@@ -121,6 +124,8 @@ namespace Primusz.Cadves.Core.Tools
                     viewport.Scale.ScaleY = zoom;
                     viewport.Zoom = zoom;
                 }
+
+                ToolService.GetService<Overlay>().Update();
             }
         }
 

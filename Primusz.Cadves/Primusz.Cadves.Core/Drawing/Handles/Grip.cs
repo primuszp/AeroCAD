@@ -2,10 +2,11 @@
 using System.Windows;
 using System.Windows.Media;
 using Primusz.Cadves.Core.Drawing.Entities;
+using Primusz.Cadves.Core.Helpers;
 
 namespace Primusz.Cadves.Core.Drawing.Handles
 {
-    public class Grip : DrawingVisual
+    public class Grip : DrawingVisual, ISelectable
     {
         #region Members
 
@@ -16,7 +17,9 @@ namespace Primusz.Cadves.Core.Drawing.Handles
 
         #region Properties
 
-        public Entity EntityParent { get; private set; }
+        public Entity Owner { get; private set; }
+
+        public bool IsSelected { get; private set; }
 
         public int Index { get; private set; }
 
@@ -39,53 +42,70 @@ namespace Primusz.Cadves.Core.Drawing.Handles
 
         #region Constructors
 
-        public Grip(Entity parent, int index)
+        public Grip(Entity entity, int index)
         {
             Size = 10;
             Index = index;
+            Owner = entity;
             Color = Colors.MediumBlue;
-            EntityParent = parent;
         }
 
         #endregion
 
         #region Methods
 
-        public void Draw(Func<Point, Point> project)
+        public void Render()
         {
-            if (EntityParent != null)
+            Viewport viewport = VisualTreeHelpers.FindAncestor<Viewport>(this);
+
+            if (viewport != null)
             {
-                Point point = project(EntityParent.GetGripPoint(Index));
+                Point point = viewport.Project(Owner.GetGripPoint(Index));
+                Rect rect = GetGripRect(point);
 
                 using (DrawingContext dc = RenderOpen())
                 {
-                    dc.DrawRectangle(brush, new Pen(Brushes.LightGray, 1.5), GetGripRect(point));
+                    dc.DrawRectangle(brush, new Pen(Brushes.LightGray, 1.5), rect);
                 }
             }
-        }
-
-        /// <summary>
-        /// Test whether grip contains point
-        /// </summary>
-        public bool Contains(Point point, Func<Point, Point> project)
-        {
-            if (EntityParent != null)
-            {
-                Rect rect = GetGripRect(project(EntityParent.GetGripPoint(Index)));
-                return rect.Contains(point);
-            }
-            return false;
         }
 
         private Rect GetGripRect(Point point)
         {
             return new Rect
             {
-                X = point.X - Size / 2.0,
-                Y = point.Y - Size / 2.0,
+                X = point.X - Size / 2.0d,
+                Y = point.Y - Size / 2.0d,
                 Width = Size,
                 Height = Size
             };
+        }
+
+        #endregion
+
+        protected override void OnVisualParentChanged(DependencyObject oldParent)
+        {
+            base.OnVisualParentChanged(oldParent);
+            Render();
+        }
+
+        protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters)
+        {
+            Viewport viewport = VisualTreeHelpers.FindAncestor<Viewport>(this);
+
+            return base.HitTestCore(hitTestParameters);
+        }
+
+        #region From ISelectable interface
+
+        public void Select()
+        {
+            IsSelected = true;
+        }
+
+        public void Unselect()
+        {
+            IsSelected = false;
         }
 
         #endregion
