@@ -1,9 +1,0 @@
-﻿<Window x:Class="WpCadCore.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:cad="clr-namespace:WpCadCore.Controls"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        <cad:ModelSpace x:Name="space" Background="Black"/>
-    </Grid>
-</Window>
