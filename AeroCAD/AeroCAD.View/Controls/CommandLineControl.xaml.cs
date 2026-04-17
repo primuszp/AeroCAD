@@ -1,9 +1,10 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Primusz.AeroCAD.Presentation.ViewModels;
+using Primusz.AeroCAD.View.ViewModels;
+using System.Windows;
 
-namespace Primusz.AeroCAD.Presentation.Controls
+namespace Primusz.AeroCAD.View.Controls
 {
     public partial class CommandLineControl : UserControl
     {
@@ -67,6 +68,34 @@ namespace Primusz.AeroCAD.Presentation.Controls
             input.SelectionLength = 0;
             input.SelectionStart = input.Text.Length;
         }
+
+        public void FocusInput()
+        {
+            input.Focus();
+            Keyboard.Focus(input);
+            MoveCaretToEnd();
+        }
+
+        public void AppendText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            FocusInput();
+            input.Text += text;
+            MoveCaretToEnd();
+        }
+
+        public void RemoveLastCharacter()
+        {
+            FocusInput();
+            if (string.IsNullOrEmpty(input.Text))
+                return;
+
+            input.Text = input.Text.Substring(0, input.Text.Length - 1);
+            MoveCaretToEnd();
+        }
     }
 }
+
 

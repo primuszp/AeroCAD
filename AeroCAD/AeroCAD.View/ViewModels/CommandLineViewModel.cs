@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Primusz.AeroCAD.Presentation.ViewModels
+namespace Primusz.AeroCAD.View.ViewModels
 {
     public class CommandLineViewModel : ViewModelBase
     {
@@ -11,7 +11,7 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
         private readonly List<string> commandHistory = new List<string>();
         private int historyIndex;
         private string currentInput = string.Empty;
-        private string prompt = "Parancs:";
+        private string prompt = "Command:";
 
         public CommandLineViewModel(Action<string> submitAction, Action cancelAction)
         {
@@ -120,4 +120,5 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
         }
     }
 }
+
 

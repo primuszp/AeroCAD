@@ -34,7 +34,11 @@ namespace Primusz.AeroCAD.Core.Drawing
 
         IList<Entity> QueryHitEntities(Point point);
 
+        IList<Entity> QueryHitEntities(Point point, double toleranceWorld);
+
         IList<Entity> QueryHitEntities(Point point, IEnumerable<Entity> candidates);
+
+        IList<Entity> QueryHitEntities(Point point, double toleranceWorld, IEnumerable<Entity> candidates);
 
         IList<Entity> QueryHitEntities(Rect rect, bool requireFullyInside = false);
 

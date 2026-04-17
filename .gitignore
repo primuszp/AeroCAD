@@ -20,3 +20,5 @@ Backups/
 # Legacy local sources not intended for the GitHub repo
 cadves_wpf/
 
+# Local review notes
+aerocad_code_review.md

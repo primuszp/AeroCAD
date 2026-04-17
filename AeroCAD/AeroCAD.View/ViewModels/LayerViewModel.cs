@@ -1,7 +1,7 @@
-﻿using System.Windows.Media;
+using System.Windows.Media;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 
-namespace Primusz.AeroCAD.Presentation.ViewModels
+namespace Primusz.AeroCAD.View.ViewModels
 {
     public class LayerViewModel : ViewModelBase
     {
@@ -35,4 +35,5 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
         public Layer Layer => layer;
     }
 }
+
 

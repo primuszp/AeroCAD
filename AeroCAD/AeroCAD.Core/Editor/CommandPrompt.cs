@@ -5,7 +5,7 @@ namespace Primusz.AeroCAD.Core.Editor
 {
     public sealed class CommandPrompt
     {
-        public static readonly CommandPrompt Default = new CommandPrompt("Parancs:");
+        public static readonly CommandPrompt Default = new CommandPrompt("Command:");
 
         public CommandPrompt(string text, IEnumerable<string> options = null)
         {

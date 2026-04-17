@@ -21,6 +21,10 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         private readonly IMarkerAppearanceService appearanceService;
         private GripPreview preview = GripPreview.Empty;
         private SnapResult snapPoint;
+        private Brush selectionWindowBrush;
+        private Brush selectionCrossingBrush;
+        private Brush snapHoverBrush;
+        private Pen snapPen;
 
         #endregion
 
@@ -107,8 +111,13 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             viewport.Children.Add(this);
             Panel.SetZIndex(this, 1000);
             pen = new Pen(Brushes.White, 1.5);
+            RefreshAppearanceCache();
             if (this.appearanceService != null)
-                this.appearanceService.AppearanceChanged += (s, e) => InvalidateVisual();
+                this.appearanceService.AppearanceChanged += (s, e) =>
+                {
+                    RefreshAppearanceCache();
+                    InvalidateVisual();
+                };
         }
 
         #endregion
@@ -161,6 +170,31 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             CurrentState = RubberState.Idle;
         }
 
+        private void RefreshAppearanceCache()
+        {
+            selectionWindowBrush = CreateFrozenBrush(Colors.DarkBlue, 0.5);
+            selectionCrossingBrush = CreateFrozenBrush(Colors.ForestGreen, 0.5);
+            snapHoverBrush = CreateFrozenBrush(appearanceService?.SnapHoverColor ?? Colors.Orange, 0.35);
+            snapPen = CreateFrozenPen(appearanceService?.SnapStrokeColor ?? Colors.Yellow, appearanceService?.MarkerStrokeThickness ?? 1.5d);
+        }
+
+        private static Brush CreateFrozenBrush(Color color, double opacity = 1.0d)
+        {
+            var brush = new SolidColorBrush(color) { Opacity = opacity };
+            if (brush.CanFreeze)
+                brush.Freeze();
+            return brush;
+        }
+
+        private static Pen CreateFrozenPen(Color color, double thickness)
+        {
+            var brush = CreateFrozenBrush(color);
+            var pen = new Pen(brush, thickness);
+            if (pen.CanFreeze)
+                pen.Freeze();
+            return pen;
+        }
+
         #endregion
 
         #region Renders
@@ -200,9 +234,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                 if (CurrentStyle == RubberStyle.Select)
                 {
                     if (end.X > start.X)
-                        brush = new SolidColorBrush(Colors.DarkBlue) { Opacity = 0.5 };
+                        brush = selectionWindowBrush;
                     else
-                        brush = new SolidColorBrush(Colors.ForestGreen) { Opacity = 0.5 };
+                        brush = selectionCrossingBrush;
                 }
 
                 pen.Thickness = 1.5 / viewport.Zoom;
@@ -231,19 +265,15 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             // Snap markers are drawn in world space (layer transform handles zoom/pan)
             double size = (appearanceService?.MarkerSize ?? 10.0d) / viewport.Zoom;
             double strokeThickness = (appearanceService?.MarkerStrokeThickness ?? 1.5d) / viewport.Zoom;
-            var snapStrokeBrush = new SolidColorBrush(appearanceService?.SnapStrokeColor ?? Colors.Yellow);
-            var snapHoverBrush = new SolidColorBrush(appearanceService?.SnapHoverColor ?? Colors.Orange) { Opacity = 0.35 };
-            if (snapStrokeBrush.CanFreeze)
-                snapStrokeBrush.Freeze();
-            if (snapHoverBrush.CanFreeze)
-                snapHoverBrush.Freeze();
-
-            var snapPen = new Pen(snapStrokeBrush, strokeThickness);
+            var scaledSnapPen = snapPen?.CloneCurrentValue() ?? new Pen(Brushes.Yellow, strokeThickness);
+            scaledSnapPen.Thickness = strokeThickness;
+            if (scaledSnapPen.CanFreeze)
+                scaledSnapPen.Freeze();
             var pt = SnapPoint.Point;
 
             if (SnapPoint.Type == SnapType.Endpoint)
             {
-                context.DrawRectangle(snapHoverBrush, snapPen,
+                context.DrawRectangle(snapHoverBrush, scaledSnapPen,
                     new Rect(pt.X - size / 2, pt.Y - size / 2, size, size));
             }
             else if (SnapPoint.Type == SnapType.Midpoint)
@@ -255,14 +285,14 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                     sgc.LineTo(new Point(pt.X + size / 2, pt.Y + size / 2), true, false);
                     sgc.LineTo(new Point(pt.X - size / 2, pt.Y + size / 2), true, false);
                 }
-                context.DrawGeometry(snapHoverBrush, snapPen, geo);
+                context.DrawGeometry(snapHoverBrush, scaledSnapPen, geo);
             }
             else if (SnapPoint.Type == SnapType.Center)
             {
                 double radius = size / 2;
-                context.DrawEllipse(snapHoverBrush, snapPen, pt, radius, radius);
-                context.DrawLine(snapPen, new Point(pt.X - radius, pt.Y), new Point(pt.X + radius, pt.Y));
-                context.DrawLine(snapPen, new Point(pt.X, pt.Y - radius), new Point(pt.X, pt.Y + radius));
+                context.DrawEllipse(snapHoverBrush, scaledSnapPen, pt, radius, radius);
+                context.DrawLine(scaledSnapPen, new Point(pt.X - radius, pt.Y), new Point(pt.X + radius, pt.Y));
+                context.DrawLine(scaledSnapPen, new Point(pt.X, pt.Y - radius), new Point(pt.X, pt.Y + radius));
             }
             else if (SnapPoint.Type == SnapType.Quadrant)
             {
@@ -274,11 +304,11 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                     sgc.LineTo(new Point(pt.X, pt.Y + size / 2), true, false);
                     sgc.LineTo(new Point(pt.X - size / 2, pt.Y), true, false);
                 }
-                context.DrawGeometry(snapHoverBrush, snapPen, geo);
+                context.DrawGeometry(snapHoverBrush, scaledSnapPen, geo);
             }
             else
             {
-                context.DrawEllipse(snapHoverBrush, snapPen, pt, size / 2, size / 2);
+                context.DrawEllipse(snapHoverBrush, scaledSnapPen, pt, size / 2, size / 2);
             }
         }
 

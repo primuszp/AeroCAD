@@ -124,12 +124,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            return Finish(host, "Arc command ended.");
+            return Finish(host, "ARC ended.");
         }
 
         public override InteractiveCommandResult TryCancel(IInteractiveCommandHost host)
         {
-            return Finish(host, "Arc command ended.");
+            return Finish(host, "ARC canceled.");
         }
 
         private InteractiveCommandResult SubmitPoint(IInteractiveCommandHost host, Point point, bool logInput)
@@ -177,7 +177,7 @@ namespace Primusz.AeroCAD.Core.Tools
                         host.ToolService.GetService<IUndoRedoService>()?.Execute(command);
                     }
 
-                    return Finish(host, "Arc created.");
+                    return Finish(host, "ARC created.");
                 }
 
                 default:

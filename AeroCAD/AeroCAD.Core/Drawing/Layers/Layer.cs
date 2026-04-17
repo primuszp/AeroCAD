@@ -125,17 +125,29 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         /// </summary>
         public IList<Entity> QueryHitEntities(Point point)
         {
-            Rect rectangle = new Rect(point.X - 4 * Scale, point.Y - 4 * Scale, 8 * Scale, 8 * Scale);
-            var hits = QueryHitEntities(rectangle, false, null);
-            AddPointPickFallbackHits(point, null, hits);
-            return hits;
+            return QueryHitEntities(point, 4d * Scale, null);
+        }
+
+        public IList<Entity> QueryHitEntities(Point point, double toleranceWorld)
+        {
+            return QueryHitEntities(point, toleranceWorld, null);
         }
 
         public IList<Entity> QueryHitEntities(Point point, IEnumerable<Entity> candidates)
         {
-            Rect rectangle = new Rect(point.X - 4 * Scale, point.Y - 4 * Scale, 8 * Scale, 8 * Scale);
+            return QueryHitEntities(point, 4d * Scale, candidates);
+        }
+
+        public IList<Entity> QueryHitEntities(Point point, double toleranceWorld, IEnumerable<Entity> candidates)
+        {
+            double effectiveTolerance = toleranceWorld > 0 ? toleranceWorld : 4d * Scale;
+            Rect rectangle = new Rect(
+                point.X - effectiveTolerance,
+                point.Y - effectiveTolerance,
+                effectiveTolerance * 2,
+                effectiveTolerance * 2);
             var hits = QueryHitEntities(rectangle, false, candidates);
-            AddPointPickFallbackHits(point, candidates, hits);
+            AddPointPickFallbackHits(point, effectiveTolerance, candidates, hits);
             return hits;
         }
 
@@ -196,10 +208,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                 : HitTestFilterBehavior.Continue;
         }
 
-        private void AddPointPickFallbackHits(Point point, IEnumerable<Entity> candidates, IList<Entity> hits)
+        private void AddPointPickFallbackHits(Point point, double tolerance, IEnumerable<Entity> candidates, IList<Entity> hits)
         {
             IEnumerable<Entity> source = candidates ?? Entities;
-            double tolerance = 4d * Scale;
 
             foreach (var entity in source)
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,11 +14,11 @@ using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Selection;
 using Primusz.AeroCAD.Core.Tools;
-using Primusz.AeroCAD.Presentation.Editor;
-using Primusz.AeroCAD.Presentation.Commands;
-using Primusz.AeroCAD.Presentation.Input;
+using Primusz.AeroCAD.View.Editor;
+using Primusz.AeroCAD.View.Commands;
+using Primusz.AeroCAD.View.Input;
 
-namespace Primusz.AeroCAD.Presentation.ViewModels
+namespace Primusz.AeroCAD.View.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
@@ -185,7 +185,10 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
             if (activeInteractiveTool == null)
                 return false;
 
-            return activeInteractiveTool.TryComplete();
+            var handled = activeInteractiveTool.TryComplete();
+            if (handled)
+                RefreshViewportVisuals();
+            return handled;
         }
 
         public bool TryHandleGlobalEscape()
@@ -298,15 +301,24 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
             if (trimmedInput.Length == 0)
             {
                 if (activeInteractiveTool != null)
+                {
                     activeInteractiveTool.TryComplete();
+                    RefreshViewportVisuals();
+                }
                 return;
             }
 
             if (activeInteractiveTool != null && activeInteractiveTool.TrySubmitToken(token))
+            {
+                RefreshViewportVisuals();
                 return;
+            }
 
             if (commandRuntime.TryResolveAndExecute(normalized))
+            {
+                RefreshViewportVisuals();
                 return;
+            }
 
             if (activeInteractiveTool != null)
                 commandFeedbackService?.LogMessage($"Invalid input for active command: {input}");
@@ -317,12 +329,24 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
         private void CancelCurrentCommand()
         {
             commandRuntime.CancelCurrentCommand();
+            RefreshViewportVisuals();
         }
 
         private bool DeleteSelectedEntities()
         {
-            return commandRuntime.DeleteSelectedEntities();
+            var deleted = commandRuntime.DeleteSelectedEntities();
+            if (deleted)
+                RefreshViewportVisuals();
+            return deleted;
+        }
+
+        private void RefreshViewportVisuals()
+        {
+            viewport.GetRubberObject()?.InvalidateVisual();
+            viewport.RefreshView();
+            viewport.InvalidateVisual();
         }
     }
 }
+
 

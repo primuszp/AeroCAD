@@ -1,10 +1,10 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using Primusz.AeroCAD.Presentation.ViewModels;
+using Primusz.AeroCAD.View.ViewModels;
 
-namespace Primusz.AeroCAD.Presentation
+namespace Primusz.AeroCAD.View
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -15,6 +15,7 @@ namespace Primusz.AeroCAD.Presentation
         {
             InitializeComponent();
             PreviewKeyDown += OnPreviewKeyDown;
+            PreviewTextInput += OnPreviewTextInput;
 
             Loaded += (s, e) =>
             {
@@ -32,16 +33,48 @@ namespace Primusz.AeroCAD.Presentation
 
                 vm.AddEntity(layer1.Layer, line1);
                 vm.AddEntity(layer2.Layer, line2);
+
+                CommandInput.FocusInput();
             };
         }
 
         private void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (!IsTextInputSource(e.OriginalSource as DependencyObject))
+            {
+                if (e.Key == Key.Back)
+                {
+                    CommandInput.RemoveLastCharacter();
+                    e.Handled = true;
+                    return;
+                }
+
+                if (e.Key != Key.LeftShift &&
+                    e.Key != Key.RightShift &&
+                    e.Key != Key.LeftCtrl &&
+                    e.Key != Key.RightCtrl &&
+                    e.Key != Key.LeftAlt &&
+                    e.Key != Key.RightAlt &&
+                    e.Key != Key.Tab)
+                {
+                    CommandInput.FocusInput();
+                }
+            }
+
             var viewModel = DataContext as MainViewModel;
             if (viewModel == null)
                 return;
 
             e.Handled = viewModel.TryHandleShortcut(e, IsTextInputSource(e.OriginalSource as DependencyObject));
+        }
+
+        private void OnPreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (IsTextInputSource(e.OriginalSource as DependencyObject))
+                return;
+
+            CommandInput.AppendText(e.Text);
+            e.Handled = true;
         }
 
         private static bool IsTextInputSource(DependencyObject source)
@@ -58,4 +91,5 @@ namespace Primusz.AeroCAD.Presentation
         }
     }
 }
+
 

@@ -5,21 +5,27 @@ using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
+using System.Collections.Generic;
 
 namespace Primusz.AeroCAD.Core.Tools
 {
     public class LineCommandController : CommandControllerBase
     {
         private static readonly CommandKeywordOption CloseKeyword =
-            new CommandKeywordOption("CLOSE", new[] { "C" }, "Close the line back to the first point.");
+            new CommandKeywordOption("Close", new[] { "C" }, "Close the line back to the first point.");
+
+        private static readonly CommandKeywordOption UndoKeyword =
+            new CommandKeywordOption("Undo", new[] { "U" }, "Remove the last segment.");
 
         private static readonly CommandStep FirstPointStep =
-            new CommandStep("FirstPoint", "Line first point:");
+            new CommandStep("FirstPoint", "Specify first point:");
 
         private static readonly CommandStep NextPointStep =
-            new CommandStep("NextPoint", "Line next point:", new[] { "ENTER" }, new[] { CloseKeyword });
+            new CommandStep("NextPoint", "Specify next point:", keywords: new[] { CloseKeyword, UndoKeyword });
 
         private readonly System.Func<Layer> activeLayerResolver;
+        private readonly List<Point> vertices = new List<Point>();
+        private readonly List<Line> createdSegments = new List<Line>();
         private bool drawing;
         private Point startPoint;
         private Point firstPoint;
@@ -40,6 +46,8 @@ namespace Primusz.AeroCAD.Core.Tools
             drawing = false;
             startPoint = default(Point);
             firstPoint = default(Point);
+            vertices.Clear();
+            createdSegments.Clear();
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
@@ -67,6 +75,9 @@ namespace Primusz.AeroCAD.Core.Tools
             {
                 if (keyword == CloseKeyword)
                     return CloseLine(host);
+
+                if (keyword == UndoKeyword)
+                    return UndoLastSegment(host);
             }
 
             Point point;
@@ -78,12 +89,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            return Cancel("Line command ended.");
+            return Cancel("LINE ended.");
         }
 
         public override InteractiveCommandResult TryCancel(IInteractiveCommandHost host)
         {
-            return Cancel("Line command ended.");
+            return Cancel("LINE canceled.");
         }
 
         private InteractiveCommandResult SubmitResolvedPoint(IInteractiveCommandHost host, Point point, bool logInput)
@@ -97,6 +108,7 @@ namespace Primusz.AeroCAD.Core.Tools
                 drawing = true;
                 startPoint = point;
                 firstPoint = point;
+                vertices.Add(point);
                 var rbo = host.ToolService.Viewport.GetRubberObject();
                 rbo.CurrentStyle = RubberStyle.Line;
                 rbo.SetStart(startPoint);
@@ -105,6 +117,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
             CreateLineSegment(host, startPoint, point);
             startPoint = point;
+            vertices.Add(point);
             host.ToolService.Viewport.GetRubberObject().SetStart(startPoint);
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
@@ -119,19 +132,47 @@ namespace Primusz.AeroCAD.Core.Tools
             var document = host.ToolService.GetService<ICadDocumentService>();
             var cmd = new AddEntityCommand(document, layer.Id, line);
             host.ToolService.GetService<IUndoRedoService>()?.Execute(cmd);
+            createdSegments.Add(line);
         }
 
         private InteractiveCommandResult CloseLine(IInteractiveCommandHost host)
         {
-            host.ToolService.GetService<ICommandFeedbackService>()?.LogInput("C");
+            if (createdSegments.Count < 2)
+                return InteractiveCommandResult.MoveToStep(NextPointStep);
+
+            host.ToolService.GetService<ICommandFeedbackService>()?.LogInput("Close");
             CreateLineSegment(host, startPoint, firstPoint);
-            drawing = false;
-            return InteractiveCommandResult.End("Line command ended.", deactivateTool: true, returnToSelectionMode: true);
+            return Finish("LINE ended.");
+        }
+
+        private InteractiveCommandResult UndoLastSegment(IInteractiveCommandHost host)
+        {
+            if (createdSegments.Count == 0 || vertices.Count <= 1)
+                return InteractiveCommandResult.MoveToStep(NextPointStep);
+
+            var document = host.ToolService.GetService<ICadDocumentService>();
+            var undoRedo = host.ToolService.GetService<IUndoRedoService>();
+            var lastSegment = createdSegments[createdSegments.Count - 1];
+            undoRedo?.Execute(new RemoveEntitiesCommand(document, new Entity[] { lastSegment }, "Undo Line Segment"));
+
+            createdSegments.RemoveAt(createdSegments.Count - 1);
+            vertices.RemoveAt(vertices.Count - 1);
+            startPoint = vertices[vertices.Count - 1];
+            host.ToolService.GetService<ICommandFeedbackService>()?.LogInput("Undo");
+            host.ToolService.Viewport.GetRubberObject().SetStart(startPoint);
+            return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
         private InteractiveCommandResult Cancel(string message)
         {
+            return Finish(message);
+        }
+
+        private InteractiveCommandResult Finish(string message)
+        {
             drawing = false;
+            vertices.Clear();
+            createdSegments.Clear();
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
         }
     }

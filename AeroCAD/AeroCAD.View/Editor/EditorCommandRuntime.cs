@@ -10,7 +10,7 @@ using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Selection;
 using Primusz.AeroCAD.Core.Tools;
 
-namespace Primusz.AeroCAD.Presentation.Editor
+namespace Primusz.AeroCAD.View.Editor
 {
     public class EditorCommandRuntime
     {
@@ -158,21 +158,21 @@ namespace Primusz.AeroCAD.Presentation.Editor
         private void RegisterDefaultCommands()
         {
             Register(
-                new EditorCommandDefinition("LINE", new[] { "L", "VONAL" }, "Draw line segments.", modalToolType: typeof(LineTool), assignActiveLayer: true));
+                new EditorCommandDefinition("LINE", new[] { "L" }, "Draw line segments.", modalToolType: typeof(LineTool), assignActiveLayer: true));
 
             Register(
-                new EditorCommandDefinition("PLINE", new[] { "PL", "POLYLINE" }, "Draw polyline.", modalToolType: typeof(PolylineTool), assignActiveLayer: true));
+                new EditorCommandDefinition("PLINE", new[] { "PL", "P" }, "Draw polyline.", modalToolType: typeof(PolylineTool), assignActiveLayer: true));
 
             Register(
-                new EditorCommandDefinition("CIRCLE", new[] { "CI", "CIR", "KOR" }, "Draw circles.", modalToolType: typeof(CircleTool), assignActiveLayer: true));
+                new EditorCommandDefinition("CIRCLE", new[] { "CI", "CIR" }, "Draw circles.", modalToolType: typeof(CircleTool), assignActiveLayer: true));
 
             Register(
-                new EditorCommandDefinition("ARC", new[] { "A", "IV" }, "Draw a 3-point arc.", modalToolType: typeof(ArcTool), assignActiveLayer: true));
+                new EditorCommandDefinition("ARC", new[] { "A", "AR" }, "Draw a 3-point arc.", modalToolType: typeof(ArcTool), assignActiveLayer: true));
 
             Register(
                 new EditorCommandDefinition(
                     "MOVE",
-                    new[] { "M", "MOZGAT" },
+                    new[] { "M" },
                     "Move selected entities.",
                     new EditorCommandPolicy(
                         CommandSelectionRequirement.Any,
@@ -182,7 +182,7 @@ namespace Primusz.AeroCAD.Presentation.Editor
             Register(
                 new EditorCommandDefinition(
                     "COPY",
-                    new[] { "CO", "CP", "MASOL" },
+                    new[] { "CO", "CP" },
                     "Copy selected entities.",
                     new EditorCommandPolicy(
                         CommandSelectionRequirement.Any,
@@ -192,7 +192,7 @@ namespace Primusz.AeroCAD.Presentation.Editor
             Register(
                 new EditorCommandDefinition(
                     "OFFSET",
-                    new[] { "O", "OF", "ELTOLAS" },
+                    new[] { "O", "OF" },
                     "Offset a selected line, polyline, circle or arc.",
                     new EditorCommandPolicy(
                         CommandSelectionRequirement.Single,
@@ -202,13 +202,13 @@ namespace Primusz.AeroCAD.Presentation.Editor
                     modalToolType: typeof(OffsetTool)));
 
             Register(
-                new EditorCommandDefinition("TRIM", new[] { "TR", "VAG" }, "Trim an entity to a selected boundary.", modalToolType: typeof(TrimTool)));
+                new EditorCommandDefinition("TRIM", new[] { "TR" }, "Trim an entity to a selected boundary.", modalToolType: typeof(TrimTool)));
 
             Register(
-                new EditorCommandDefinition("EXTEND", new[] { "EX", "HOSSZABBIT" }, "Extend an entity to a selected boundary.", modalToolType: typeof(ExtendTool)));
+                new EditorCommandDefinition("EXTEND", new[] { "EX" }, "Extend an entity to a selected boundary.", modalToolType: typeof(ExtendTool)));
 
             Register(
-                new EditorCommandDefinition("SELECT", new[] { "S", "SEL", "KIJ" }, "Return to selection mode."),
+                new EditorCommandDefinition("SELECT", new[] { "S", "SEL" }, "Return to selection mode."),
                 () =>
                 {
                     ActivateSelectionMode();
@@ -261,7 +261,7 @@ namespace Primusz.AeroCAD.Presentation.Editor
                 });
 
             Register(
-                new EditorCommandDefinition("GRID", new[] { "F7", "HALO", "RACS" }, "Toggle adaptive grid."),
+                new EditorCommandDefinition("GRID", new[] { "F7" }, "Toggle adaptive grid."),
                 () =>
                 {
                     gridSettingsService?.Toggle();
@@ -381,3 +381,4 @@ namespace Primusz.AeroCAD.Presentation.Editor
         }
     }
 }
+

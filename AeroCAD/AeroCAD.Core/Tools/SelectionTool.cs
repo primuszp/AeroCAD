@@ -39,9 +39,7 @@ namespace Primusz.AeroCAD.Core.Tools
             var rbo = ToolService.Viewport.GetRubberObject();
             var selMgr = ToolService.GetService<ISelectionManager>();
             var overlay = ToolService.GetService<Overlay>();
-            Point screenPos = e.GetPosition(viewport);
-            Point wpos = viewport.Unproject(screenPos);
-            viewport.Position = wpos;
+            Point wpos = viewport.Position;
 
             if (e.LeftButton == MouseButtonState.Pressed)
             {
@@ -68,29 +66,41 @@ namespace Primusz.AeroCAD.Core.Tools
                     var spatial = ToolService.GetService<ISpatialQueryService>();
                     var candidates = spatial?.QueryIntersecting(selectionRect);
                     var hits = ToolService.Viewport.QueryHitEntities(selectionRect, isWindowSelection, candidates);
-                    selMgr.SelectRange(hits);
+                    bool removeFromSelection = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+                    if (removeFromSelection)
+                    {
+                        foreach (var hit in hits)
+                            selMgr.Deselect(hit);
+                    }
+                    else
+                    {
+                        selMgr.SelectRange(hits);
+                    }
                     SetEditorMode(EditorMode.Idle);
                 }
                 else
                 {
                     // First try point selection
                     var spatial = ToolService.GetService<ISpatialQueryService>();
-                    double pickRadius = 4.0d / ToolService.Viewport.Zoom;
+                    var pickSettings = ToolService.GetService<IPickSettingsService>();
+                    double pickRadius = pickSettings?.GetPickRadiusWorld(ToolService.Viewport.Zoom) ?? (4.0d / ToolService.Viewport.Zoom);
                     var candidates = spatial?.QueryNearby(wpos, pickRadius);
-                    var hits = ToolService.Viewport.QueryHitEntities(wpos, candidates);
+                    var hits = ToolService.Viewport.QueryHitEntities(wpos, pickRadius, candidates);
 
                     if (hits.Count > 0)
                     {
-                        selMgr.ClearSelection();
                         var pickResolver = ToolService.GetService<IPickResolutionService>();
                         var primaryHit = pickResolver?.ResolvePrimary(hits) ?? ResolvePrimaryHit(hits);
-                        selMgr.Select(primaryHit);
+                        bool removeFromSelection = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+                        if (removeFromSelection && selMgr.IsSelected(primaryHit))
+                            selMgr.Deselect(primaryHit);
+                        else
+                            selMgr.Select(primaryHit);
                         SetEditorMode(EditorMode.Idle);
                     }
                     else
                     {
                         // Start rectangle selection
-                        selMgr.ClearSelection();
                         rbo.SetStart(wpos);
                         rbo.SetMove(wpos);
                         start = rbo.Start;

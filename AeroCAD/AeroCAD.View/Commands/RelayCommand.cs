@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Windows.Input;
 
-namespace Primusz.AeroCAD.Presentation.Commands
+namespace Primusz.AeroCAD.View.Commands
 {
     public class RelayCommand : ICommand
     {
@@ -24,4 +24,5 @@ namespace Primusz.AeroCAD.Presentation.Commands
         public void Execute(object parameter) => execute();
     }
 }
+
 

@@ -56,6 +56,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             var commandFeedback = new CommandFeedbackService();
             var commandCatalog = new EditorCommandCatalog();
             var gridSettings = new GridSettingsService();
+            var pickSettings = new PickSettingsService();
             var gridLayer = new GridLayer(viewport, gridSettings);
             var gripPreviewService = new GripPreviewService(new IGripPreviewStrategy[]
             {
@@ -146,6 +147,8 @@ namespace Primusz.AeroCAD.Core.Drawing
                 { typeof(OrthoService), orthoService },
                 { typeof(IGridSettingsService), gridSettings },
                 { typeof(GridSettingsService), gridSettings },
+                { typeof(IPickSettingsService), pickSettings },
+                { typeof(PickSettingsService), pickSettings },
                 { typeof(GridLayer), gridLayer },
                 { typeof(Overlay), overlay },
                 { typeof(RubberObject), rubberObject },

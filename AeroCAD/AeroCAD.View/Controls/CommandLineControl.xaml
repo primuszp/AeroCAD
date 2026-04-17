@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Primusz.AeroCAD.Presentation.Controls.CommandLineControl"
+<UserControl x:Class="Primusz.AeroCAD.View.Controls.CommandLineControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Height="100"
@@ -57,4 +57,5 @@
         </ScrollViewer>
     </DockPanel>
 </UserControl>
+
 

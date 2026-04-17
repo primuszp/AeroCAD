@@ -70,18 +70,13 @@ namespace Primusz.AeroCAD.Core.Tools
             {
                 prevCursor = Mouse.OverrideCursor;
                 IsActive = true;
-                
-                if (ToolService?.Viewport != null)
-                {
-                    ToolService.Viewport.ActiveCursorType = CursorType;
-                }
             }
 
-            // Always update cursor type to ensure it switches correctly when reactivating originally active tools (like SelectionTool)
             if (IsActive && ToolService?.Viewport != null)
             {
                 ToolService.Viewport.ActiveCursorType = CursorType;
-                (ToolService.Viewport as UIElement)?.InvalidateVisual();
+                ToolService.Viewport.GetRubberObject()?.InvalidateVisual();
+                ToolService.Viewport.InvalidateVisual();
             }
 
             return IsActive;
@@ -228,7 +223,7 @@ namespace Primusz.AeroCAD.Core.Tools
             {
                 ToolService.Viewport.ActiveCursorType = selectionTool.CursorType;
                 ToolService.Viewport.GetRubberObject()?.InvalidateVisual();
-                (ToolService.Viewport as UIElement)?.InvalidateVisual();
+                ToolService.Viewport.InvalidateVisual();
             }
         }
 

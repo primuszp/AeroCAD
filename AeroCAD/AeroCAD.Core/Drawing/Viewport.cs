@@ -166,11 +166,27 @@ namespace Primusz.AeroCAD.Core.Drawing
             return result;
         }
 
+        public IList<Entity> QueryHitEntities(Point point, double toleranceWorld)
+        {
+            var result = new List<Entity>();
+            foreach (Layer layer in Children.OfType<Layer>())
+                result.AddRange(layer.QueryHitEntities(point, toleranceWorld));
+            return result;
+        }
+
         public IList<Entity> QueryHitEntities(Point point, IEnumerable<Entity> candidates)
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
                 result.AddRange(layer.QueryHitEntities(point, candidates));
+            return result;
+        }
+
+        public IList<Entity> QueryHitEntities(Point point, double toleranceWorld, IEnumerable<Entity> candidates)
+        {
+            var result = new List<Entity>();
+            foreach (Layer layer in Children.OfType<Layer>())
+                result.AddRange(layer.QueryHitEntities(point, toleranceWorld, candidates));
             return result;
         }
 

@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Input;
 
-namespace Primusz.AeroCAD.Presentation.Input
+namespace Primusz.AeroCAD.View.Input
 {
     public sealed class KeyboardShortcutService
     {
@@ -96,4 +96,5 @@ namespace Primusz.AeroCAD.Presentation.Input
         }
     }
 }
+
 

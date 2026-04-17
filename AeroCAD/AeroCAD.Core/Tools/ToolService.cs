@@ -12,6 +12,8 @@ namespace Primusz.AeroCAD.Core.Tools
     {
         private readonly Dictionary<Guid, ITool> tools;
         private readonly Dictionary<Guid, int> registrationOrder;
+        private List<ITool> orderedTools;
+        private bool orderedToolsDirty;
         private readonly IServiceProvider provider;
         private int nextRegistrationOrder;
 
@@ -21,12 +23,14 @@ namespace Primusz.AeroCAD.Core.Tools
             Viewport = viewport;
             tools = new Dictionary<Guid, ITool>();
             registrationOrder = new Dictionary<Guid, int>();
+            orderedTools = new List<ITool>();
+            orderedToolsDirty = true;
             InitializeService();
         }
 
         public IViewport Viewport { get; private set; }
 
-        public IReadOnlyCollection<ITool> Tools => tools.Values.ToList().AsReadOnly();
+        public IReadOnlyCollection<ITool> Tools => GetOrderedTools().AsReadOnly();
 
         private void InitializeService()
         {
@@ -46,10 +50,21 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private IEnumerable<TListener> GetListeners<TListener>() where TListener : class
         {
-            return tools.Values
+            return GetOrderedTools()
+                .OfType<TListener>();
+        }
+
+        private List<ITool> GetOrderedTools()
+        {
+            if (!orderedToolsDirty)
+                return orderedTools;
+
+            orderedTools = tools.Values
                 .OrderByDescending(tool => tool.InputPriority)
                 .ThenBy(tool => registrationOrder.TryGetValue(tool.Id, out int order) ? order : int.MaxValue)
-                .OfType<TListener>();
+                .ToList();
+            orderedToolsDirty = false;
+            return orderedTools;
         }
 
         private void MouseButtonDown(object sender, MouseButtonEventArgs e)
@@ -140,6 +155,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
             tools.Add(tool.Id, tool);
             registrationOrder[tool.Id] = nextRegistrationOrder++;
+            orderedToolsDirty = true;
             tool.ToolService = this;
         }
 
@@ -150,6 +166,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
             tools.Remove(tool.Id);
             registrationOrder.Remove(tool.Id);
+            orderedToolsDirty = true;
         }
 
         public void SuspendAll()

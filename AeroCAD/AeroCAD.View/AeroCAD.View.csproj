@@ -3,8 +3,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <RootNamespace>Primusz.AeroCAD.Presentation</RootNamespace>
-    <AssemblyName>AeroCAD.Presentation</AssemblyName>
+    <RootNamespace>Primusz.AeroCAD.View</RootNamespace>
+    <AssemblyName>AeroCAD.View</AssemblyName>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

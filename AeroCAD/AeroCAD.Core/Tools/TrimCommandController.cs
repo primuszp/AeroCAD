@@ -197,9 +197,10 @@ namespace Primusz.AeroCAD.Core.Tools
         private static Entity PickEntity(IInteractiveCommandHost host, Point point, System.Func<Entity, bool> predicate)
         {
             var spatial = host.ToolService.GetService<ISpatialQueryService>();
-            double pickRadius = 4.0d / host.ToolService.Viewport.Zoom;
+            var pickSettings = host.ToolService.GetService<IPickSettingsService>();
+            double pickRadius = pickSettings?.GetPickRadiusWorld(host.ToolService.Viewport.Zoom) ?? (4.0d / host.ToolService.Viewport.Zoom);
             var candidates = spatial?.QueryNearby(point, pickRadius) ?? System.Array.Empty<Entity>();
-            var hits = host.ToolService.Viewport.QueryHitEntities(point, candidates);
+            var hits = host.ToolService.Viewport.QueryHitEntities(point, pickRadius, candidates);
             var pickResolver = host.ToolService.GetService<Selection.IPickResolutionService>();
             return pickResolver?.ResolvePrimary(hits, predicate) ?? hits.FirstOrDefault(entity => predicate == null || predicate(entity));
         }

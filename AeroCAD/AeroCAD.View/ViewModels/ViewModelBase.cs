@@ -1,7 +1,7 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Primusz.AeroCAD.Presentation.ViewModels
+namespace Primusz.AeroCAD.View.ViewModels
 {
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
@@ -13,4 +13,5 @@ namespace Primusz.AeroCAD.Presentation.ViewModels
         }
     }
 }
+
 
