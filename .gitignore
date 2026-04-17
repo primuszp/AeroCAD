@@ -1,0 +1,22 @@
+# Build output
+**/bin/
+**/obj/
+
+# IDE / user-specific
+**/.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Local tooling
+.claude/
+
+# Archives / backups
+*.zip
+Backups/
+
+# Legacy local sources not intended for the GitHub repo
+cadves_wpf/
+

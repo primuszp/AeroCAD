@@ -1,0 +1,60 @@
+﻿<UserControl x:Class="Primusz.AeroCAD.Presentation.Controls.CommandLineControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="100"
+             Width="200"
+             MinHeight="48"
+             FontFamily="Courier New"
+             FontSize="15">
+    <DockPanel Background="White">
+        <Border DockPanel.Dock="Bottom"
+                Background="White"
+                Padding="4,2">
+            <DockPanel LastChildFill="True">
+                <TextBlock x:Name="prompt"
+                           DockPanel.Dock="Left"
+                           Margin="0,0,6,0"
+                           VerticalAlignment="Center"
+                           Background="White"
+                           Cursor="None"
+                           FontFamily="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontFamily}"
+                           FontSize="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontSize}"
+                           Text="{Binding Prompt}"/>
+                <TextBox x:Name="input"
+                         DockPanel.Dock="Left"
+                         Background="White"
+                         TextWrapping="Wrap"
+                         AllowDrop="False"
+                         BorderThickness="0"
+                         VerticalContentAlignment="Center"
+                         FontFamily="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontFamily}"
+                         FontSize="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontSize}"
+                         Text="{Binding CurrentInput, UpdateSourceTrigger=PropertyChanged}"
+                         PreviewKeyDown="CmdLine_KeyDown"/>
+            </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                Margin="2"
+                BorderThickness="1"
+                BorderBrush="Silver"/>
+        <ScrollViewer x:Name="scroll"
+                      VerticalScrollBarVisibility="Auto"
+                      Background="White">
+            <ItemsControl x:Name="rtbMessages"
+                          Background="White"
+                          ItemsSource="{Binding Messages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock FontFamily="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontFamily}"
+                                   FontSize="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontSize}"
+                                   Background="White"
+                                   Foreground="#FF202020"
+                                   Text="{Binding}"
+                                   TextWrapping="Wrap"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
+

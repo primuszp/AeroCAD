@@ -1,0 +1,69 @@
+using System.Collections.Generic;
+using System.Windows;
+using Primusz.AeroCAD.Core.Documents;
+using Primusz.AeroCAD.Core.Drawing.Entities;
+using Primusz.AeroCAD.Core.Editor;
+using Primusz.AeroCAD.Core.Snapping;
+using Primusz.AeroCAD.Core.Spatial;
+
+namespace Primusz.AeroCAD.Core.Tools
+{
+    /// <summary>
+    /// Abstract base class for interactive command controllers.
+    /// Provides shared snap update and entity enumeration helpers,
+    /// eliminating code duplication across all concrete controllers.
+    /// </summary>
+    public abstract class CommandControllerBase : IInteractiveCommandController
+    {
+        public abstract string CommandName { get; }
+
+        public abstract CommandStep InitialStep { get; }
+
+        public abstract EditorMode EditorMode { get; }
+
+        public abstract void OnActivated(IInteractiveCommandHost host);
+
+        public abstract void OnPointerMove(IInteractiveCommandHost host, Point rawPoint);
+
+        public abstract InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint);
+
+        public abstract InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token);
+
+        public virtual InteractiveCommandResult OnLeftButtonReleased(IInteractiveCommandHost host)
+        {
+            return InteractiveCommandResult.Unhandled();
+        }
+
+        public abstract InteractiveCommandResult TryComplete(IInteractiveCommandHost host);
+
+        public abstract InteractiveCommandResult TryCancel(IInteractiveCommandHost host);
+
+        /// <summary>
+        /// Updates the snap engine with nearby entities and refreshes the rubber object's snap indicator.
+        /// </summary>
+        protected void UpdateSnap(IInteractiveCommandHost host, Point rawPoint)
+        {
+            var snapEngine = host.ToolService.GetService<ISnapEngine>();
+            if (snapEngine == null)
+                return;
+
+            var spatial = host.ToolService.GetService<ISpatialQueryService>();
+            var candidates = spatial?.QueryNearby(rawPoint, snapEngine.ToleranceWorld) ?? GetAllEntities(host);
+            snapEngine.Update(rawPoint, candidates);
+            host.ToolService.Viewport.GetRubberObject().SnapPoint = snapEngine.CurrentSnap;
+        }
+
+        /// <summary>
+        /// Returns all entities in the document as snap candidates when no spatial query is available.
+        /// </summary>
+        protected IEnumerable<Entity> GetAllEntities(IInteractiveCommandHost host)
+        {
+            var document = host.ToolService.GetService<ICadDocumentService>();
+            if (document == null)
+                yield break;
+
+            foreach (var entity in document.Entities)
+                yield return entity;
+        }
+    }
+}
