@@ -1,37 +1,27 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using Primusz.AeroCAD.Core.Commands;
-using Primusz.AeroCAD.Core.Documents;
-using Primusz.AeroCAD.Core.Drawing.Layers;
-using Primusz.AeroCAD.Core.Drawing.Markers;
-using Primusz.AeroCAD.Core.Editing.GripPreviews;
-using Primusz.AeroCAD.Core.Editing.MovePreviews;
-using Primusz.AeroCAD.Core.Editing.Offsets;
-using Primusz.AeroCAD.Core.Editing.TransientPreviews;
-using Primusz.AeroCAD.Core.Editing.TrimExtend;
-using Primusz.AeroCAD.Core.Editor;
-using Primusz.AeroCAD.Core.Rendering;
-using Primusz.AeroCAD.Core.Selection;
-using Primusz.AeroCAD.Core.Spatial;
-using Primusz.AeroCAD.Core.Snapping;
-using Primusz.AeroCAD.Core.Tools;
+using Primusz.AeroCAD.Core.Plugins;
 
 namespace Primusz.AeroCAD.Core.Drawing
 {
     public class ModelSpace : IServiceProvider
     {
         private Dictionary<Type, object> services;
-        private readonly Viewport viewport;
+        private readonly ModelSpaceComposition composition;
 
         public ModelSpace(Viewport viewport)
         {
-            this.viewport = viewport;
-            InitializeServices();
+            composition = new ModelSpaceComposition(viewport);
         }
 
-        private void InitializeServices()
+        public ModelSpace RegisterPlugin(IEntityPlugin plugin)
         {
-            var composition = new ModelSpaceComposition(viewport);
+            composition.RegisterPlugin(plugin);
+            return this;
+        }
+
+        public void Initialize()
+        {
             services = composition.BuildServices();
             composition.Bootstrap();
         }
@@ -45,10 +35,9 @@ namespace Primusz.AeroCAD.Core.Drawing
 
         public object GetService(Type serviceType)
         {
-            return services.ContainsKey(serviceType) ? services[serviceType] : null;
+            return services != null && services.ContainsKey(serviceType) ? services[serviceType] : null;
         }
 
         #endregion
     }
 }
-

@@ -13,6 +13,7 @@ using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Selection;
+using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Tools;
 using Primusz.AeroCAD.View.Editor;
 using Primusz.AeroCAD.View.Commands;
@@ -40,7 +41,9 @@ namespace Primusz.AeroCAD.View.ViewModels
         public MainViewModel(Viewport viewport)
         {
             this.viewport = viewport;
-            modelSpace = new ModelSpace(viewport);
+            modelSpace = new ModelSpace(viewport)
+                .RegisterPlugin(new RectangleEntityPlugin());
+            modelSpace.Initialize();
 
             documentService = modelSpace.GetService<ICadDocumentService>();
             undoRedoService = modelSpace.GetService<IUndoRedoService>();

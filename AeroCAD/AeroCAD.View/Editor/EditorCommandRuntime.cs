@@ -170,6 +170,9 @@ namespace Primusz.AeroCAD.View.Editor
                 new EditorCommandDefinition("ARC", new[] { "A", "AR" }, "Draw a 3-point arc.", modalToolType: typeof(ArcTool), assignActiveLayer: true));
 
             Register(
+                new EditorCommandDefinition("RECTANGLE", new[] { "REC", "RECT" }, "Draw an axis-aligned rectangle.", modalToolType: typeof(RectangleTool), assignActiveLayer: true));
+
+            Register(
                 new EditorCommandDefinition(
                     "MOVE",
                     new[] { "M" },
