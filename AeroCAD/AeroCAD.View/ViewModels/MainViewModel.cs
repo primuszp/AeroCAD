@@ -1,6 +1,6 @@
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -23,6 +23,8 @@ namespace Primusz.AeroCAD.View.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
+        private static readonly string[] MenuGroupOrder = { "Edit", "Draw", "Modify", "View" };
+
         private readonly ModelSpace modelSpace;
         private readonly ICadDocumentService documentService;
         private readonly IUndoRedoService undoRedoService;
@@ -54,6 +56,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             orthoService = modelSpace.GetService<IOrthoService>();
             gridSettingsService = modelSpace.GetService<IGridSettingsService>();
             keyboardShortcutService = new KeyboardShortcutService();
+
             commandRuntime = new EditorCommandRuntime(
                 modelSpace.GetService<IEditorCommandCatalog>(),
                 commandFeedbackService,
@@ -67,6 +70,10 @@ namespace Primusz.AeroCAD.View.ViewModels
                 viewport,
                 GetActiveLayer,
                 toolName => ActiveToolName = toolName);
+
+            modelSpace.RegisterService<IEditorCommandRuntime, EditorCommandRuntime>(commandRuntime);
+
+            MenuGroups = BuildMenuGroups(modelSpace.GetService<IEditorCommandCatalog>());
 
             CommandLine = new CommandLineViewModel(HandleCommandLineInput, CancelCurrentCommand);
 
@@ -96,7 +103,6 @@ namespace Primusz.AeroCAD.View.ViewModels
                 .FromProperty(Viewport.PositionProperty, typeof(Viewport))
                 .AddValueChanged(viewport, OnViewportPositionChanged);
 
-            InitializeCommands();
             InitializeKeyboardShortcuts();
             ActiveToolName = "SelectionTool";
         }
@@ -133,49 +139,11 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         public CommandLineViewModel CommandLine { get; }
 
-        public ICommand UndoCommand { get; private set; }
-
-        public ICommand RedoCommand { get; private set; }
-
-        public ICommand CancelCommand { get; private set; }
-
-        public ICommand ActivateSelectionToolCommand { get; private set; }
-
-        public ICommand ActivateLineToolCommand { get; private set; }
-
-        public ICommand ActivatePolylineToolCommand { get; private set; }
-
-        public ICommand ActivateCircleToolCommand { get; private set; }
-
-        public ICommand ActivateArcToolCommand { get; private set; }
-
-        public ICommand ActivateMoveToolCommand { get; private set; }
-
-        public ICommand ActivateCopyToolCommand { get; private set; }
-
-        public ICommand ActivateOffsetToolCommand { get; private set; }
-
-        public ICommand ActivateTrimToolCommand { get; private set; }
-
-        public ICommand ActivateExtendToolCommand { get; private set; }
-
-        public ICommand ToggleOrthoCommand { get; private set; }
-
-        public ICommand ToggleGridCommand { get; private set; }
-
-        public void ToggleOrtho()
-        {
-            orthoService?.Toggle();
-            commandFeedbackService?.LogMessage(
-                orthoService?.IsEnabled == true ? "Ortho mode ON." : "Ortho mode OFF.");
-        }
-
-        public void ToggleGrid()
-        {
-            gridSettingsService?.Toggle();
-            commandFeedbackService?.LogMessage(
-                gridSettingsService?.IsEnabled == true ? "Grid mode ON." : "Grid mode OFF.");
-        }
+        /// <summary>
+        /// Menu groups built from the command catalog. Each group maps to a top-level menu item;
+        /// items within a group map to sub-menu entries. Plugin commands appear automatically.
+        /// </summary>
+        public IReadOnlyList<MenuGroupViewModel> MenuGroups { get; }
 
         public bool TryHandleShortcut(KeyEventArgs e, bool isTextInputFocused)
         {
@@ -242,31 +210,53 @@ namespace Primusz.AeroCAD.View.ViewModels
             return Layers.Count > 0 ? Layers[0].Layer : null;
         }
 
-        private void InitializeCommands()
+        private IReadOnlyList<MenuGroupViewModel> BuildMenuGroups(IEditorCommandCatalog catalog)
         {
-            UndoCommand = new RelayCommand(
-                () => commandRuntime.Execute("UNDO"),
-                () => undoRedoService?.CanUndo ?? false);
+            if (catalog == null)
+                return new List<MenuGroupViewModel>().AsReadOnly();
 
-            RedoCommand = new RelayCommand(
-                () => commandRuntime.Execute("REDO"),
-                () => undoRedoService?.CanRedo ?? false);
+            // Special CanExecute predicates for commands that can be disabled
+            var canExecuteMap = new Dictionary<string, Func<bool>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["UNDO"] = () => undoRedoService?.CanUndo ?? false,
+                ["REDO"] = () => undoRedoService?.CanRedo ?? false
+            };
 
-            CancelCommand = new RelayCommand(() => commandRuntime.Execute("CANCEL"));
+            // Group commands by MenuGroup, preserving catalog insertion order within each group
+            var grouped = new Dictionary<string, List<EditorCommandDefinition>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var definition in catalog.Commands.Where(d => d.MenuGroup != null))
+            {
+                if (!grouped.TryGetValue(definition.MenuGroup, out var list))
+                {
+                    list = new List<EditorCommandDefinition>();
+                    grouped[definition.MenuGroup] = list;
+                }
+                list.Add(definition);
+            }
 
-            ToggleOrthoCommand = new RelayCommand(() => commandRuntime.Execute("ORTHO"));
-            ToggleGridCommand = new RelayCommand(() => commandRuntime.Execute("GRID"));
+            // Known groups first in declared order, unknown groups alphabetically after
+            var orderedKeys = MenuGroupOrder
+                .Where(g => grouped.ContainsKey(g))
+                .Concat(grouped.Keys.Except(MenuGroupOrder, StringComparer.OrdinalIgnoreCase).OrderBy(g => g));
 
-            ActivateSelectionToolCommand = new RelayCommand(() => commandRuntime.Execute("SELECT"));
-            ActivateLineToolCommand = new RelayCommand(() => commandRuntime.Execute("LINE"));
-            ActivatePolylineToolCommand = new RelayCommand(() => commandRuntime.Execute("PLINE"));
-            ActivateCircleToolCommand = new RelayCommand(() => commandRuntime.Execute("CIRCLE"));
-            ActivateArcToolCommand = new RelayCommand(() => commandRuntime.Execute("ARC"));
-            ActivateMoveToolCommand = new RelayCommand(() => commandRuntime.Execute("MOVE"));
-            ActivateCopyToolCommand = new RelayCommand(() => commandRuntime.Execute("COPY"));
-            ActivateOffsetToolCommand = new RelayCommand(() => commandRuntime.Execute("OFFSET"));
-            ActivateTrimToolCommand = new RelayCommand(() => commandRuntime.Execute("TRIM"));
-            ActivateExtendToolCommand = new RelayCommand(() => commandRuntime.Execute("EXTEND"));
+            var result = new List<MenuGroupViewModel> { new MenuGroupViewModel("_File", new List<MenuItemViewModel>()) };
+
+            foreach (var key in orderedKeys)
+            {
+                var items = grouped[key].Select(definition =>
+                {
+                    canExecuteMap.TryGetValue(definition.Name, out var canExec);
+                    ICommand command = canExec != null
+                        ? new RelayCommand(() => commandRuntime.Execute(definition.Name), canExec)
+                        : new RelayCommand(() => commandRuntime.Execute(definition.Name));
+                    return new MenuItemViewModel(definition.MenuLabel ?? definition.Description, command);
+                }).ToList();
+
+                var displayName = "_" + char.ToUpper(key[0]) + key.Substring(1).ToLowerInvariant();
+                result.Add(new MenuGroupViewModel(displayName, items));
+            }
+
+            return result.AsReadOnly();
         }
 
         private void InitializeKeyboardShortcuts()
@@ -278,14 +268,8 @@ namespace Primusz.AeroCAD.View.ViewModels
                 TryHandleGlobalDelete,
                 allowWhenTextInputFocused: true,
                 canHandle: context => !context.IsTextInputFocused || string.IsNullOrWhiteSpace(CommandLine?.CurrentInput));
-            keyboardShortcutService.Register(Key.F8, () =>
-            {
-                return commandRuntime.Execute("ORTHO");
-            }, allowWhenTextInputFocused: true);
-            keyboardShortcutService.Register(Key.F7, () =>
-            {
-                return commandRuntime.Execute("GRID");
-            }, allowWhenTextInputFocused: true);
+            keyboardShortcutService.Register(Key.F8, () => commandRuntime.Execute("ORTHO"), allowWhenTextInputFocused: true);
+            keyboardShortcutService.Register(Key.F7, () => commandRuntime.Execute("GRID"), allowWhenTextInputFocused: true);
         }
 
         private void OnViewportPositionChanged(object sender, EventArgs e)
@@ -351,5 +335,3 @@ namespace Primusz.AeroCAD.View.ViewModels
         }
     }
 }
-
-

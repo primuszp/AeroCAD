@@ -41,6 +41,19 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Style for sub-menu items bound to MenuItemViewModel -->
+        <Style x:Key="CatalogMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Header" Value="{Binding Label}"/>
+            <Setter Property="Command" Value="{Binding Command}"/>
+        </Style>
+
+        <!-- Style for top-level menu groups bound to MenuGroupViewModel -->
+        <Style x:Key="CatalogMenuGroupStyle" TargetType="MenuItem">
+            <Setter Property="Header" Value="{Binding GroupName}"/>
+            <Setter Property="ItemsSource" Value="{Binding Items}"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource CatalogMenuItemStyle}"/>
+        </Style>
     </Window.Resources>
     <DockPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="Auto" Width="Auto">
@@ -84,32 +97,13 @@
                 </TextBlock>
             </StatusBarItem>
         </StatusBar>
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File"/>
-            <MenuItem Header="_Edit">
-                <MenuItem Header="_Undo" Command="{Binding UndoCommand}"/>
-                <MenuItem Header="_Redo" Command="{Binding RedoCommand}"/>
-                <Separator/>
-                <MenuItem Header="_Select" Command="{Binding ActivateSelectionToolCommand}"/>
-            </MenuItem>
-            <MenuItem Header="_Draw">
-                <MenuItem Header="_Line" Command="{Binding ActivateLineToolCommand}"/>
-                <MenuItem Header="_Polyline" Command="{Binding ActivatePolylineToolCommand}"/>
-                <MenuItem Header="_Circle" Command="{Binding ActivateCircleToolCommand}"/>
-                <MenuItem Header="_Arc" Command="{Binding ActivateArcToolCommand}"/>
-            </MenuItem>
-            <MenuItem Header="_Modify">
-                <MenuItem Header="_Move" Command="{Binding ActivateMoveToolCommand}"/>
-                <MenuItem Header="_Copy" Command="{Binding ActivateCopyToolCommand}"/>
-                <MenuItem Header="_Offset" Command="{Binding ActivateOffsetToolCommand}"/>
-                <MenuItem Header="_Trim" Command="{Binding ActivateTrimToolCommand}"/>
-                <MenuItem Header="_Extend" Command="{Binding ActivateExtendToolCommand}"/>
-            </MenuItem>
-            <MenuItem Header="_View">
-                <MenuItem Header="_Ortho" Command="{Binding ToggleOrthoCommand}"/>
-                <MenuItem Header="_Grid" Command="{Binding ToggleGridCommand}"/>
-            </MenuItem>
-        </Menu>
+
+        <!-- Menu is fully data-driven from MenuGroups (built from the command catalog).
+             Adding a plugin with CreateCommands() + menuGroup automatically adds a menu entry. -->
+        <Menu DockPanel.Dock="Top"
+              ItemsSource="{Binding MenuGroups}"
+              ItemContainerStyle="{StaticResource CatalogMenuGroupStyle}"/>
+
         <controls:CommandLineControl x:Name="CommandInput"
                                      DockPanel.Dock="Bottom"
                                      DataContext="{Binding CommandLine}"
@@ -129,5 +123,3 @@
                           Zoom="1"/>
     </DockPanel>
 </Window>
-
-
