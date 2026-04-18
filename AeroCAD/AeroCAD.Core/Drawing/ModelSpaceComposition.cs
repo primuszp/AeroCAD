@@ -135,7 +135,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             var snapEngine = new SnapEngine(snapModePolicy);
             var undoRedoService = new UndoRedoService();
             var orthoService = new OrthoService();
-            var runtimeBootstrapper = new ModelSpaceRuntimeBootstrapper(viewport, document, selectionManager, editorState, overlay, toolService);
+            var runtimeBootstrapper = new ModelSpaceRuntimeBootstrapper(viewport, document, selectionManager, editorState, overlay, toolService, commandCatalog, plugins.AsReadOnly());
 
             Services = new Dictionary<Type, object>
             {

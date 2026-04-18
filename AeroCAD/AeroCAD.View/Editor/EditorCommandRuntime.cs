@@ -12,7 +12,7 @@ using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.View.Editor
 {
-    public class EditorCommandRuntime
+    public class EditorCommandRuntime : IEditorCommandRuntime
     {
         private readonly IEditorCommandCatalog commandCatalog;
         private readonly ICommandFeedbackService commandFeedbackService;
@@ -68,7 +68,11 @@ namespace Primusz.AeroCAD.View.Editor
             if (!commandExecutors.TryGetValue(normalizedName, out var executor))
             {
                 if (!commandDefinitions.TryGetValue(normalizedName, out var fallbackDefinition))
-                    return false;
+                {
+                    // Fall through to catalog for plugin-registered commands
+                    if (commandCatalog == null || !commandCatalog.TryResolve(normalizedName, out fallbackDefinition))
+                        return false;
+                }
 
                 if (!ValidatePolicy(fallbackDefinition))
                     return true;
@@ -168,9 +172,6 @@ namespace Primusz.AeroCAD.View.Editor
 
             Register(
                 new EditorCommandDefinition("ARC", new[] { "A", "AR" }, "Draw a 3-point arc.", modalToolType: typeof(ArcTool), assignActiveLayer: true));
-
-            Register(
-                new EditorCommandDefinition("RECTANGLE", new[] { "REC", "RECT" }, "Draw an axis-aligned rectangle.", modalToolType: typeof(RectangleTool), assignActiveLayer: true));
 
             Register(
                 new EditorCommandDefinition(
