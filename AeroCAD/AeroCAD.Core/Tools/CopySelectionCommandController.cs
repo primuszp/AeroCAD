@@ -14,8 +14,8 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class CopySelectionCommandController : CommandControllerBase
     {
-        private static readonly CommandStep BasePointStep = new CommandStep("BasePoint", "Copy base point:");
-        private static readonly CommandStep TargetPointStep = new CommandStep("TargetPoint", "Copy target point:", new[] { "ENTER" });
+        private static readonly CommandStep BasePointStep = new CommandStep("BasePoint", "Specify base point:");
+        private static readonly CommandStep TargetPointStep = new CommandStep("TargetPoint", "Specify second point:");
 
         private IReadOnlyList<Entity> selectedEntities = System.Array.Empty<Entity>();
         private readonly Dictionary<System.Guid, System.Guid> sourceLayers = new Dictionary<System.Guid, System.Guid>();

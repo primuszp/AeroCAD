@@ -27,7 +27,8 @@ namespace Primusz.AeroCAD.Core.Editor
             if (Options.Count == 0)
                 return Text;
 
-            return string.Format("{0} [{1}]", Text, string.Join("/", Options));
+            var baseText = Text.TrimEnd().TrimEnd(':').TrimEnd();
+            return string.Format("{0} or [{1}]:", baseText, string.Join("/", Options));
         }
     }
 }

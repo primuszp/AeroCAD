@@ -11,7 +11,7 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class GripEditCommandController : CommandControllerBase
     {
-        private static readonly CommandStep GripPointStep = new CommandStep("GripPoint", "Grip point:", new[] { "ENTER" });
+        private static readonly CommandStep GripPointStep = new CommandStep("GripPoint", "Specify stretch point:");
 
         private Grip activeGrip;
         private Entity stateBeforeDrag;

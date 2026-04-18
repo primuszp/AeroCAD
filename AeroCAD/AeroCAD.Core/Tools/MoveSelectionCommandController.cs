@@ -14,8 +14,8 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class MoveSelectionCommandController : CommandControllerBase
     {
-        private static readonly CommandStep BasePointStep = new CommandStep("BasePoint", "Move base point:");
-        private static readonly CommandStep TargetPointStep = new CommandStep("TargetPoint", "Move target point:", new[] { "ENTER" });
+        private static readonly CommandStep BasePointStep = new CommandStep("BasePoint", "Specify base point:");
+        private static readonly CommandStep TargetPointStep = new CommandStep("TargetPoint", "Specify second point:");
 
         private IReadOnlyList<Entity> selectedEntities = System.Array.Empty<Entity>();
         private IReadOnlyList<ModifyEntitiesCommand.EntityStateRecord> stateRecords = System.Array.Empty<ModifyEntitiesCommand.EntityStateRecord>();

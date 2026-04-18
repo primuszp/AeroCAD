@@ -9,10 +9,10 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class CircleCommandController : CommandControllerBase
     {
-        private static readonly CommandKeywordOption DiameterKeyword = new CommandKeywordOption("DIAMETER", new[] { "DIA", "D" }, "Switch to diameter input.");
+        private static readonly CommandKeywordOption DiameterKeyword = new CommandKeywordOption("DIAMETER", new[] { "D" }, "Switch to diameter input.");
         private static readonly CommandStep CenterPointStep = new CommandStep("CenterPoint", "Specify center point:");
-        private static readonly CommandStep RadiusPointStep = new CommandStep("RadiusPoint", "Specify radius or [Diameter]:", new[] { "ENTER" }, new[] { DiameterKeyword });
-        private static readonly CommandStep DiameterPointStep = new CommandStep("DiameterPoint", "Specify diameter or second point:");
+        private static readonly CommandStep RadiusPointStep = new CommandStep("RadiusPoint", "Specify radius:", keywords: new[] { DiameterKeyword });
+        private static readonly CommandStep DiameterPointStep = new CommandStep("DiameterPoint", "Specify diameter:");
 
         private readonly System.Func<Layer> activeLayerResolver;
         private bool hasCenterPoint;

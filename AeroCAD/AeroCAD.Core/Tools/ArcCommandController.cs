@@ -22,13 +22,13 @@ namespace Primusz.AeroCAD.Core.Tools
     public class ArcCommandController : CommandControllerBase
     {
         private static readonly CommandStep StartPointStep =
-            new CommandStep("StartPoint", "Arc start point:");
+            new CommandStep("StartPoint", "Specify start point:");
 
         private static readonly CommandStep SecondPointStep =
-            new CommandStep("SecondPoint", "Arc second point:");
+            new CommandStep("SecondPoint", "Specify second point:");
 
         private static readonly CommandStep EndPointStep =
-            new CommandStep("EndPoint", "Arc end point:", new[] { "ENTER" });
+            new CommandStep("EndPoint", "Specify end point:");
 
         private readonly Func<Layer> activeLayerResolver;
 
