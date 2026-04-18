@@ -29,7 +29,9 @@ namespace Primusz.AeroCAD.Core.Plugins
                 new[] { "REC", "RECT" },
                 "Draw an axis-aligned rectangle.",
                 modalToolType: typeof(RectangleTool),
-                assignActiveLayer: true);
+                assignActiveLayer: true,
+                menuGroup: "Draw",
+                menuLabel: "_Rectangle");
         }
     }
 }

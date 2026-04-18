@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,7 +12,9 @@ namespace Primusz.AeroCAD.Core.Editor
             string description = null,
             EditorCommandPolicy policy = null,
             Type modalToolType = null,
-            bool assignActiveLayer = false)
+            bool assignActiveLayer = false,
+            string menuGroup = null,
+            string menuLabel = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Command name is required.", nameof(name));
@@ -29,6 +31,8 @@ namespace Primusz.AeroCAD.Core.Editor
             Policy = policy ?? EditorCommandPolicy.Default;
             ModalToolType = modalToolType;
             AssignActiveLayer = assignActiveLayer;
+            MenuGroup = string.IsNullOrWhiteSpace(menuGroup) ? null : menuGroup.Trim();
+            MenuLabel = string.IsNullOrWhiteSpace(menuLabel) ? description : menuLabel;
         }
 
         public string Name { get; }
@@ -42,6 +46,17 @@ namespace Primusz.AeroCAD.Core.Editor
         public Type ModalToolType { get; }
 
         public bool AssignActiveLayer { get; }
+
+        /// <summary>
+        /// The menu group this command belongs to (e.g. "Draw", "Modify", "Edit", "View").
+        /// Null means the command is not shown in any menu.
+        /// </summary>
+        public string MenuGroup { get; }
+
+        /// <summary>
+        /// The display label for this command in menus, with WPF access-key prefix (e.g. "_Line").
+        /// Falls back to Description when null.
+        /// </summary>
+        public string MenuLabel { get; }
     }
 }
-
