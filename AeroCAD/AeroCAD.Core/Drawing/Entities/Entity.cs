@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Drawing.Handles;
 using Primusz.AeroCAD.Core.Rendering;
@@ -98,6 +99,16 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             return GripKind.Endpoint;
         }
 
+        /// <summary>
+        /// Returns grip descriptors for this entity. Override when grip semantics need
+        /// stable, explicit descriptors beyond simple index-based defaults.
+        /// </summary>
+        public virtual IEnumerable<GripDescriptor> GetGripDescriptors()
+        {
+            return Enumerable.Range(0, GripCount)
+                .Select(index => new GripDescriptor(this, index, GetGripKind(index), () => GetGripPoint(index)));
+        }
+
         protected void CopyIdentityTo(Entity clone)
         {
             clone.Id = Id;
@@ -125,8 +136,55 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
         /// <summary>
         /// Gets the snap descriptors exposed by this entity.
+        /// Grip-backed snap points are derived from the grip descriptor model by default,
+        /// while entity-specific non-grip snaps can be supplied by overrides.
         /// </summary>
-        public abstract IEnumerable<ISnapDescriptor> GetSnapDescriptors();
+        public virtual IEnumerable<ISnapDescriptor> GetSnapDescriptors()
+        {
+            foreach (var descriptor in GetGripSnapDescriptors())
+                yield return descriptor;
+
+            foreach (var descriptor in GetAdditionalSnapDescriptors())
+                yield return descriptor;
+        }
+
+        protected virtual IEnumerable<ISnapDescriptor> GetGripSnapDescriptors()
+        {
+            foreach (var grip in GetGripDescriptors())
+            {
+                if (!TryMapGripToSnapType(grip.Kind, out var snapType))
+                    continue;
+
+                yield return new SnapPointDescriptor(snapType, grip.GetPoint);
+            }
+        }
+
+        protected virtual IEnumerable<ISnapDescriptor> GetAdditionalSnapDescriptors()
+        {
+            yield break;
+        }
+
+        protected virtual bool TryMapGripToSnapType(GripKind gripKind, out SnapType snapType)
+        {
+            switch (gripKind)
+            {
+                case GripKind.Center:
+                    snapType = SnapType.Center;
+                    return true;
+                case GripKind.Midpoint:
+                    snapType = SnapType.Midpoint;
+                    return true;
+                case GripKind.Quadrant:
+                    snapType = SnapType.Quadrant;
+                    return true;
+                case GripKind.Endpoint:
+                    snapType = SnapType.Endpoint;
+                    return true;
+                default:
+                    snapType = default;
+                    return false;
+            }
+        }
 
         #region ISelectable
 

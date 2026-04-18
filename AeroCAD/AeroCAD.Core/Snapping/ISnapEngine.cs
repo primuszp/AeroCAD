@@ -17,6 +17,9 @@ namespace Primusz.AeroCAD.Core.Snapping
         /// <summary>Updates the snap state for the given world position and candidate entities.</summary>
         void Update(Point worldPos, IEnumerable<Entity> candidates);
 
+        /// <summary>Updates the snap state for the given world position and explicit descriptors.</summary>
+        void Update(Point worldPos, IEnumerable<ISnapDescriptor> descriptors);
+
         /// <summary>Returns the snapped point, or rawPos if no snap found.</summary>
         Point Snap(Point rawPos);
     }

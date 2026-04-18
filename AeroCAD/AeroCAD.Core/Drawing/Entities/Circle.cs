@@ -72,7 +72,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
         public override GripKind GetGripKind(int index)
         {
-            return index == 0 ? GripKind.Center : GripKind.Endpoint;
+            return index == 0 ? GripKind.Center : GripKind.Quadrant;
         }
 
         public override Entity Clone()
@@ -111,14 +111,18 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             InvalidateGeometry();
         }
 
-        public override IEnumerable<ISnapDescriptor> GetSnapDescriptors()
+        protected override IEnumerable<ISnapDescriptor> GetAdditionalSnapDescriptors()
         {
-            yield return new SnapPointDescriptor(SnapType.Center, () => Center);
-            yield return new SnapPointDescriptor(SnapType.Quadrant, () => GetGripPoint(1));
-            yield return new SnapPointDescriptor(SnapType.Quadrant, () => GetGripPoint(2));
-            yield return new SnapPointDescriptor(SnapType.Quadrant, () => GetGripPoint(3));
-            yield return new SnapPointDescriptor(SnapType.Quadrant, () => GetGripPoint(4));
             yield return new ComputedSnapDescriptor(SnapType.Nearest, GetClosestPointOnCircle);
+        }
+
+        public override IEnumerable<GripDescriptor> GetGripDescriptors()
+        {
+            yield return new GripDescriptor(this, 0, GripKind.Center, () => center);
+            yield return new GripDescriptor(this, 1, GripKind.Quadrant, () => new Point(center.X + radius, center.Y));
+            yield return new GripDescriptor(this, 2, GripKind.Quadrant, () => new Point(center.X, center.Y - radius));
+            yield return new GripDescriptor(this, 3, GripKind.Quadrant, () => new Point(center.X - radius, center.Y));
+            yield return new GripDescriptor(this, 4, GripKind.Quadrant, () => new Point(center.X, center.Y + radius));
         }
 
         public static Geometry BuildGeometry(Point center, double radius)

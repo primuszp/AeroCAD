@@ -164,7 +164,7 @@ namespace Primusz.AeroCAD.View.Editor
                 new EditorCommandDefinition("PLINE", new[] { "PL", "P" }, "Draw polyline.", modalToolType: typeof(PolylineTool), assignActiveLayer: true));
 
             Register(
-                new EditorCommandDefinition("CIRCLE", new[] { "CI", "CIR" }, "Draw circles.", modalToolType: typeof(CircleTool), assignActiveLayer: true));
+                new EditorCommandDefinition("CIRCLE", new[] { "C", "CI", "CIR" }, "Draw circles.", modalToolType: typeof(CircleTool), assignActiveLayer: true));
 
             Register(
                 new EditorCommandDefinition("ARC", new[] { "A", "AR" }, "Draw a 3-point arc.", modalToolType: typeof(ArcTool), assignActiveLayer: true));

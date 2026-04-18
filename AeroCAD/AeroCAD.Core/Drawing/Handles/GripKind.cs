@@ -4,6 +4,7 @@
     {
         Endpoint,
         Midpoint,
+        Quadrant,
         Center
     }
 }

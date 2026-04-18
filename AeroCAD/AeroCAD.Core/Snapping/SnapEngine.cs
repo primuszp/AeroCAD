@@ -20,18 +20,23 @@ namespace Primusz.AeroCAD.Core.Snapping
 
         public void Update(Point worldPos, IEnumerable<Entity> candidates)
         {
-            CurrentSnap = null;
             var descriptors = candidates
                 .OfType<ISnappable>()
-                .SelectMany(entity => entity.GetSnapDescriptors())
-                .ToList();
+                .SelectMany(entity => entity.GetSnapDescriptors());
 
+            Update(worldPos, descriptors);
+        }
+
+        public void Update(Point worldPos, IEnumerable<ISnapDescriptor> descriptors)
+        {
+            CurrentSnap = null;
+            var descriptorList = descriptors?.ToList() ?? new List<ISnapDescriptor>();
             foreach (var snapType in ModePolicy.EvaluationOrder)
             {
                 if (!ModePolicy.IsEnabled(snapType))
                     continue;
 
-                var result = FindBestSnap(worldPos, descriptors, snapType);
+                var result = FindBestSnap(worldPos, descriptorList, snapType);
                 if (result != null)
                     CurrentSnap = result;
                 if (CurrentSnap != null)

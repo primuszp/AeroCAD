@@ -9,12 +9,15 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class CircleCommandController : CommandControllerBase
     {
-        private static readonly CommandStep CenterPointStep = new CommandStep("CenterPoint", "Circle center point:");
-        private static readonly CommandStep RadiusPointStep = new CommandStep("RadiusPoint", "Circle radius point or radius:", new[] { "ENTER" });
+        private static readonly CommandKeywordOption DiameterKeyword = new CommandKeywordOption("DIAMETER", new[] { "DIA", "D" }, "Switch to diameter input.");
+        private static readonly CommandStep CenterPointStep = new CommandStep("CenterPoint", "Specify center point:");
+        private static readonly CommandStep RadiusPointStep = new CommandStep("RadiusPoint", "Specify radius or [Diameter]:", new[] { "ENTER" }, new[] { DiameterKeyword });
+        private static readonly CommandStep DiameterPointStep = new CommandStep("DiameterPoint", "Specify diameter or second point:");
 
         private readonly System.Func<Layer> activeLayerResolver;
         private bool hasCenterPoint;
         private Point centerPoint;
+        private bool useDiameterInput;
 
         public CircleCommandController(System.Func<Layer> activeLayerResolver)
         {
@@ -29,6 +32,13 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override void OnActivated(IInteractiveCommandHost host)
         {
+            var rubberObject = host.ToolService.Viewport.GetRubberObject();
+            rubberObject?.ClearPreview();
+            if (rubberObject != null)
+            {
+                rubberObject.SnapPoint = null;
+                rubberObject.Cancel();
+            }
             Reset();
         }
 
@@ -54,9 +64,21 @@ namespace Primusz.AeroCAD.Core.Tools
             Point point;
             if (!host.TryResolvePointInput(token, hasCenterPoint ? centerPoint : (Point?)null, out point))
             {
+                CommandKeywordOption keyword;
+                if (hasCenterPoint && host.CurrentStep != null && host.CurrentStep.TryResolveKeyword(token, out keyword))
+                {
+                    if (keyword == DiameterKeyword)
+                    {
+                        useDiameterInput = true;
+                        return InteractiveCommandResult.MoveToStep(DiameterPointStep);
+                    }
+                }
+
                 double scalar;
                 if (hasCenterPoint && host.TryResolveScalarInput(token, out scalar))
-                    return SubmitRadius(host, scalar, true);
+                    return useDiameterInput
+                        ? SubmitDiameter(host, scalar, true)
+                        : SubmitRadius(host, scalar, true);
 
                 return InteractiveCommandResult.Unhandled();
             }
@@ -66,12 +88,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            return Finish(host, "Circle command ended.");
+            return Finish(host, "CIRCLE ended.");
         }
 
         public override InteractiveCommandResult TryCancel(IInteractiveCommandHost host)
         {
-            return Finish(host, "Circle command ended.");
+            return Finish(host, "CIRCLE canceled.");
         }
 
         private InteractiveCommandResult SubmitResolvedPoint(IInteractiveCommandHost host, Point point, bool logInput)
@@ -84,13 +106,18 @@ namespace Primusz.AeroCAD.Core.Tools
             {
                 hasCenterPoint = true;
                 centerPoint = point;
+                useDiameterInput = false;
                 var rbo = host.ToolService.Viewport.GetRubberObject();
+                rbo.ClearPreview();
+                rbo.SnapPoint = null;
                 rbo.CurrentStyle = RubberStyle.Circle;
                 rbo.SetStart(centerPoint);
                 return InteractiveCommandResult.MoveToStep(RadiusPointStep);
             }
 
-            return SubmitRadius(host, (point - centerPoint).Length, false);
+            return useDiameterInput
+                ? SubmitDiameter(host, (point - centerPoint).Length * 2.0d, false)
+                : SubmitRadius(host, (point - centerPoint).Length, false);
         }
 
         private InteractiveCommandResult SubmitRadius(IInteractiveCommandHost host, double radius, bool logInput)
@@ -112,18 +139,26 @@ namespace Primusz.AeroCAD.Core.Tools
                 }
             }
 
-            var rubberObject = host.ToolService.Viewport.GetRubberObject();
-            rubberObject.Cancel();
-            rubberObject.SnapPoint = null;
-            hasCenterPoint = false;
-            centerPoint = default(Point);
-            return InteractiveCommandResult.MoveToStep(CenterPointStep);
+            return Finish(host, "CIRCLE created.");
+        }
+
+        private InteractiveCommandResult SubmitDiameter(IInteractiveCommandHost host, double diameter, bool logInput)
+        {
+            diameter = System.Math.Abs(diameter);
+
+            if (logInput)
+                host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(diameter.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+
+            return SubmitRadius(host, diameter / 2.0d, false);
         }
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            host.ToolService.Viewport.GetRubberObject().SnapPoint = null;
-            host.ToolService.Viewport.GetRubberObject().Cancel();
+            var rubberObject = host.ToolService.Viewport.GetRubberObject();
+            rubberObject.SnapPoint = null;
+            rubberObject.ClearPreview();
+            rubberObject.Cancel();
+            rubberObject.InvalidateVisual();
             Reset();
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
         }
@@ -132,6 +167,7 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             hasCenterPoint = false;
             centerPoint = default(Point);
+            useDiameterInput = false;
         }
     }
 }

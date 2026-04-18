@@ -11,9 +11,10 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class PolylineCommandController : CommandControllerBase
     {
+        private static readonly CommandKeywordOption CloseKeyword = new CommandKeywordOption("CLOSE", new[] { "CL" }, "Close the polyline.");
         private static readonly CommandKeywordOption UndoKeyword = new CommandKeywordOption("UNDO", new[] { "U" }, "Undo last point.");
-        private static readonly CommandStep FirstPointStep = new CommandStep("FirstPoint", "Polyline first point:");
-        private static readonly CommandStep NextPointStep = new CommandStep("NextPoint", "Polyline next point:", new[] { "ENTER" }, new[] { UndoKeyword });
+        private static readonly CommandStep FirstPointStep = new CommandStep("FirstPoint", "Specify start point:");
+        private static readonly CommandStep NextPointStep = new CommandStep("NextPoint", "Specify next point:", new[] { "ENTER" }, new[] { CloseKeyword, UndoKeyword });
 
         private readonly System.Func<Layer> activeLayerResolver;
         private readonly List<Point> points = new List<Point>();
@@ -61,6 +62,9 @@ namespace Primusz.AeroCAD.Core.Tools
             CommandKeywordOption keyword;
             if (host.CurrentStep != null && host.CurrentStep.TryResolveKeyword(token, out keyword))
             {
+                if (keyword == CloseKeyword)
+                    return ClosePolyline(host);
+
                 if (keyword == UndoKeyword)
                     return UndoLastPoint(host);
             }
@@ -74,12 +78,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            return Cancel("Polyline command ended.");
+            return Finish(host, "PLINE ended.");
         }
 
         public override InteractiveCommandResult TryCancel(IInteractiveCommandHost host)
         {
-            return Cancel("Polyline command ended.");
+            return Finish(host, "PLINE canceled.");
         }
 
         private InteractiveCommandResult SubmitResolvedPoint(IInteractiveCommandHost host, Point point, bool logInput)
@@ -116,6 +120,23 @@ namespace Primusz.AeroCAD.Core.Tools
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
+        private InteractiveCommandResult ClosePolyline(IInteractiveCommandHost host)
+        {
+            if (points.Count < 2)
+                return InteractiveCommandResult.Unhandled();
+
+            var firstPoint = points[0];
+            var lastPoint = points[points.Count - 1];
+            if (firstPoint != lastPoint)
+            {
+                points.Add(firstPoint);
+                currentPolyline?.AddPoint(firstPoint);
+                host.ToolService.Viewport.GetRubberObject().SetStart(firstPoint);
+            }
+
+            return Finish(host, "PLINE created.");
+        }
+
         private InteractiveCommandResult UndoLastPoint(IInteractiveCommandHost host)
         {
             if (points.Count == 0)
@@ -148,8 +169,17 @@ namespace Primusz.AeroCAD.Core.Tools
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
-        private InteractiveCommandResult Cancel(string message)
+        private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
+            var rubberObject = host.ToolService.Viewport.GetRubberObject();
+            if (rubberObject != null)
+            {
+                rubberObject.SnapPoint = null;
+                rubberObject.ClearPreview();
+                rubberObject.Cancel();
+                rubberObject.InvalidateVisual();
+            }
+
             points.Clear();
             currentPolyline = null;
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);

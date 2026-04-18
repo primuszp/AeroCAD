@@ -49,6 +49,15 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             return GripKind.Endpoint;
         }
 
+        public override IEnumerable<GripDescriptor> GetGripDescriptors()
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                int currentIndex = i;
+                yield return new GripDescriptor(this, currentIndex, GripKind.Endpoint, () => points[currentIndex]);
+            }
+        }
+
         public override Entity Clone()
         {
             var clone = new Polyline(points)
@@ -86,23 +95,18 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             InvalidateGeometry();
         }
 
-        public override IEnumerable<ISnapDescriptor> GetSnapDescriptors()
+        protected override IEnumerable<ISnapDescriptor> GetAdditionalSnapDescriptors()
         {
             if (points.Count == 0)
                 yield break;
 
-            for (int i = 0; i < points.Count; i++)
+            for (int i = 0; i < points.Count - 1; i++)
             {
                 int currentIndex = i;
-                yield return new SnapPointDescriptor(SnapType.Endpoint, () => points[currentIndex]);
-
-                if (i < points.Count - 1)
-                {
-                    int nextIndex = i + 1;
-                    yield return new SnapPointDescriptor(
-                        SnapType.Midpoint,
-                        () => new Point((points[currentIndex].X + points[nextIndex].X) / 2.0, (points[currentIndex].Y + points[nextIndex].Y) / 2.0));
-                }
+                int nextIndex = i + 1;
+                yield return new SnapPointDescriptor(
+                    SnapType.Midpoint,
+                    () => new Point((points[currentIndex].X + points[nextIndex].X) / 2.0, (points[currentIndex].Y + points[nextIndex].Y) / 2.0));
             }
 
             yield return new ComputedSnapDescriptor(SnapType.Nearest, GetClosestPoint);

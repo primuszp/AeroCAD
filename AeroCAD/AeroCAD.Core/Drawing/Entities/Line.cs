@@ -67,6 +67,13 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             return index == 2 ? GripKind.Midpoint : GripKind.Endpoint;
         }
 
+        public override IEnumerable<GripDescriptor> GetGripDescriptors()
+        {
+            yield return new GripDescriptor(this, 0, GripKind.Endpoint, () => StartPoint);
+            yield return new GripDescriptor(this, 1, GripKind.Endpoint, () => EndPoint);
+            yield return new GripDescriptor(this, 2, GripKind.Midpoint, GetMidpoint);
+        }
+
         public override Entity Clone()
         {
             var clone = new Line(startPoint, endPoint)
@@ -103,11 +110,8 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             InvalidateGeometry();
         }
 
-        public override IEnumerable<ISnapDescriptor> GetSnapDescriptors()
+        protected override IEnumerable<ISnapDescriptor> GetAdditionalSnapDescriptors()
         {
-            yield return new SnapPointDescriptor(SnapType.Endpoint, () => StartPoint);
-            yield return new SnapPointDescriptor(SnapType.Endpoint, () => EndPoint);
-            yield return new SnapPointDescriptor(SnapType.Midpoint, GetMidpoint);
             yield return new ComputedSnapDescriptor(SnapType.Nearest, worldPos => GetClosestPointOnLineSegment(StartPoint, EndPoint, worldPos));
         }
 

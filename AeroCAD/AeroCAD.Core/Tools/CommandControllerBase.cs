@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Entities;
@@ -48,9 +49,17 @@ namespace Primusz.AeroCAD.Core.Tools
                 return;
 
             var spatial = host.ToolService.GetService<ISpatialQueryService>();
-            var candidates = spatial?.QueryNearby(rawPoint, snapEngine.ToleranceWorld) ?? GetAllEntities(host);
-            snapEngine.Update(rawPoint, candidates);
+            var candidates = GetSnapCandidates(host, rawPoint, snapEngine.ToleranceWorld, spatial);
+            var descriptorService = host.ToolService.GetService<ISnapDescriptorService>();
+            var descriptors = descriptorService?.GetEntityAndSelectedGripDescriptors(candidates)
+                ?? GetAllEntities(host).OfType<ISnappable>().SelectMany(entity => entity.GetSnapDescriptors());
+            snapEngine.Update(rawPoint, descriptors);
             host.ToolService.Viewport.GetRubberObject().SnapPoint = snapEngine.CurrentSnap;
+        }
+
+        private IEnumerable<Entity> GetSnapCandidates(IInteractiveCommandHost host, Point rawPoint, double toleranceWorld, ISpatialQueryService spatial)
+        {
+            return spatial?.QueryNearby(rawPoint, toleranceWorld) ?? GetAllEntities(host);
         }
 
         /// <summary>

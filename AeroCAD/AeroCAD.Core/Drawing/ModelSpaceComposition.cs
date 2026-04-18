@@ -4,6 +4,7 @@ using Primusz.AeroCAD.Core.Commands;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Drawing.Markers;
+using Primusz.AeroCAD.Core.Drawing.Handles;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
 using Primusz.AeroCAD.Core.Editing.MovePreviews;
 using Primusz.AeroCAD.Core.Editing.Offsets;
@@ -30,6 +31,7 @@ namespace Primusz.AeroCAD.Core.Drawing
         public Dictionary<Type, object> BuildServices()
         {
             var selectionManager = new SelectionManager();
+            var gripService = new GripService(selectionManager);
             var markerAppearance = new MarkerAppearanceService();
             var editorState = new EditorStateService(viewport);
             var entityRenderService = new EntityRenderService(new IEntityRenderStrategy[]
@@ -49,7 +51,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             });
             var spatialQueryService = new SpatialQueryService(document, entityBoundsService);
             var pickResolutionService = new PickResolutionService(document);
-            var overlay = new Overlay(viewport, markerAppearance);
+            var overlay = new Overlay(viewport, markerAppearance, gripService);
             var rubberObject = new RubberObject(viewport, markerAppearance);
             var toolService = new ToolService(new DictionaryServiceProvider(() => Services), viewport);
             var toolRuntime = new EditorToolRuntime(toolService, editorState);
@@ -93,13 +95,27 @@ namespace Primusz.AeroCAD.Core.Drawing
                 new CircleTrimExtendStrategy(),
                 new ArcTrimExtendStrategy()
             });
-            var snapModePolicy = new SnapModePolicy(new[]
+            var snapDescriptorService = new SnapDescriptorService(new ISnapDescriptorProvider[]
             {
-                SnapType.Endpoint,
-                SnapType.Midpoint,
-                SnapType.Center,
-                SnapType.Quadrant
+                new EntitySnapDescriptorProvider(),
+                new SelectedGripSnapDescriptorProvider(gripService)
             });
+            var snapModePolicy = new SnapModePolicy(
+                new[]
+                {
+                    SnapType.Endpoint,
+                    SnapType.Midpoint,
+                    SnapType.Center,
+                    SnapType.Quadrant
+                },
+                new[]
+                {
+                    SnapType.Endpoint,
+                    SnapType.Midpoint,
+                    SnapType.Center,
+                    SnapType.Quadrant,
+                    SnapType.Nearest
+                });
             var snapEngine = new SnapEngine(snapModePolicy);
             var undoRedoService = new UndoRedoService();
             var orthoService = new OrthoService();
@@ -109,12 +125,16 @@ namespace Primusz.AeroCAD.Core.Drawing
             {
                 { typeof(ISelectionManager), selectionManager },
                 { typeof(SelectionManager), selectionManager },
+                { typeof(IGripService), gripService },
+                { typeof(GripService), gripService },
                 { typeof(IMarkerAppearanceService), markerAppearance },
                 { typeof(MarkerAppearanceService), markerAppearance },
                 { typeof(ICadDocumentService), document },
                 { typeof(CadDocumentService), document },
                 { typeof(ISnapEngine), snapEngine },
                 { typeof(SnapEngine), snapEngine },
+                { typeof(ISnapDescriptorService), snapDescriptorService },
+                { typeof(SnapDescriptorService), snapDescriptorService },
                 { typeof(ISnapModePolicy), snapModePolicy },
                 { typeof(SnapModePolicy), snapModePolicy },
                 { typeof(IUndoRedoService), undoRedoService },

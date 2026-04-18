@@ -205,27 +205,21 @@ namespace Primusz.AeroCAD.Core.Tools
         private void UpdateGripPreview()
         {
             var rubberObject = ToolService.Viewport.GetRubberObject();
-            var overlay = ToolService.GetService<Overlay>();
+            var snapEngine = ToolService.GetService<ISnapEngine>();
+            var descriptorService = ToolService.GetService<ISnapDescriptorService>();
 
-            if (rubberObject == null || overlay == null)
+            if (rubberObject == null || snapEngine == null || descriptorService == null)
                 return;
 
-            Grip grip = overlay.HitTestGrip(ToolService.Viewport.Position);
-            if (grip == null)
+            var descriptors = descriptorService.GetSelectedGripDescriptors();
+            snapEngine.Update(ToolService.Viewport.Position, descriptors);
+            if (snapEngine.CurrentSnap == null)
             {
                 ClearSnapPreview();
                 return;
             }
 
-            var snapType = grip.Kind == GripKind.Center
-                ? SnapType.Center
-                : grip.Kind == GripKind.Midpoint
-                    ? SnapType.Midpoint
-                    : SnapType.Endpoint;
-
-            rubberObject.SnapPoint = new SnapResult(
-                grip.Owner.GetGripPoint(grip.Index),
-                snapType);
+            rubberObject.SnapPoint = snapEngine.CurrentSnap;
             rubberObject.InvalidateVisual();
         }
 
