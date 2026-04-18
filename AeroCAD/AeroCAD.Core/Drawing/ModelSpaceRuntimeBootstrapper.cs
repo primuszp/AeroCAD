@@ -18,6 +18,7 @@ namespace Primusz.AeroCAD.Core.Drawing
         private readonly IToolService toolService;
         private readonly IEditorCommandCatalog commandCatalog;
         private readonly IReadOnlyList<IEntityPlugin> plugins;
+        private readonly IReadOnlyList<ICadModule> modules;
 
         public ModelSpaceRuntimeBootstrapper(
             Viewport viewport,
@@ -27,7 +28,8 @@ namespace Primusz.AeroCAD.Core.Drawing
             Overlay overlay,
             IToolService toolService,
             IEditorCommandCatalog commandCatalog,
-            IReadOnlyList<IEntityPlugin> plugins)
+            IReadOnlyList<IEntityPlugin> plugins,
+            IReadOnlyList<ICadModule> modules)
         {
             this.viewport = viewport;
             this.documentService = documentService;
@@ -37,6 +39,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             this.toolService = toolService;
             this.commandCatalog = commandCatalog;
             this.plugins = plugins;
+            this.modules = modules;
         }
 
         public void Bootstrap()
@@ -44,7 +47,10 @@ namespace Primusz.AeroCAD.Core.Drawing
             WireEvents();
             RegisterDefaultTools();
             RegisterPluginTools();
+            RegisterPluginInteractiveCommands();
             RegisterPluginCommands();
+            RegisterModuleInteractiveCommands();
+            RegisterModuleCommands();
             ActivateDefaultTools();
         }
 
@@ -61,23 +67,26 @@ namespace Primusz.AeroCAD.Core.Drawing
             toolService.RegisterTool(new PanZoomTool());
             toolService.RegisterTool(new SelectionTool());
             toolService.RegisterTool(new GripDragTool());
-            toolService.RegisterTool(new LineTool());
-            toolService.RegisterTool(new PolylineTool());
-            toolService.RegisterTool(new CircleTool());
-            toolService.RegisterTool(new ArcTool());
-            toolService.RegisterTool(new MoveTool());
-            toolService.RegisterTool(new CopyTool());
-            toolService.RegisterTool(new OffsetTool());
-            toolService.RegisterTool(new TrimTool());
-            toolService.RegisterTool(new ExtendTool());
         }
 
         private void RegisterPluginTools()
         {
             foreach (var plugin in plugins)
             {
-                foreach (var tool in plugin.CreateTools())
+                foreach (var tool in plugin.Descriptor.Tools)
                     toolService.RegisterTool(tool);
+            }
+        }
+
+        private void RegisterPluginInteractiveCommands()
+        {
+            foreach (var plugin in plugins)
+            {
+                foreach (var registration in plugin.Descriptor.InteractiveCommands)
+                {
+                    toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
+                    commandCatalog.Register(registration.CreateCommandDefinition());
+                }
             }
         }
 
@@ -85,7 +94,28 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             foreach (var plugin in plugins)
             {
-                foreach (var definition in plugin.CreateCommands())
+                foreach (var definition in plugin.Descriptor.Commands)
+                    commandCatalog.Register(definition);
+            }
+        }
+
+        private void RegisterModuleInteractiveCommands()
+        {
+            foreach (var module in modules)
+            {
+                foreach (var registration in module.InteractiveCommands ?? System.Linq.Enumerable.Empty<InteractiveCommandRegistration>())
+                {
+                    toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
+                    commandCatalog.Register(registration.CreateCommandDefinition());
+                }
+            }
+        }
+
+        private void RegisterModuleCommands()
+        {
+            foreach (var module in modules)
+            {
+                foreach (var definition in module.Commands ?? System.Linq.Enumerable.Empty<EditorCommandDefinition>())
                     commandCatalog.Register(definition);
             }
         }

@@ -13,19 +13,41 @@ using Primusz.AeroCAD.Core.Tools;
 namespace Primusz.AeroCAD.Core.Plugins
 {
     /// <summary>
-    /// Base class for entity plugins. Subclasses only need to override the strategies they support.
-    /// RenderStrategy and BoundsStrategy are required; all others default to null / empty.
+    /// Base class for entity plugins. Subclasses override normalized capability members and the
+    /// base class materializes a single descriptor consumed by the engine runtime.
     /// </summary>
     public abstract class EntityPluginBase : IEntityPlugin
     {
-        public abstract IEntityRenderStrategy RenderStrategy { get; }
-        public abstract IEntityBoundsStrategy BoundsStrategy { get; }
-        public virtual IGripPreviewStrategy GripPreviewStrategy => null;
-        public virtual ISelectionMovePreviewStrategy SelectionMovePreviewStrategy => null;
-        public virtual ITransientEntityPreviewStrategy TransientEntityPreviewStrategy => null;
-        public virtual IEntityOffsetStrategy OffsetStrategy => null;
-        public virtual IEntityTrimExtendStrategy TrimExtendStrategy => null;
-        public virtual IEnumerable<ITool> CreateTools() => Enumerable.Empty<ITool>();
-        public virtual IEnumerable<EditorCommandDefinition> CreateCommands() => Enumerable.Empty<EditorCommandDefinition>();
+        private EntityPluginDescriptor descriptor;
+
+        public EntityPluginDescriptor Descriptor => descriptor ??= BuildDescriptor();
+
+        protected virtual string PluginName => GetType().Name;
+        protected abstract IEntityRenderStrategy RenderStrategy { get; }
+        protected abstract IEntityBoundsStrategy BoundsStrategy { get; }
+        protected virtual IGripPreviewStrategy GripPreviewStrategy => null;
+        protected virtual ISelectionMovePreviewStrategy SelectionMovePreviewStrategy => null;
+        protected virtual ITransientEntityPreviewStrategy TransientEntityPreviewStrategy => null;
+        protected virtual IEntityOffsetStrategy OffsetStrategy => null;
+        protected virtual IEntityTrimExtendStrategy TrimExtendStrategy => null;
+        protected virtual IEnumerable<ITool> CreateTools() => Enumerable.Empty<ITool>();
+        protected virtual IEnumerable<InteractiveCommandRegistration> CreateInteractiveCommands() => Enumerable.Empty<InteractiveCommandRegistration>();
+        protected virtual IEnumerable<EditorCommandDefinition> CreateCommands() => Enumerable.Empty<EditorCommandDefinition>();
+
+        protected virtual EntityPluginDescriptor BuildDescriptor()
+        {
+            return new EntityPluginDescriptor(
+                PluginName,
+                RenderStrategy,
+                BoundsStrategy,
+                gripPreviewStrategy: GripPreviewStrategy,
+                selectionMovePreviewStrategy: SelectionMovePreviewStrategy,
+                transientEntityPreviewStrategy: TransientEntityPreviewStrategy,
+                offsetStrategy: OffsetStrategy,
+                trimExtendStrategy: TrimExtendStrategy,
+                tools: CreateTools(),
+                interactiveCommands: CreateInteractiveCommands(),
+                commands: CreateCommands());
+        }
     }
 }

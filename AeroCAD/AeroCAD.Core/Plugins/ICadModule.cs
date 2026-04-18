@@ -11,5 +11,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         string Name { get; }
         string Version { get; }
         IEnumerable<IEntityPlugin> Plugins { get; }
+        IEnumerable<InteractiveCommandRegistration> InteractiveCommands { get; }
+        IEnumerable<Editor.EditorCommandDefinition> Commands { get; }
     }
 }

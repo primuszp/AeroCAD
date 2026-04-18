@@ -1,34 +1,30 @@
 using System.Collections.Generic;
-using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
 using Primusz.AeroCAD.Core.Editing.MovePreviews;
 using Primusz.AeroCAD.Core.Editing.TransientPreviews;
+using Primusz.AeroCAD.Core.Editing.TrimExtend;
 using Primusz.AeroCAD.Core.Rendering;
 using Primusz.AeroCAD.Core.Spatial;
-using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.Core.Plugins
 {
     public class RectangleEntityPlugin : EntityPluginBase
     {
-        public override IEntityRenderStrategy RenderStrategy => new RectangleEntityRenderStrategy();
-        public override IEntityBoundsStrategy BoundsStrategy => new RectangleBoundsStrategy();
-        public override IGripPreviewStrategy GripPreviewStrategy => new RectangleGripPreviewStrategy();
-        public override ISelectionMovePreviewStrategy SelectionMovePreviewStrategy => new RectangleSelectionMovePreviewStrategy();
-        public override ITransientEntityPreviewStrategy TransientEntityPreviewStrategy => new RectangleTransientEntityPreviewStrategy();
+        protected override string PluginName => "AeroCAD.Rectangle";
+        protected override IEntityRenderStrategy RenderStrategy => new RectangleEntityRenderStrategy();
+        protected override IEntityBoundsStrategy BoundsStrategy => new RectangleBoundsStrategy();
+        protected override IGripPreviewStrategy GripPreviewStrategy => new RectangleGripPreviewStrategy();
+        protected override ISelectionMovePreviewStrategy SelectionMovePreviewStrategy => new RectangleSelectionMovePreviewStrategy();
+        protected override ITransientEntityPreviewStrategy TransientEntityPreviewStrategy => new RectangleTransientEntityPreviewStrategy();
+        protected override IEntityTrimExtendStrategy TrimExtendStrategy => new RectangleTrimExtendStrategy();
 
-        public override IEnumerable<ITool> CreateTools()
+        protected override IEnumerable<InteractiveCommandRegistration> CreateInteractiveCommands()
         {
-            yield return new RectangleTool();
-        }
-
-        public override IEnumerable<EditorCommandDefinition> CreateCommands()
-        {
-            yield return new EditorCommandDefinition(
+            yield return new InteractiveCommandRegistration(
                 "RECTANGLE",
-                new[] { "REC", "RECT" },
-                "Draw an axis-aligned rectangle.",
-                modalToolType: typeof(RectangleTool),
+                layerProvider => new Tools.RectangleCommandController(layerProvider),
+                aliases: new[] { "REC", "RECT" },
+                description: "Draw an axis-aligned rectangle.",
                 assignActiveLayer: true,
                 menuGroup: "Draw",
                 menuLabel: "_Rectangle");

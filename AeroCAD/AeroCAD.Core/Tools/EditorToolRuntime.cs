@@ -85,6 +85,24 @@ namespace Primusz.AeroCAD.Core.Tools
             return toolService.ActivateTool(tool);
         }
 
+        public bool ActivateModalTool(string toolName, Layer activeLayer = null)
+        {
+            if (string.IsNullOrWhiteSpace(toolName))
+                return false;
+
+            var tool = toolService?.GetTool(toolName);
+            if (tool == null)
+                return false;
+
+            CancelOtherModalTools(tool.GetType());
+
+            var layerBoundTool = tool as ILayerBoundTool;
+            if (layerBoundTool != null && activeLayer != null)
+                layerBoundTool.ActiveLayer = activeLayer;
+
+            return toolService.ActivateTool(tool);
+        }
+
         private void CancelOtherModalTools(System.Type keepType)
         {
             if (toolService?.Tools == null)

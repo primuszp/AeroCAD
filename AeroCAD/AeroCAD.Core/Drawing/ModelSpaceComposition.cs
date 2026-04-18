@@ -2,21 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Primusz.AeroCAD.Core.Commands;
-using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Documents;
+using Primusz.AeroCAD.Core.Drawing.Handles;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Drawing.Markers;
-using Primusz.AeroCAD.Core.Drawing.Handles;
+using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
 using Primusz.AeroCAD.Core.Editing.MovePreviews;
 using Primusz.AeroCAD.Core.Editing.Offsets;
 using Primusz.AeroCAD.Core.Editing.TransientPreviews;
 using Primusz.AeroCAD.Core.Editing.TrimExtend;
-using Primusz.AeroCAD.Core.Editor;
+using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Rendering;
 using Primusz.AeroCAD.Core.Selection;
-using Primusz.AeroCAD.Core.Spatial;
 using Primusz.AeroCAD.Core.Snapping;
+using Primusz.AeroCAD.Core.Spatial;
 using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.Core.Drawing
@@ -25,6 +25,7 @@ namespace Primusz.AeroCAD.Core.Drawing
     {
         private readonly Viewport viewport;
         private readonly List<IEntityPlugin> plugins = new List<IEntityPlugin>();
+        private readonly List<ICadModule> modules = new List<ICadModule>();
 
         public ModelSpaceComposition(Viewport viewport)
         {
@@ -37,29 +38,24 @@ namespace Primusz.AeroCAD.Core.Drawing
             return this;
         }
 
+        public ModelSpaceComposition RegisterModule(ICadModule module)
+        {
+            if (module != null)
+                modules.Add(module);
+            return this;
+        }
+
         public Dictionary<Type, object> BuildServices()
         {
+            var entityPlugins = plugins.AsReadOnly();
+            var pluginDescriptors = entityPlugins.Select(plugin => plugin.Descriptor).ToArray();
             var selectionManager = new SelectionManager();
             var gripService = new GripService(selectionManager);
             var markerAppearance = new MarkerAppearanceService();
             var editorState = new EditorStateService(viewport);
-            var entityRenderService = new EntityRenderService(
-                new IEntityRenderStrategy[]
-                {
-                    new LineEntityRenderStrategy(),
-                    new PolylineEntityRenderStrategy(),
-                    new CircleEntityRenderStrategy(),
-                    new ArcEntityRenderStrategy()
-                }.Concat(plugins.Select(p => p.RenderStrategy).Where(s => s != null)).ToArray());
+            var entityRenderService = new EntityRenderService(pluginDescriptors.Select(descriptor => descriptor.RenderStrategy).ToArray());
             var document = new CadDocumentService(entityRenderService);
-            var entityBoundsService = new EntityBoundsService(
-                new IEntityBoundsStrategy[]
-                {
-                    new LineBoundsStrategy(),
-                    new PolylineBoundsStrategy(),
-                    new CircleBoundsStrategy(),
-                    new ArcBoundsStrategy()
-                }.Concat(plugins.Select(p => p.BoundsStrategy).Where(s => s != null)).ToArray());
+            var entityBoundsService = new EntityBoundsService(pluginDescriptors.Select(descriptor => descriptor.BoundsStrategy).ToArray());
             var spatialQueryService = new SpatialQueryService(document, entityBoundsService);
             var pickResolutionService = new PickResolutionService(document);
             var overlay = new Overlay(viewport, markerAppearance, gripService);
@@ -71,47 +67,11 @@ namespace Primusz.AeroCAD.Core.Drawing
             var gridSettings = new GridSettingsService();
             var pickSettings = new PickSettingsService();
             var gridLayer = new GridLayer(viewport, gridSettings);
-            var gripPreviewService = new GripPreviewService(
-                new IGripPreviewStrategy[]
-                {
-                    new LineGripPreviewStrategy(),
-                    new PolylineGripPreviewStrategy(),
-                    new CircleGripPreviewStrategy(),
-                    new ArcGripPreviewStrategy()
-                }.Concat(plugins.Select(p => p.GripPreviewStrategy).Where(s => s != null)).ToArray());
-            var selectionMovePreviewService = new SelectionMovePreviewService(
-                new ISelectionMovePreviewStrategy[]
-                {
-                    new LineSelectionMovePreviewStrategy(),
-                    new PolylineSelectionMovePreviewStrategy(),
-                    new CircleSelectionMovePreviewStrategy(),
-                    new ArcSelectionMovePreviewStrategy()
-                }.Concat(plugins.Select(p => p.SelectionMovePreviewStrategy).Where(s => s != null)).ToArray());
-            var transientEntityPreviewService = new TransientEntityPreviewService(
-                new ITransientEntityPreviewStrategy[]
-                {
-                    new LineTransientEntityPreviewStrategy(),
-                    new PolylineTransientEntityPreviewStrategy(),
-                    new CircleTransientEntityPreviewStrategy(),
-                    new ArcTransientEntityPreviewStrategy()
-                }.Concat(plugins.Select(p => p.TransientEntityPreviewStrategy).Where(s => s != null)).ToArray());
-            var entityOffsetService = new EntityOffsetService(
-                new IEntityOffsetStrategy[]
-                {
-                    new LineOffsetStrategy(),
-                    new PolylineOffsetStrategy(),
-                    new CircleOffsetStrategy(),
-                    new ArcOffsetStrategy()
-                }.Concat(plugins.Select(p => p.OffsetStrategy).Where(s => s != null)).ToArray());
-            var entityTrimExtendService = new EntityTrimExtendService(
-                new IEntityTrimExtendStrategy[]
-                {
-                    new LineTrimExtendStrategy(),
-                    new PolylineTrimExtendStrategy(),
-                    new RectangleTrimExtendStrategy(),
-                    new CircleTrimExtendStrategy(),
-                    new ArcTrimExtendStrategy()
-                }.Concat(plugins.Select(p => p.TrimExtendStrategy).Where(s => s != null)).ToArray());
+            var gripPreviewService = new GripPreviewService(pluginDescriptors.Select(descriptor => descriptor.GripPreviewStrategy).Where(strategy => strategy != null).ToArray());
+            var selectionMovePreviewService = new SelectionMovePreviewService(pluginDescriptors.Select(descriptor => descriptor.SelectionMovePreviewStrategy).Where(strategy => strategy != null).ToArray());
+            var transientEntityPreviewService = new TransientEntityPreviewService(pluginDescriptors.Select(descriptor => descriptor.TransientEntityPreviewStrategy).Where(strategy => strategy != null).ToArray());
+            var entityOffsetService = new EntityOffsetService(pluginDescriptors.Select(descriptor => descriptor.OffsetStrategy).Where(strategy => strategy != null).ToArray());
+            var entityTrimExtendService = new EntityTrimExtendService(pluginDescriptors.Select(descriptor => descriptor.TrimExtendStrategy).Where(strategy => strategy != null).ToArray());
             var snapDescriptorService = new SnapDescriptorService(new ISnapDescriptorProvider[]
             {
                 new EntitySnapDescriptorProvider(),
@@ -136,7 +96,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             var snapEngine = new SnapEngine(snapModePolicy);
             var undoRedoService = new UndoRedoService();
             var orthoService = new OrthoService();
-            var runtimeBootstrapper = new ModelSpaceRuntimeBootstrapper(viewport, document, selectionManager, editorState, overlay, toolService, commandCatalog, plugins.AsReadOnly());
+            var runtimeBootstrapper = new ModelSpaceRuntimeBootstrapper(viewport, document, selectionManager, editorState, overlay, toolService, commandCatalog, entityPlugins, modules.AsReadOnly());
 
             Services = new Dictionary<Type, object>
             {

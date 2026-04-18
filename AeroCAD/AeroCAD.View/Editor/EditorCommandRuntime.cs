@@ -161,52 +161,6 @@ namespace Primusz.AeroCAD.View.Editor
 
         private void RegisterDefaultCommands()
         {
-            Register(new EditorCommandDefinition("LINE", new[] { "L" }, "Draw line segments.",
-                modalToolType: typeof(LineTool), assignActiveLayer: true,
-                menuGroup: "Draw", menuLabel: "_Line"));
-
-            Register(new EditorCommandDefinition("PLINE", new[] { "PL", "P" }, "Draw polyline.",
-                modalToolType: typeof(PolylineTool), assignActiveLayer: true,
-                menuGroup: "Draw", menuLabel: "_Polyline"));
-
-            Register(new EditorCommandDefinition("CIRCLE", new[] { "C", "CI", "CIR" }, "Draw circles.",
-                modalToolType: typeof(CircleTool), assignActiveLayer: true,
-                menuGroup: "Draw", menuLabel: "_Circle"));
-
-            Register(new EditorCommandDefinition("ARC", new[] { "A", "AR" }, "Draw a 3-point arc.",
-                modalToolType: typeof(ArcTool), assignActiveLayer: true,
-                menuGroup: "Draw", menuLabel: "_Arc"));
-
-            Register(new EditorCommandDefinition(
-                "MOVE", new[] { "M" }, "Move selected entities.",
-                new EditorCommandPolicy(CommandSelectionRequirement.Any, selectionFailureMessage: "MOVE requires a preselection."),
-                modalToolType: typeof(MoveTool),
-                menuGroup: "Modify", menuLabel: "_Move"));
-
-            Register(new EditorCommandDefinition(
-                "COPY", new[] { "CO", "CP" }, "Copy selected entities.",
-                new EditorCommandPolicy(CommandSelectionRequirement.Any, selectionFailureMessage: "COPY requires a preselection."),
-                modalToolType: typeof(CopyTool),
-                menuGroup: "Modify", menuLabel: "_Copy"));
-
-            Register(new EditorCommandDefinition(
-                "OFFSET", new[] { "O", "OF" }, "Offset a selected line, polyline, circle or arc.",
-                new EditorCommandPolicy(
-                    CommandSelectionRequirement.Single,
-                    new[] { typeof(Line), typeof(Polyline), typeof(Circle), typeof(Arc) },
-                    "OFFSET requires exactly one preselected entity.",
-                    "OFFSET currently supports line, polyline, circle and arc."),
-                modalToolType: typeof(OffsetTool),
-                menuGroup: "Modify", menuLabel: "_Offset"));
-
-            Register(new EditorCommandDefinition("TRIM", new[] { "TR" }, "Trim an entity to a selected boundary.",
-                modalToolType: typeof(TrimTool),
-                menuGroup: "Modify", menuLabel: "_Trim"));
-
-            Register(new EditorCommandDefinition("EXTEND", new[] { "EX" }, "Extend an entity to a selected boundary.",
-                modalToolType: typeof(ExtendTool),
-                menuGroup: "Modify", menuLabel: "_Extend"));
-
             Register(
                 new EditorCommandDefinition("SELECT", new[] { "S", "SEL" }, "Return to selection mode.",
                     menuGroup: "Edit", menuLabel: "_Select"),
@@ -316,29 +270,30 @@ namespace Primusz.AeroCAD.View.Editor
 
         private bool ExecuteDefinition(EditorCommandDefinition definition)
         {
-            if (definition?.ModalToolType == null)
+            if (definition == null)
                 return false;
 
             var activeLayer = definition.AssignActiveLayer ? activeLayerProvider?.Invoke() : null;
             if (definition.AssignActiveLayer && activeLayer != null)
                 editorStateService?.SetActiveLayer(activeLayer);
 
-            var activated = toolRuntime?.ActivateModalTool(definition.ModalToolType, activeLayer) ?? false;
-            if (activated)
-                activeToolChanged?.Invoke(definition.ModalToolType.Name);
-
-            return activated;
-        }
-
-        private bool ActivateModalTool<TTool>(string toolName, bool assignActiveLayer = false) where TTool : class, ITool
-        {
-            var activeLayer = assignActiveLayer ? activeLayerProvider?.Invoke() : null;
-            if (assignActiveLayer && activeLayer != null)
-                editorStateService?.SetActiveLayer(activeLayer);
-
-            var activated = toolRuntime?.ActivateModalTool<TTool>(activeLayer) ?? false;
-            if (activated)
-                activeToolChanged?.Invoke(toolName);
+            bool activated;
+            if (!string.IsNullOrWhiteSpace(definition.ModalToolName))
+            {
+                activated = toolRuntime?.ActivateModalTool(definition.ModalToolName, activeLayer) ?? false;
+                if (activated)
+                    activeToolChanged?.Invoke(definition.ModalToolName);
+            }
+            else if (definition.ModalToolType != null)
+            {
+                activated = toolRuntime?.ActivateModalTool(definition.ModalToolType, activeLayer) ?? false;
+                if (activated)
+                    activeToolChanged?.Invoke(definition.ModalToolType.Name);
+            }
+            else
+            {
+                return false;
+            }
 
             return activated;
         }

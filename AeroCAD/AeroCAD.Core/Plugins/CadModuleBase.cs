@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Primusz.AeroCAD.Core.Editor;
 
 namespace Primusz.AeroCAD.Core.Plugins
 {
@@ -11,5 +13,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         public abstract string Name { get; }
         public virtual string Version => "1.0.0";
         public abstract IEnumerable<IEntityPlugin> Plugins { get; }
+        public virtual IEnumerable<InteractiveCommandRegistration> InteractiveCommands => Enumerable.Empty<InteractiveCommandRegistration>();
+        public virtual IEnumerable<EditorCommandDefinition> Commands => Enumerable.Empty<EditorCommandDefinition>();
     }
 }

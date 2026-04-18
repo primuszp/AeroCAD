@@ -14,6 +14,8 @@ namespace Primusz.AeroCAD.Core.Drawing
         public ModelSpace(Viewport viewport)
         {
             composition = new ModelSpaceComposition(viewport);
+            RegisterModule(new BuiltInGeometryModule());
+            RegisterModule(new BuiltInModifyModule());
         }
 
         /// <summary>
@@ -34,6 +36,7 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             if (module == null) return this;
             modules.Add(module);
+            composition.RegisterModule(module);
             foreach (var plugin in module.Plugins ?? System.Linq.Enumerable.Empty<IEntityPlugin>())
                 RegisterPlugin(plugin);
             return this;

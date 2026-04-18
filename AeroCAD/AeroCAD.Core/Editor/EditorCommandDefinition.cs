@@ -14,7 +14,8 @@ namespace Primusz.AeroCAD.Core.Editor
             Type modalToolType = null,
             bool assignActiveLayer = false,
             string menuGroup = null,
-            string menuLabel = null)
+            string menuLabel = null,
+            string modalToolName = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Command name is required.", nameof(name));
@@ -30,6 +31,7 @@ namespace Primusz.AeroCAD.Core.Editor
             Description = description ?? string.Empty;
             Policy = policy ?? EditorCommandPolicy.Default;
             ModalToolType = modalToolType;
+            ModalToolName = string.IsNullOrWhiteSpace(modalToolName) ? null : modalToolName.Trim();
             AssignActiveLayer = assignActiveLayer;
             MenuGroup = string.IsNullOrWhiteSpace(menuGroup) ? null : menuGroup.Trim();
             MenuLabel = string.IsNullOrWhiteSpace(menuLabel) ? description : menuLabel;
@@ -44,6 +46,8 @@ namespace Primusz.AeroCAD.Core.Editor
         public EditorCommandPolicy Policy { get; }
 
         public Type ModalToolType { get; }
+
+        public string ModalToolName { get; }
 
         public bool AssignActiveLayer { get; }
 

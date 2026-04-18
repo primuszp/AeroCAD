@@ -13,5 +13,7 @@ namespace Primusz.AeroCAD.Core.Tools
         bool ActivateModalTool<TTool>(Layer activeLayer = null) where TTool : class, ITool;
 
         bool ActivateModalTool(System.Type toolType, Layer activeLayer = null);
+
+        bool ActivateModalTool(string toolName, Layer activeLayer = null);
     }
 }
