@@ -54,6 +54,30 @@
             <Setter Property="ItemsSource" Value="{Binding Items}"/>
             <Setter Property="ItemContainerStyle" Value="{StaticResource CatalogMenuItemStyle}"/>
         </Style>
+
+        <!-- Toolbar button style for MenuItemViewModel -->
+        <DataTemplate x:Key="ToolbarButtonTemplate">
+            <Button Content="{Binding DisplayLabel}"
+                    Command="{Binding Command}"
+                    ToolTip="{Binding Label}"
+                    Padding="6,2"
+                    Margin="1,0"/>
+        </DataTemplate>
+
+        <!-- Toolbar group template: buttons for each item + separator after the group -->
+        <DataTemplate x:Key="ToolbarGroupTemplate">
+            <StackPanel Orientation="Horizontal">
+                <ItemsControl ItemsSource="{Binding Items}"
+                              ItemTemplate="{StaticResource ToolbarButtonTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <Separator Margin="2,0"/>
+            </StackPanel>
+        </DataTemplate>
     </Window.Resources>
     <DockPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="Auto" Width="Auto">
@@ -98,11 +122,24 @@
             </StatusBarItem>
         </StatusBar>
 
-        <!-- Menu is fully data-driven from MenuGroups (built from the command catalog).
-             Adding a plugin with CreateCommands() + menuGroup automatically adds a menu entry. -->
+        <!-- Menu: fully data-driven from MenuGroups. Plugin commands appear automatically. -->
         <Menu DockPanel.Dock="Top"
               ItemsSource="{Binding MenuGroups}"
               ItemContainerStyle="{StaticResource CatalogMenuGroupStyle}"/>
+
+        <!-- Toolbar: same catalog source, excludes File and View groups. -->
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar>
+                <ItemsControl ItemsSource="{Binding ToolbarGroups}"
+                              ItemTemplate="{StaticResource ToolbarGroupTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ToolBar>
+        </ToolBarTray>
 
         <controls:CommandLineControl x:Name="CommandInput"
                                      DockPanel.Dock="Bottom"
