@@ -55,6 +55,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             toolService.RegisterTool(new PolylineTool());
             toolService.RegisterTool(new CircleTool());
             toolService.RegisterTool(new ArcTool());
+            toolService.RegisterTool(new RectangleTool());
             toolService.RegisterTool(new MoveTool());
             toolService.RegisterTool(new CopyTool());
             toolService.RegisterTool(new OffsetTool());
