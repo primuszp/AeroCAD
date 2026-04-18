@@ -80,9 +80,9 @@ namespace Primusz.AeroCAD.Core.Tools
             var documentService = host.ToolService.GetService<ICadDocumentService>();
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
 
-            if (boundaryEntities.Count == 0)
+            if (!IsInTargetPhase(host))
             {
-                // Phase 1: pick boundary entities
+                // Phase 1: pick boundary entities (multiple allowed, Enter confirms)
                 var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
                 if (picked != null && !boundaryEntities.Contains(picked))
                 {
