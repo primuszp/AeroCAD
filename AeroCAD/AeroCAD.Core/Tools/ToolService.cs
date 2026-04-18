@@ -8,7 +8,7 @@ using Primusz.AeroCAD.Core.Drawing;
 
 namespace Primusz.AeroCAD.Core.Tools
 {
-    class ToolService : IToolService
+    public class ToolService : IToolService
     {
         private readonly Dictionary<Guid, ITool> tools;
         private readonly Dictionary<Guid, int> registrationOrder;
