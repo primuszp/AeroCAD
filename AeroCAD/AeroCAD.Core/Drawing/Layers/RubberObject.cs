@@ -219,6 +219,13 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                     group.Children.Add(new EllipseGeometry(start, radius, radius));
                     geometry = group;
                     break;
+                case RubberStyle.CircleDiameter:
+                    double dRadius = (Start - End).Length / 2;
+                    GeometryGroup dGroup = new GeometryGroup();
+                    dGroup.Children.Add(new LineGeometry(start, end));
+                    dGroup.Children.Add(new EllipseGeometry(start, dRadius, dRadius));
+                    geometry = dGroup;
+                    break;
             }
             return geometry;
         }

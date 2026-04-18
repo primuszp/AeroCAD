@@ -49,11 +49,7 @@ namespace Primusz.AeroCAD.Core.Tools
             if (hasCenterPoint)
             {
                 Point final = host.ResolveFinalPoint(centerPoint, rawPoint);
-                // In diameter mode the rubber circle radius = half the distance to cursor
-                Point rubberEnd = useDiameterInput
-                    ? new Point((centerPoint.X + final.X) / 2, (centerPoint.Y + final.Y) / 2)
-                    : final;
-                host.ToolService.Viewport.GetRubberObject().SetMove(rubberEnd);
+                host.ToolService.Viewport.GetRubberObject().SetMove(final);
             }
         }
 
@@ -77,6 +73,7 @@ namespace Primusz.AeroCAD.Core.Tools
                     if (keyword == DiameterKeyword)
                     {
                         useDiameterInput = true;
+                        host.ToolService.Viewport.GetRubberObject().CurrentStyle = RubberStyle.CircleDiameter;
                         return InteractiveCommandResult.MoveToStep(DiameterPointStep);
                     }
                 }
