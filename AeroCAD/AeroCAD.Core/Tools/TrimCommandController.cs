@@ -197,7 +197,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private static bool IsSupportedBoundary(Entity entity)
         {
-            return entity is Line || entity is Polyline || entity is Circle || entity is Arc;
+            return entity is Line || entity is Polyline || entity is Circle || entity is Arc || entity is Rectangle;
         }
 
         private void HighlightBoundary(Entity entity)

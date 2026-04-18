@@ -139,7 +139,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         private static bool IsSupportedBoundary(Entity boundary)
         {
-            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc;
+            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc || boundary is Rectangle;
         }
     }
 }

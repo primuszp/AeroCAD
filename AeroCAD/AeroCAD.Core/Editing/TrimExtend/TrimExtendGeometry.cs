@@ -32,6 +32,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                     .ToList();
             }
 
+            if (boundary is Rectangle boundaryRect)
+                return GetRectangleLineIntersections(target, boundaryRect);
+
             return Array.Empty<LineIntersectionPoint>();
         }
 
@@ -59,6 +62,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                         boundaryArc.SweepAngle))
                     .ToList();
             }
+
+            if (boundary is Rectangle boundaryRect)
+                return GetRectangleCircleIntersections(center, radius, boundaryRect);
 
             return Array.Empty<CircularIntersectionPoint>();
         }
@@ -197,6 +203,50 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             }
 
             return intersections;
+        }
+
+        private static IReadOnlyList<LineIntersectionPoint> GetRectangleLineIntersections(Line target, Rectangle rect)
+        {
+            var corners = GetRectangleCorners(rect);
+            var intersections = new List<LineIntersectionPoint>();
+            for (int i = 0; i < 4; i++)
+            {
+                var segment = new Line(corners[i], corners[(i + 1) % 4]);
+                intersections.AddRange(GetLineLineIntersections(target, segment));
+            }
+            return intersections
+                .GroupBy(item => Math.Round(item.Parameter, 9))
+                .Select(group => group.First())
+                .ToList();
+        }
+
+        private static IReadOnlyList<CircularIntersectionPoint> GetRectangleCircleIntersections(Point center, double radius, Rectangle rect)
+        {
+            var corners = GetRectangleCorners(rect);
+            var circle = new Circle(center, radius);
+            var intersections = new List<CircularIntersectionPoint>();
+            for (int i = 0; i < 4; i++)
+            {
+                var segment = new Line(corners[i], corners[(i + 1) % 4]);
+                intersections.AddRange(
+                    GetLineCircleIntersections(segment, circle)
+                        .Select(item => new CircularIntersectionPoint(item.Point, CircularGeometry.GetAngle(center, item.Point))));
+            }
+            return intersections
+                .GroupBy(item => Math.Round(item.Angle, 9))
+                .Select(group => group.First())
+                .ToList();
+        }
+
+        private static Point[] GetRectangleCorners(Rectangle rect)
+        {
+            return new[]
+            {
+                rect.TopLeft,
+                new Point(rect.BottomRight.X, rect.TopLeft.Y),
+                rect.BottomRight,
+                new Point(rect.TopLeft.X, rect.BottomRight.Y)
+            };
         }
 
         private static double Cross(Vector first, Vector second)
