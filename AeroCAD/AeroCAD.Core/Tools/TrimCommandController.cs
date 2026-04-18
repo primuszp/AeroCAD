@@ -86,6 +86,11 @@ namespace Primusz.AeroCAD.Core.Tools
                 var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
                 if (picked != null && !boundaryEntities.Contains(picked))
                 {
+                    // Detach from target-highlight tracking before promoting to boundary
+                    if (ReferenceEquals(highlightedTargetEntity, picked))
+                    {
+                        highlightedTargetEntity = null;
+                    }
                     boundaryEntities.Add(picked);
                     HighlightBoundary(picked);
                 }
