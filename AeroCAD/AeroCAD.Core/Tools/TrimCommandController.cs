@@ -138,14 +138,32 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            // Enter in boundary phase confirms selection and moves to trim phase
-            if (boundaryEntities.Count > 0 && !IsInTargetPhase(host))
+            if (IsInTargetPhase(host))
+                return Finish(host, "Trim command ended.");
+
+            // Enter in boundary phase: if none selected, use all entities as cutting edges
+            if (boundaryEntities.Count == 0)
+            {
+                var document = host.ToolService.GetService<ICadDocumentService>();
+                if (document != null)
+                {
+                    foreach (var e in document.Entities)
+                    {
+                        if (IsSupportedBoundary(e) && !boundaryEntities.Contains(e))
+                        {
+                            boundaryEntities.Add(e);
+                            HighlightBoundary(e);
+                        }
+                    }
+                }
+            }
+
+            if (boundaryEntities.Count > 0)
             {
                 host.MoveToStep(TargetStep);
                 return InteractiveCommandResult.HandledOnly();
             }
 
-            // Enter in target phase ends the command
             return Finish(host, "Trim command ended.");
         }
 
