@@ -108,6 +108,7 @@ namespace Primusz.AeroCAD.Core.Drawing
                 {
                     new LineTrimExtendStrategy(),
                     new PolylineTrimExtendStrategy(),
+                    new RectangleTrimExtendStrategy(),
                     new CircleTrimExtendStrategy(),
                     new ArcTrimExtendStrategy()
                 }.Concat(plugins.Select(p => p.TrimExtendStrategy).Where(s => s != null)).ToArray());
