@@ -47,7 +47,14 @@ namespace Primusz.AeroCAD.Core.Tools
             UpdateSnap(host, rawPoint);
 
             if (hasCenterPoint)
-                host.ToolService.Viewport.GetRubberObject().SetMove(host.ResolveFinalPoint(centerPoint, rawPoint));
+            {
+                Point final = host.ResolveFinalPoint(centerPoint, rawPoint);
+                // In diameter mode the rubber circle radius = half the distance to cursor
+                Point rubberEnd = useDiameterInput
+                    ? new Point((centerPoint.X + final.X) / 2, (centerPoint.Y + final.Y) / 2)
+                    : final;
+                host.ToolService.Viewport.GetRubberObject().SetMove(rubberEnd);
+            }
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
@@ -116,7 +123,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             return useDiameterInput
-                ? SubmitDiameter(host, (point - centerPoint).Length * 2.0d, false)
+                ? SubmitDiameter(host, (point - centerPoint).Length, false)
                 : SubmitRadius(host, (point - centerPoint).Length, false);
         }
 
