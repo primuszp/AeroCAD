@@ -10,21 +10,21 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     {
         private const double Epsilon = 1e-9;
 
-        public bool CanTrim(Entity boundary, Entity target)
+        public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
             return target is Polyline polyline &&
                 polyline.Points.Count >= 2 &&
-                IsSupportedBoundary(boundary);
+                boundaries.Any(IsSupportedBoundary);
         }
 
-        public bool CanExtend(Entity boundary, Entity target)
+        public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
             return target is Polyline polyline &&
                 polyline.Points.Count >= 2 &&
-                IsSupportedBoundary(boundary);
+                boundaries.Any(IsSupportedBoundary);
         }
 
-        public Entity CreateTrimmed(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var polyline = target as Polyline;
             if (polyline == null || polyline.Points.Count < 2)
@@ -33,7 +33,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (!TryResolveClosestSegment(polyline, pickPoint, out int segmentIndex, out var segmentLine, out double clickParameter))
                 return null;
 
-            var intersections = TrimExtendGeometry.GetLineBoundaryIntersections(segmentLine, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(segmentLine, boundary))
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
                 .OrderBy(item => item.Parameter)
                 .ToList();
@@ -49,7 +51,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return CreateTrimmedPolyline(polyline, segmentIndex, keepSuffix, replacement.Value);
         }
 
-        public Entity CreateExtended(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var polyline = target as Polyline;
             if (polyline == null || polyline.Points.Count < 2)
@@ -58,7 +60,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (!TryResolveEditableSegment(polyline, pickPoint, out bool extendStart, out var segmentLine, out double clickParameter))
                 return null;
 
-            var intersections = TrimExtendGeometry.GetLineBoundaryIntersections(segmentLine, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(segmentLine, boundary))
                 .OrderBy(item => item.Parameter)
                 .ToList();
 

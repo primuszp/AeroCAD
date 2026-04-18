@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Drawing.Entities;
@@ -8,23 +9,25 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     {
         private const double Epsilon = 1e-9;
 
-        public bool CanTrim(Entity boundary, Entity target)
+        public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Line && IsSupportedBoundary(boundary);
+            return target is Line && boundaries.Any(IsSupportedBoundary);
         }
 
-        public bool CanExtend(Entity boundary, Entity target)
+        public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Line && IsSupportedBoundary(boundary);
+            return target is Line && boundaries.Any(IsSupportedBoundary);
         }
 
-        public Entity CreateTrimmed(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var line = target as Line;
             if (line == null)
                 return null;
 
-            var intersections = TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary))
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
                 .OrderBy(item => item.Parameter)
                 .ToList();
@@ -44,19 +47,32 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (clickParameter < intersections[0].Parameter)
                 return CreateLine(intersections[0].Point, line.EndPoint, line.Thickness);
 
-            if (clickParameter > intersections[1].Parameter)
-                return CreateLine(line.StartPoint, intersections[1].Point, line.Thickness);
+            if (clickParameter > intersections[intersections.Count - 1].Parameter)
+                return CreateLine(line.StartPoint, intersections[intersections.Count - 1].Point, line.Thickness);
 
-            return null;
+            // Click is between intersections — trim out the segment containing the click
+            var left = intersections.Last(item => item.Parameter <= clickParameter);
+            var right = intersections.First(item => item.Parameter >= clickParameter);
+            if (left == null || right == null || left == right)
+                return null;
+
+            // Return the longer remaining piece
+            double leftLength = left.Parameter;
+            double rightLength = 1d - right.Parameter;
+            return leftLength >= rightLength
+                ? CreateLine(line.StartPoint, left.Point, line.Thickness)
+                : CreateLine(right.Point, line.EndPoint, line.Thickness);
         }
 
-        public Entity CreateExtended(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var line = target as Line;
             if (line == null)
                 return null;
 
-            var intersections = TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary))
                 .OrderBy(item => item.Parameter)
                 .ToList();
 
