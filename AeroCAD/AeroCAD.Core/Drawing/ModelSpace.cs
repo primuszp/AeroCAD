@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Primusz.AeroCAD.Core.Plugins;
 
 namespace Primusz.AeroCAD.Core.Drawing
@@ -8,15 +9,33 @@ namespace Primusz.AeroCAD.Core.Drawing
     {
         private Dictionary<Type, object> services;
         private readonly ModelSpaceComposition composition;
+        private readonly List<ICadModule> modules = new List<ICadModule>();
 
         public ModelSpace(Viewport viewport)
         {
             composition = new ModelSpaceComposition(viewport);
         }
 
+        /// <summary>
+        /// Registered modules, available after Initialize() for diagnostics or UI (e.g. "About" dialogs).
+        /// </summary>
+        public IReadOnlyList<ICadModule> Modules => modules.AsReadOnly();
+
         public ModelSpace RegisterPlugin(IEntityPlugin plugin)
         {
             composition.RegisterPlugin(plugin);
+            return this;
+        }
+
+        /// <summary>
+        /// Registers all plugins contained in the module and tracks the module for identification.
+        /// </summary>
+        public ModelSpace RegisterModule(ICadModule module)
+        {
+            if (module == null) return this;
+            modules.Add(module);
+            foreach (var plugin in module.Plugins ?? System.Linq.Enumerable.Empty<IEntityPlugin>())
+                RegisterPlugin(plugin);
             return this;
         }
 

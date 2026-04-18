@@ -12,5 +12,8 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         public string Label { get; }
         public ICommand Command { get; }
+
+        /// <summary>Label without the WPF access-key underscore prefix, suitable for toolbar buttons.</summary>
+        public string DisplayLabel => Label?.TrimStart('_') ?? string.Empty;
     }
 }

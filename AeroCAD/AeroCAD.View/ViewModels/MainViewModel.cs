@@ -44,7 +44,7 @@ namespace Primusz.AeroCAD.View.ViewModels
         {
             this.viewport = viewport;
             modelSpace = new ModelSpace(viewport)
-                .RegisterPlugin(new RectangleEntityPlugin());
+                .RegisterModule(new RectangleModule());
             modelSpace.Initialize();
 
             documentService = modelSpace.GetService<ICadDocumentService>();
@@ -74,6 +74,12 @@ namespace Primusz.AeroCAD.View.ViewModels
             modelSpace.RegisterService<IEditorCommandRuntime, EditorCommandRuntime>(commandRuntime);
 
             MenuGroups = BuildMenuGroups(modelSpace.GetService<IEditorCommandCatalog>());
+
+            // Toolbar shows all groups except File (empty) and View (status bar already shows Ortho/Grid)
+            ToolbarGroups = MenuGroups
+                .Where(g => g.GroupName != "_File" && g.GroupName != "_View" && g.Items.Count > 0)
+                .ToList()
+                .AsReadOnly();
 
             CommandLine = new CommandLineViewModel(HandleCommandLineInput, CancelCurrentCommand);
 
@@ -144,6 +150,12 @@ namespace Primusz.AeroCAD.View.ViewModels
         /// items within a group map to sub-menu entries. Plugin commands appear automatically.
         /// </summary>
         public IReadOnlyList<MenuGroupViewModel> MenuGroups { get; }
+
+        /// <summary>
+        /// Toolbar groups — same source as MenuGroups but excludes File and View groups.
+        /// Plugin commands with a Draw/Modify group appear here automatically.
+        /// </summary>
+        public IReadOnlyList<MenuGroupViewModel> ToolbarGroups { get; }
 
         public bool TryHandleShortcut(KeyEventArgs e, bool isTextInputFocused)
         {
