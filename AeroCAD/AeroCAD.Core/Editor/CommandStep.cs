@@ -20,7 +20,7 @@ namespace Primusz.AeroCAD.Core.Editor
                 .AsReadOnly();
 
             var promptOptions = (options ?? Enumerable.Empty<string>())
-                .Concat(Keywords.Select(keyword => keyword.Name))
+                .Concat(Keywords.Select(keyword => keyword.DisplayName))
                 .Distinct();
 
             Prompt = new CommandPrompt(prompt, promptOptions);

@@ -28,6 +28,27 @@ namespace Primusz.AeroCAD.Core.Editor
 
         public string Description { get; }
 
+        /// <summary>
+        /// AutoCAD-style display name: the shortest alias is shown in UPPERCASE,
+        /// remaining characters in lowercase. E.g. "CLOSE"+"C" → "Close", "CLOSE"+"CL" → "CLose".
+        /// </summary>
+        public string DisplayName
+        {
+            get
+            {
+                var shortAlias = Aliases
+                    .Where(a => a != Name)
+                    .OrderBy(a => a.Length)
+                    .FirstOrDefault();
+
+                int upperLen = shortAlias != null
+                    ? Math.Min(shortAlias.Length, Name.Length)
+                    : 1;
+
+                return Name.Substring(0, upperLen) + Name.Substring(upperLen).ToLowerInvariant();
+            }
+        }
+
         public bool Matches(string value)
         {
             if (string.IsNullOrWhiteSpace(value))

@@ -10,8 +10,8 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class OffsetCommandController : CommandControllerBase
     {
-        private static readonly CommandStep OffsetInputStep = new CommandStep("OffsetInput", "Offset through point or distance:", new[] { "ENTER" });
-        private static readonly CommandStep SidePointStep = new CommandStep("SidePoint", "Offset side point:", new[] { "ENTER" });
+        private static readonly CommandStep OffsetInputStep = new CommandStep("OffsetInput", "Specify offset distance or through point:");
+        private static readonly CommandStep SidePointStep = new CommandStep("SidePoint", "Specify point on side to offset:");
 
         private Entity sourceEntity;
         private System.Guid sourceLayerId;
