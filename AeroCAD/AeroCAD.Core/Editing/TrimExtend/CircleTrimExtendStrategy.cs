@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Drawing.Entities;
@@ -9,23 +10,25 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     {
         private const double Epsilon = 1e-9;
 
-        public bool CanTrim(Entity boundary, Entity target)
+        public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Circle && IsSupportedBoundary(boundary);
+            return target is Circle && boundaries.Any(IsSupportedBoundary);
         }
 
-        public bool CanExtend(Entity boundary, Entity target)
+        public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
             return false;
         }
 
-        public Entity CreateTrimmed(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var circle = target as Circle;
             if (circle == null)
                 return null;
 
-            var intersections = TrimExtendGeometry.GetCircularBoundaryIntersections(circle.Center, circle.Radius, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(circle.Center, circle.Radius, boundary))
                 .OrderBy(item => item.Angle)
                 .ToList();
 
@@ -65,7 +68,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             };
         }
 
-        public Entity CreateExtended(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             return null;
         }

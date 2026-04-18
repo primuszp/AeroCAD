@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Drawing.Entities;
@@ -9,23 +10,25 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     {
         private const double Epsilon = 1e-9;
 
-        public bool CanTrim(Entity boundary, Entity target)
+        public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Arc && IsSupportedBoundary(boundary);
+            return target is Arc && boundaries.Any(IsSupportedBoundary);
         }
 
-        public bool CanExtend(Entity boundary, Entity target)
+        public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Arc && IsSupportedBoundary(boundary);
+            return target is Arc && boundaries.Any(IsSupportedBoundary);
         }
 
-        public Entity CreateTrimmed(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var arc = target as Arc;
             if (arc == null)
                 return null;
 
-            var intersections = TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Where(item => CircularGeometry.IsAngleOnArc(item.Angle, arc.StartAngle, arc.SweepAngle))
                 .Select(item => new { item.Angle, Parameter = CircularGeometry.GetArcParameter(arc.StartAngle, arc.SweepAngle, item.Angle) })
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
@@ -65,13 +68,15 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return CreateArc(arc, arc.StartAngle, trimmedSweep);
         }
 
-        public Entity CreateExtended(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var arc = target as Arc;
             if (arc == null)
                 return null;
 
-            var intersections = TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary)
+            var intersections = boundaries
+                .Where(IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Select(item => new
                 {
                     item.Angle,

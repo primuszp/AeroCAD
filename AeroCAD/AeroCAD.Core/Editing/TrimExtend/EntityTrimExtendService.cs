@@ -17,46 +17,46 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 .AsReadOnly();
         }
 
-        public bool CanTrim(Entity boundary, Entity target)
+        public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return ResolveTrimStrategy(boundary, target) != null;
+            return ResolveTrimStrategy(boundaries, target) != null;
         }
 
-        public bool CanExtend(Entity boundary, Entity target)
+        public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return ResolveExtendStrategy(boundary, target) != null;
+            return ResolveExtendStrategy(boundaries, target) != null;
         }
 
-        public Entity CreateTrimmed(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
-            var strategy = ResolveTrimStrategy(boundary, target);
+            var strategy = ResolveTrimStrategy(boundaries, target);
             if (strategy == null)
                 throw new InvalidOperationException("Trim is not supported for the specified entities.");
 
-            return strategy.CreateTrimmed(boundary, target, pickPoint);
+            return strategy.CreateTrimmed(boundaries, target, pickPoint);
         }
 
-        public Entity CreateExtended(Entity boundary, Entity target, Point pickPoint)
+        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
-            var strategy = ResolveExtendStrategy(boundary, target);
+            var strategy = ResolveExtendStrategy(boundaries, target);
             if (strategy == null)
                 throw new InvalidOperationException("Extend is not supported for the specified entities.");
 
-            return strategy.CreateExtended(boundary, target, pickPoint);
+            return strategy.CreateExtended(boundaries, target, pickPoint);
         }
 
-        private IEntityTrimExtendStrategy ResolveTrimStrategy(Entity boundary, Entity target)
+        private IEntityTrimExtendStrategy ResolveTrimStrategy(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return boundary == null || target == null
+            return boundaries == null || boundaries.Count == 0 || target == null
                 ? null
-                : strategies.FirstOrDefault(candidate => candidate.CanTrim(boundary, target));
+                : strategies.FirstOrDefault(candidate => candidate.CanTrim(boundaries, target));
         }
 
-        private IEntityTrimExtendStrategy ResolveExtendStrategy(Entity boundary, Entity target)
+        private IEntityTrimExtendStrategy ResolveExtendStrategy(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return boundary == null || target == null
+            return boundaries == null || boundaries.Count == 0 || target == null
                 ? null
-                : strategies.FirstOrDefault(candidate => candidate.CanExtend(boundary, target));
+                : strategies.FirstOrDefault(candidate => candidate.CanExtend(boundaries, target));
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Commands;
@@ -12,11 +13,11 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class TrimCommandController : CommandControllerBase
     {
-        private static readonly CommandStep BoundaryStep = new CommandStep("Boundary", "Select cutting edge:", inputMode: CommandInputMode.Selection);
-        private static readonly CommandStep TargetStep = new CommandStep("Target", "Select object to trim:", inputMode: CommandInputMode.Selection);
+        private static readonly CommandStep BoundaryStep = new CommandStep("Boundary", "Select cutting edges [Enter=confirm]:", inputMode: CommandInputMode.Selection);
+        private static readonly CommandStep TargetStep = new CommandStep("Target", "Select object to trim [Enter=end]:", inputMode: CommandInputMode.Selection);
 
-        private Entity boundaryEntity;
-        private Entity highlightedBoundaryEntity;
+        private readonly List<Entity> boundaryEntities = new List<Entity>();
+        private readonly List<Entity> highlightedBoundaries = new List<Entity>();
         private Entity highlightedTargetEntity;
 
         public override string CommandName => "TRIM";
@@ -27,15 +28,23 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override void OnActivated(IInteractiveCommandHost host)
         {
-            ClearBoundaryHighlight(host);
-            boundaryEntity = null;
+            ClearAllBoundaryHighlights();
+            boundaryEntities.Clear();
 
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
-            if (selectionManager?.SelectedEntities.Count == 1 && IsSupportedBoundary(selectionManager.SelectedEntities[0]))
+            if (selectionManager?.SelectedEntities.Count > 0)
             {
-                boundaryEntity = selectionManager.SelectedEntities[0];
-                HighlightBoundary(host, boundaryEntity);
-                host.MoveToStep(TargetStep);
+                var supported = selectionManager.SelectedEntities.Where(IsSupportedBoundary).ToList();
+                if (supported.Count > 0)
+                {
+                    foreach (var e in supported)
+                    {
+                        boundaryEntities.Add(e);
+                        HighlightBoundary(e);
+                    }
+                    host.MoveToStep(TargetStep);
+                    return;
+                }
             }
         }
 
@@ -43,14 +52,15 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             var rubberObject = host.ToolService.Viewport.GetRubberObject();
             var trimService = host.ToolService.GetService<IEntityTrimExtendService>();
-            if (boundaryEntity == null)
+
+            if (boundaryEntities.Count == 0)
             {
                 ClearTargetHighlight(host);
                 rubberObject.ClearPreview();
                 return;
             }
 
-            var pick = PickEntity(host, rawPoint, entity => entity != boundaryEntity && (trimService?.CanTrim(boundaryEntity, entity) ?? false));
+            var pick = PickEntity(host, rawPoint, entity => !boundaryEntities.Contains(entity) && (trimService?.CanTrim(boundaryEntities, entity) ?? false));
             if (pick == null)
             {
                 ClearTargetHighlight(host);
@@ -59,7 +69,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             HighlightTarget(host, pick);
-            var previewEntity = trimService?.CreateTrimmed(boundaryEntity, pick, rawPoint);
+            var previewEntity = trimService?.CreateTrimmed(boundaryEntities, pick, rawPoint);
             var color = host.ToolService.GetService<ICadDocumentService>()?.GetLayerForEntity(pick)?.Color
                 ?? System.Windows.Media.Colors.White;
             rubberObject.Preview = host.ToolService.GetService<ITransientEntityPreviewService>()?.CreatePreview(previewEntity, color);
@@ -70,21 +80,25 @@ namespace Primusz.AeroCAD.Core.Tools
             var documentService = host.ToolService.GetService<ICadDocumentService>();
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
 
-            if (boundaryEntity == null)
+            if (!IsInTargetPhase(host))
             {
-                boundaryEntity = PickEntity(host, rawPoint, IsSupportedBoundary);
-                HighlightBoundary(host, boundaryEntity);
-                return boundaryEntity != null
-                    ? InteractiveCommandResult.MoveToStep(TargetStep)
-                    : InteractiveCommandResult.HandledOnly();
+                // Phase 1: pick boundary entities (multiple allowed, Enter confirms)
+                var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
+                if (picked != null && !boundaryEntities.Contains(picked))
+                {
+                    boundaryEntities.Add(picked);
+                    HighlightBoundary(picked);
+                }
+                return InteractiveCommandResult.HandledOnly();
             }
 
+            // Phase 2: trim target entities
             var trimService = host.ToolService.GetService<IEntityTrimExtendService>();
-            var target = PickEntity(host, rawPoint, entity => entity != boundaryEntity && (trimService?.CanTrim(boundaryEntity, entity) ?? false));
+            var target = PickEntity(host, rawPoint, entity => !boundaryEntities.Contains(entity) && (trimService?.CanTrim(boundaryEntities, entity) ?? false));
             if (target == null)
                 return InteractiveCommandResult.HandledOnly();
 
-            var result = trimService?.CreateTrimmed(boundaryEntity, target, rawPoint);
+            var result = trimService?.CreateTrimmed(boundaryEntities, target, rawPoint);
             if (result == null)
                 return InteractiveCommandResult.HandledOnly();
 
@@ -104,7 +118,9 @@ namespace Primusz.AeroCAD.Core.Tools
                     selectionManager);
 
             host.ToolService.GetService<IUndoRedoService>()?.Execute(command);
-            return Finish(host, "Trim command ended.");
+            ClearTargetHighlight(host);
+            // Stay in target step — user can trim more
+            return InteractiveCommandResult.HandledOnly();
         }
 
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
@@ -122,6 +138,32 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
+            if (IsInTargetPhase(host))
+                return Finish(host, "Trim command ended.");
+
+            // Enter in boundary phase: if none selected, use all entities as cutting edges
+            if (boundaryEntities.Count == 0)
+            {
+                var document = host.ToolService.GetService<ICadDocumentService>();
+                if (document != null)
+                {
+                    foreach (var e in document.Entities)
+                    {
+                        if (IsSupportedBoundary(e) && !boundaryEntities.Contains(e))
+                        {
+                            boundaryEntities.Add(e);
+                            HighlightBoundary(e);
+                        }
+                    }
+                }
+            }
+
+            if (boundaryEntities.Count > 0)
+            {
+                host.MoveToStep(TargetStep);
+                return InteractiveCommandResult.HandledOnly();
+            }
+
             return Finish(host, "Trim command ended.");
         }
 
@@ -130,11 +172,16 @@ namespace Primusz.AeroCAD.Core.Tools
             return Finish(host, "Trim command ended.");
         }
 
+        private bool IsInTargetPhase(IInteractiveCommandHost host)
+        {
+            return host.CurrentStep?.Id == TargetStep.Id;
+        }
+
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            ClearBoundaryHighlight(host);
+            ClearAllBoundaryHighlights();
             ClearTargetHighlight(host);
-            boundaryEntity = null;
+            boundaryEntities.Clear();
             var rubberObject = host.ToolService.Viewport.GetRubberObject();
             rubberObject.ClearPreview();
             rubberObject.SnapPoint = null;
@@ -148,27 +195,20 @@ namespace Primusz.AeroCAD.Core.Tools
             return entity is Line || entity is Polyline || entity is Circle || entity is Arc;
         }
 
-        private void HighlightBoundary(IInteractiveCommandHost host, Entity entity)
+        private void HighlightBoundary(Entity entity)
         {
-            if (ReferenceEquals(highlightedBoundaryEntity, entity))
+            if (entity == null || highlightedBoundaries.Contains(entity))
                 return;
 
-            ClearBoundaryHighlight(host);
-            if (entity == null)
-                return;
-
-            highlightedBoundaryEntity = entity;
+            highlightedBoundaries.Add(entity);
             entity.SetCommandHighlight(EntityCommandHighlightKind.Primary);
         }
 
-        private void ClearBoundaryHighlight(IInteractiveCommandHost host)
+        private void ClearAllBoundaryHighlights()
         {
-            if (highlightedBoundaryEntity == null)
-                return;
-
-            var entity = highlightedBoundaryEntity;
-            highlightedBoundaryEntity = null;
-            entity.ClearCommandHighlight();
+            foreach (var entity in highlightedBoundaries)
+                entity.ClearCommandHighlight();
+            highlightedBoundaries.Clear();
         }
 
         private void HighlightTarget(IInteractiveCommandHost host, Entity entity)
