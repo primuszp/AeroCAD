@@ -12,6 +12,7 @@ namespace Primusz.AeroCAD.Core.Plugins
     public class RectangleEntityPlugin : EntityPluginBase
     {
         protected override string PluginName => "AeroCAD.Rectangle";
+        protected override EntityPluginCapability Capabilities => EntityPluginCapability.Render | EntityPluginCapability.Bounds | EntityPluginCapability.GripPreview | EntityPluginCapability.SelectionMovePreview | EntityPluginCapability.TransientPreview | EntityPluginCapability.Offset | EntityPluginCapability.TrimExtend | EntityPluginCapability.InteractiveCommand;
         protected override IEntityRenderStrategy RenderStrategy => new RectangleEntityRenderStrategy();
         protected override IEntityBoundsStrategy BoundsStrategy => new RectangleBoundsStrategy();
         protected override IGripPreviewStrategy GripPreviewStrategy => new RectangleGripPreviewStrategy();

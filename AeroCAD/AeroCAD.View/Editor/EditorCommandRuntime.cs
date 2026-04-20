@@ -1,14 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Primusz.AeroCAD.Core.Commands;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing;
-using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Selection;
 using Primusz.AeroCAD.Core.Tools;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Primusz.AeroCAD.View.Editor
 {
@@ -219,7 +218,7 @@ namespace Primusz.AeroCAD.View.Editor
                 });
 
             Register(
-                new EditorCommandDefinition("GRID", new[] { "F7" }, "Toggle adaptive grid.",
+                new EditorCommandDefinition("GRID", ["F7"], "Toggle adaptive grid.",
                     menuGroup: "View", menuLabel: "_Grid"),
                 () =>
                 {
@@ -230,7 +229,7 @@ namespace Primusz.AeroCAD.View.Editor
                 });
 
             Register(
-                new EditorCommandDefinition("CANCEL", new[] { "ESC", "STOP" }, "Cancel the active command."),
+                new EditorCommandDefinition("CANCEL", ["ESC", "STOP"], "Cancel the active command."),
                 () =>
                 {
                     CancelCurrentCommand();

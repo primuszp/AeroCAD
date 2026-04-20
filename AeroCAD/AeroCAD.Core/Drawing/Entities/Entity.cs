@@ -155,7 +155,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
                 if (!TryMapGripToSnapType(grip.Kind, out var snapType))
                     continue;
 
-                yield return new SnapPointDescriptor(snapType, grip.GetPoint);
+                yield return new SnapPointDescriptor(snapType, grip.GetPoint, grip.Owner, grip.Index);
             }
         }
 

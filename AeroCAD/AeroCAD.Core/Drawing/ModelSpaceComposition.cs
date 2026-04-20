@@ -49,6 +49,9 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var entityPlugins = plugins.AsReadOnly();
             var pluginDescriptors = entityPlugins.Select(plugin => plugin.Descriptor).ToArray();
+            var pluginCatalog = new EntityPluginCatalog(entityPlugins);
+            var moduleCatalog = new CadModuleCatalog(modules);
+            var interactiveCommandRegistry = new InteractiveCommandRegistry(entityPlugins, modules);
             var selectionManager = new SelectionManager();
             var gripService = new GripService(selectionManager);
             var markerAppearance = new MarkerAppearanceService();
@@ -122,6 +125,12 @@ namespace Primusz.AeroCAD.Core.Drawing
                 { typeof(CommandFeedbackService), commandFeedback },
                 { typeof(IEditorCommandCatalog), commandCatalog },
                 { typeof(EditorCommandCatalog), commandCatalog },
+                { typeof(IEntityPluginCatalog), pluginCatalog },
+                { typeof(EntityPluginCatalog), pluginCatalog },
+                { typeof(ICadModuleCatalog), moduleCatalog },
+                { typeof(CadModuleCatalog), moduleCatalog },
+                { typeof(IInteractiveCommandRegistry), interactiveCommandRegistry },
+                { typeof(InteractiveCommandRegistry), interactiveCommandRegistry },
                 { typeof(IEntityRenderService), entityRenderService },
                 { typeof(EntityRenderService), entityRenderService },
                 { typeof(IEntityBoundsService), entityBoundsService },

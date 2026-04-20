@@ -11,13 +11,17 @@ using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
+using Primusz.AeroCAD.Core.Drawing.Handles;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Selection;
 using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Tools;
+using Primusz.AeroCAD.Core.Snapping;
+using Primusz.AeroCAD.Core.Spatial;
 using Primusz.AeroCAD.View.Editor;
 using Primusz.AeroCAD.View.Commands;
 using Primusz.AeroCAD.View.Input;
+using Primusz.AeroCAD.View.Plugins;
 
 namespace Primusz.AeroCAD.View.ViewModels
 {
@@ -33,19 +37,25 @@ namespace Primusz.AeroCAD.View.ViewModels
         private readonly EditorCommandRuntime commandRuntime;
         private readonly IEditorToolRuntime toolRuntime;
         private readonly ISelectionManager selectionManager;
+        private readonly IGripService gripService;
+        private readonly ISnapEngine snapEngine;
+        private readonly ISnapDescriptorService snapDescriptorService;
+        private readonly ISpatialQueryService spatialQueryService;
+        private readonly Overlay overlay;
         private readonly IOrthoService orthoService;
         private readonly IGridSettingsService gridSettingsService;
         private readonly KeyboardShortcutService keyboardShortcutService;
+        private readonly CommandRepeatCoordinator commandRepeatCoordinator;
         private readonly Viewport viewport;
         private string statusText = "Ready";
         private string activeToolName = string.Empty;
-        private string lastExecutedCommand = string.Empty;
 
         public MainViewModel(Viewport viewport)
         {
             this.viewport = viewport;
             modelSpace = new ModelSpace(viewport)
-                .RegisterModule(new RectangleModule());
+                .RegisterModule(new RectangleModule())
+                .RegisterModule(new ViewInteractiveEntityModule());
             modelSpace.Initialize();
 
             documentService = modelSpace.GetService<ICadDocumentService>();
@@ -54,9 +64,15 @@ namespace Primusz.AeroCAD.View.ViewModels
             commandFeedbackService = modelSpace.GetService<ICommandFeedbackService>();
             toolRuntime = modelSpace.GetService<IEditorToolRuntime>();
             selectionManager = modelSpace.GetService<ISelectionManager>();
+            gripService = modelSpace.GetService<IGripService>();
+            snapEngine = modelSpace.GetService<ISnapEngine>();
+            snapDescriptorService = modelSpace.GetService<ISnapDescriptorService>();
+            spatialQueryService = modelSpace.GetService<ISpatialQueryService>();
+            overlay = modelSpace.GetService<Overlay>();
             orthoService = modelSpace.GetService<IOrthoService>();
             gridSettingsService = modelSpace.GetService<IGridSettingsService>();
             keyboardShortcutService = new KeyboardShortcutService();
+            commandRepeatCoordinator = new CommandRepeatCoordinator();
 
             commandRuntime = new EditorCommandRuntime(
                 modelSpace.GetService<IEditorCommandCatalog>(),
@@ -109,6 +125,9 @@ namespace Primusz.AeroCAD.View.ViewModels
             DependencyPropertyDescriptor
                 .FromProperty(Viewport.PositionProperty, typeof(Viewport))
                 .AddValueChanged(viewport, OnViewportPositionChanged);
+            viewport.MouseMove += OnViewportMouseMove;
+            viewport.MouseLeave += OnViewportMouseLeave;
+            viewport.GetRubberObject().SnapPointChanged += OnSnapPointChanged;
 
             InitializeKeyboardShortcuts();
             ActiveToolName = "SelectionTool";
@@ -288,7 +307,54 @@ namespace Primusz.AeroCAD.View.ViewModels
         private void OnViewportPositionChanged(object sender, EventArgs e)
         {
             var pos = viewport.Position;
-            StatusText = $"X: {pos.X:F2}  Y: {pos.Y:F2}";
+            StatusText = FormatCoordinates(pos);
+        }
+
+        private void OnViewportMouseMove(object sender, MouseEventArgs e)
+        {
+            var screenPoint = e.GetPosition(viewport);
+            var worldPoint = viewport.Unproject(screenPoint);
+            var statusPoint = ResolveHoverStatusPoint(worldPoint);
+
+            StatusText = FormatCoordinates(statusPoint ?? worldPoint);
+        }
+
+        private void OnSnapPointChanged(object sender, EventArgs e)
+        {
+            var snapResult = viewport.GetRubberObject()?.SnapPoint;
+            if (snapResult == null)
+                return;
+
+            Point snapped;
+            if (snapResult.SourceEntity != null && snapResult.SourceGripIndex.HasValue)
+                snapped = snapResult.SourceEntity.GetGripPoint(snapResult.SourceGripIndex.Value);
+            else
+                snapped = snapResult.SourcePoint ?? snapResult.Point;
+
+            StatusText = FormatCoordinates(snapped);
+        }
+
+        private void OnViewportMouseLeave(object sender, MouseEventArgs e)
+        {
+            var pos = viewport.Position;
+            StatusText = FormatCoordinates(pos);
+        }
+
+        private Point? ResolveHoverStatusPoint(Point worldPoint)
+        {
+            var snapResult = viewport.GetRubberObject()?.SnapPoint;
+            if (snapResult != null && snapResult.SourceEntity != null && snapResult.SourceGripIndex.HasValue)
+                return snapResult.SourceEntity.GetGripPoint(snapResult.SourceGripIndex.Value);
+
+            if (snapResult != null)
+                return snapResult.SourcePoint ?? snapResult.Point;
+
+            return null;
+        }
+
+        private static string FormatCoordinates(Point point)
+        {
+            return $"X: {point.X:F2}  Y: {point.Y:F2}";
         }
 
         private void HandleCommandLineInput(string input)
@@ -297,36 +363,28 @@ namespace Primusz.AeroCAD.View.ViewModels
             var trimmedInput = (input ?? string.Empty).Trim();
             var normalized = trimmedInput.ToUpperInvariant();
             var token = commandFeedbackService?.ParseInput(trimmedInput) ?? CommandInputToken.Text(trimmedInput, trimmedInput);
-            var activeCommandName = commandFeedbackService?.ActiveCommandName;
 
             if (trimmedInput.Length == 0)
             {
-                if (activeInteractiveTool != null)
-                {
-                    activeInteractiveTool.TryComplete();
-                    RefreshViewportVisuals();
-                    if (!string.IsNullOrWhiteSpace(activeCommandName))
-                        lastExecutedCommand = activeCommandName;
-                }
-                else if (!string.IsNullOrWhiteSpace(lastExecutedCommand))
-                {
-                    if (commandRuntime.Execute(lastExecutedCommand))
-                        RefreshViewportVisuals();
-                }
+                commandRepeatCoordinator.HandleBlankSubmit(
+                    activeInteractiveTool,
+                    commandRuntime.Execute,
+                    () => commandFeedbackService?.ActiveCommandName,
+                    RefreshViewportVisuals);
                 return;
             }
 
             if (activeInteractiveTool != null && activeInteractiveTool.TrySubmitToken(token))
             {
                 RefreshViewportVisuals();
-                if (!string.IsNullOrWhiteSpace(activeCommandName))
-                    lastExecutedCommand = activeCommandName;
+                if (!string.IsNullOrWhiteSpace(commandFeedbackService?.ActiveCommandName))
+                    commandRepeatCoordinator.RememberExecutedCommand(commandFeedbackService.ActiveCommandName);
                 return;
             }
 
             if (commandRuntime.TryResolveAndExecute(normalized))
             {
-                lastExecutedCommand = normalized;
+                commandRepeatCoordinator.RememberExecutedCommand(normalized);
                 RefreshViewportVisuals();
                 return;
             }

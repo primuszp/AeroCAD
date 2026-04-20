@@ -17,8 +17,9 @@ namespace Primusz.AeroCAD.Core.Drawing
         private readonly Overlay overlay;
         private readonly IToolService toolService;
         private readonly IEditorCommandCatalog commandCatalog;
-        private readonly IReadOnlyList<IEntityPlugin> plugins;
-        private readonly IReadOnlyList<ICadModule> modules;
+        private readonly IInteractiveCommandRegistry interactiveCommandRegistry;
+        private readonly IEntityPluginCatalog pluginCatalog;
+        private readonly ICadModuleCatalog moduleCatalog;
 
         public ModelSpaceRuntimeBootstrapper(
             Viewport viewport,
@@ -38,8 +39,9 @@ namespace Primusz.AeroCAD.Core.Drawing
             this.overlay = overlay;
             this.toolService = toolService;
             this.commandCatalog = commandCatalog;
-            this.plugins = plugins;
-            this.modules = modules;
+            this.pluginCatalog = new EntityPluginCatalog(plugins);
+            this.interactiveCommandRegistry = new InteractiveCommandRegistry(plugins, modules);
+            this.moduleCatalog = new CadModuleCatalog(modules);
         }
 
         public void Bootstrap()
@@ -49,7 +51,6 @@ namespace Primusz.AeroCAD.Core.Drawing
             RegisterPluginTools();
             RegisterPluginInteractiveCommands();
             RegisterPluginCommands();
-            RegisterModuleInteractiveCommands();
             RegisterModuleCommands();
             ActivateDefaultTools();
         }
@@ -71,49 +72,34 @@ namespace Primusz.AeroCAD.Core.Drawing
 
         private void RegisterPluginTools()
         {
-            foreach (var plugin in plugins)
+            foreach (var plugin in pluginCatalog.Descriptors)
             {
-                foreach (var tool in plugin.Descriptor.Tools)
+                foreach (var tool in plugin.Tools)
                     toolService.RegisterTool(tool);
             }
         }
 
         private void RegisterPluginInteractiveCommands()
         {
-            foreach (var plugin in plugins)
+            foreach (var registration in interactiveCommandRegistry.Registrations)
             {
-                foreach (var registration in plugin.Descriptor.InteractiveCommands)
-                {
-                    toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
-                    commandCatalog.Register(registration.CreateCommandDefinition());
-                }
+                toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
+                commandCatalog.Register(registration.CreateCommandDefinition());
             }
         }
 
         private void RegisterPluginCommands()
         {
-            foreach (var plugin in plugins)
+            foreach (var plugin in pluginCatalog.Descriptors)
             {
-                foreach (var definition in plugin.Descriptor.Commands)
+                foreach (var definition in plugin.Commands)
                     commandCatalog.Register(definition);
-            }
-        }
-
-        private void RegisterModuleInteractiveCommands()
-        {
-            foreach (var module in modules)
-            {
-                foreach (var registration in module.InteractiveCommands ?? System.Linq.Enumerable.Empty<InteractiveCommandRegistration>())
-                {
-                    toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
-                    commandCatalog.Register(registration.CreateCommandDefinition());
-                }
             }
         }
 
         private void RegisterModuleCommands()
         {
-            foreach (var module in modules)
+            foreach (var module in moduleCatalog.Modules)
             {
                 foreach (var definition in module.Commands ?? System.Linq.Enumerable.Empty<EditorCommandDefinition>())
                     commandCatalog.Register(definition);

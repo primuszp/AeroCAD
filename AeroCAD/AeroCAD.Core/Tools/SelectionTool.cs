@@ -8,6 +8,8 @@ using Primusz.AeroCAD.Core.Selection;
 using Primusz.AeroCAD.Core.Spatial;
 using Primusz.AeroCAD.Core.Snapping;
 
+using Primusz.AeroCAD.Core.Documents;
+
 namespace Primusz.AeroCAD.Core.Tools
 {
     public class SelectionTool : BaseTool, IMouseListener, IKeyboardListener
@@ -204,15 +206,27 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private void UpdateGripPreview()
         {
+            var editorState = ToolService.GetService<IEditorStateService>();
+            var gripService = ToolService.GetService<IGripService>();
+            var hasSelectedGrips = gripService?.GetSelectedGrips()?.Count > 0;
+            if (editorState == null || (!hasSelectedGrips && editorState.Mode != EditorMode.CommandInput && editorState.Mode != EditorMode.GripEditing))
+            {
+                ClearSnapPreview();
+                return;
+            }
+
             var rubberObject = ToolService.Viewport.GetRubberObject();
             var snapEngine = ToolService.GetService<ISnapEngine>();
             var descriptorService = ToolService.GetService<ISnapDescriptorService>();
+            var spatial = ToolService.GetService<ISpatialQueryService>();
 
             if (rubberObject == null || snapEngine == null || descriptorService == null)
                 return;
 
-            var descriptors = descriptorService.GetSelectedGripDescriptors();
-            snapEngine.Update(ToolService.Viewport.Position, descriptors);
+            var worldPoint = ToolService.Viewport.Position;
+            var candidates = spatial?.QueryNearby(worldPoint, snapEngine.ToleranceWorld) ?? GetAllEntities();
+            var descriptors = descriptorService.GetEntityAndSelectedGripDescriptors(candidates);
+            snapEngine.Update(worldPoint, descriptors);
             if (snapEngine.CurrentSnap == null)
             {
                 ClearSnapPreview();
@@ -223,6 +237,16 @@ namespace Primusz.AeroCAD.Core.Tools
             rubberObject.InvalidateVisual();
         }
 
+        private System.Collections.Generic.IEnumerable<Drawing.Entities.Entity> GetAllEntities()
+        {
+            var document = ToolService.GetService<ICadDocumentService>();
+            if (document == null)
+                yield break;
+
+            foreach (var entity in document.Entities)
+                yield return entity;
+        }
+
         private static Drawing.Entities.Entity ResolvePrimaryHit(System.Collections.Generic.IList<Drawing.Entities.Entity> hits)
         {
             return hits != null && hits.Count > 0 ? hits[hits.Count - 1] : null;
@@ -231,4 +255,3 @@ namespace Primusz.AeroCAD.Core.Tools
         #endregion
     }
 }
-

@@ -44,6 +44,8 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             }
         }
 
+        public event EventHandler SnapPointChanged;
+
         /// <summary>
         /// Current snap point to visualize (set by tools during MouseMove). Null = no snap active.
         /// </summary>
@@ -53,6 +55,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             set
             {
                 snapPoint = value;
+                SnapPointChanged?.Invoke(this, EventArgs.Empty);
                 InvalidateVisual();
             }
         }

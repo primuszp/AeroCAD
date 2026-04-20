@@ -19,6 +19,7 @@ namespace Primusz.AeroCAD.Core.Plugins
             string name,
             IEntityRenderStrategy renderStrategy,
             IEntityBoundsStrategy boundsStrategy,
+            EntityPluginCapability capabilities = EntityPluginCapability.None,
             IGripPreviewStrategy gripPreviewStrategy = null,
             ISelectionMovePreviewStrategy selectionMovePreviewStrategy = null,
             ITransientEntityPreviewStrategy transientEntityPreviewStrategy = null,
@@ -31,6 +32,9 @@ namespace Primusz.AeroCAD.Core.Plugins
             Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentException("Plugin name is required.", nameof(name)) : name;
             RenderStrategy = renderStrategy ?? throw new ArgumentNullException(nameof(renderStrategy));
             BoundsStrategy = boundsStrategy ?? throw new ArgumentNullException(nameof(boundsStrategy));
+            Capabilities = capabilities != EntityPluginCapability.None
+                ? capabilities
+                : InferCapabilities(renderStrategy, boundsStrategy, gripPreviewStrategy, selectionMovePreviewStrategy, transientEntityPreviewStrategy, offsetStrategy, trimExtendStrategy, tools, interactiveCommands, commands);
             GripPreviewStrategy = gripPreviewStrategy;
             SelectionMovePreviewStrategy = selectionMovePreviewStrategy;
             TransientEntityPreviewStrategy = transientEntityPreviewStrategy;
@@ -42,6 +46,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         }
 
         public string Name { get; }
+        public EntityPluginCapability Capabilities { get; }
         public IEntityRenderStrategy RenderStrategy { get; }
         public IEntityBoundsStrategy BoundsStrategy { get; }
         public IGripPreviewStrategy GripPreviewStrategy { get; }
@@ -52,5 +57,31 @@ namespace Primusz.AeroCAD.Core.Plugins
         public IReadOnlyList<ITool> Tools { get; }
         public IReadOnlyList<InteractiveCommandRegistration> InteractiveCommands { get; }
         public IReadOnlyList<EditorCommandDefinition> Commands { get; }
+
+        private static EntityPluginCapability InferCapabilities(
+            IEntityRenderStrategy renderStrategy,
+            IEntityBoundsStrategy boundsStrategy,
+            IGripPreviewStrategy gripPreviewStrategy,
+            ISelectionMovePreviewStrategy selectionMovePreviewStrategy,
+            ITransientEntityPreviewStrategy transientEntityPreviewStrategy,
+            IEntityOffsetStrategy offsetStrategy,
+            IEntityTrimExtendStrategy trimExtendStrategy,
+            IEnumerable<ITool> tools,
+            IEnumerable<InteractiveCommandRegistration> interactiveCommands,
+            IEnumerable<EditorCommandDefinition> commands)
+        {
+            var capabilities = EntityPluginCapability.None;
+            if (renderStrategy != null) capabilities |= EntityPluginCapability.Render;
+            if (boundsStrategy != null) capabilities |= EntityPluginCapability.Bounds;
+            if (gripPreviewStrategy != null) capabilities |= EntityPluginCapability.GripPreview;
+            if (selectionMovePreviewStrategy != null) capabilities |= EntityPluginCapability.SelectionMovePreview;
+            if (transientEntityPreviewStrategy != null) capabilities |= EntityPluginCapability.TransientPreview;
+            if (offsetStrategy != null) capabilities |= EntityPluginCapability.Offset;
+            if (trimExtendStrategy != null) capabilities |= EntityPluginCapability.TrimExtend;
+            if (tools != null) capabilities |= EntityPluginCapability.Tool;
+            if (interactiveCommands != null) capabilities |= EntityPluginCapability.InteractiveCommand;
+            if (commands != null) capabilities |= EntityPluginCapability.Command;
+            return capabilities;
+        }
     }
 }

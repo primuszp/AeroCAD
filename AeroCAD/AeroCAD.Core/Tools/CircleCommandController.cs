@@ -68,7 +68,7 @@ namespace Primusz.AeroCAD.Core.Tools
             if (!host.TryResolvePointInput(token, hasCenterPoint ? centerPoint : (Point?)null, out point))
             {
                 CommandKeywordOption keyword;
-                if (hasCenterPoint && host.CurrentStep != null && host.CurrentStep.TryResolveKeyword(token, out keyword))
+                if (hasCenterPoint && TryResolveKeyword(host, token, out keyword))
                 {
                     if (keyword == DiameterKeyword)
                     {
@@ -158,11 +158,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            var rubberObject = host.ToolService.Viewport.GetRubberObject();
-            rubberObject.SnapPoint = null;
-            rubberObject.ClearPreview();
-            rubberObject.Cancel();
-            rubberObject.InvalidateVisual();
+            ResetRubberObject(host);
             Reset();
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
         }

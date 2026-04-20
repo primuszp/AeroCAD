@@ -40,6 +40,30 @@ namespace Primusz.AeroCAD.Core.Tools
         public abstract InteractiveCommandResult TryCancel(IInteractiveCommandHost host);
 
         /// <summary>
+        /// Resolves a keyword token against the host's current step.
+        /// </summary>
+        protected bool TryResolveKeyword(IInteractiveCommandHost host, CommandInputToken token, out CommandKeywordOption keyword)
+        {
+            keyword = null;
+            return host?.CurrentStep != null && host.CurrentStep.TryResolveKeyword(token, out keyword);
+        }
+
+        /// <summary>
+        /// Clears the viewport rubber object and snaps after a command completes or is canceled.
+        /// </summary>
+        protected void ResetRubberObject(IInteractiveCommandHost host)
+        {
+            var rubberObject = host?.ToolService?.Viewport?.GetRubberObject();
+            if (rubberObject == null)
+                return;
+
+            rubberObject.SnapPoint = null;
+            rubberObject.ClearPreview();
+            rubberObject.Cancel();
+            rubberObject.InvalidateVisual();
+        }
+
+        /// <summary>
         /// Updates the snap engine with nearby entities and refreshes the rubber object's snap indicator.
         /// </summary>
         protected void UpdateSnap(IInteractiveCommandHost host, Point rawPoint)

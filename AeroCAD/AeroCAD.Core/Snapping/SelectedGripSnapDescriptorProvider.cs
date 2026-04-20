@@ -19,7 +19,7 @@ namespace Primusz.AeroCAD.Core.Snapping
         public IEnumerable<ISnapDescriptor> GetDescriptors(IEnumerable<Entity> entityCandidates)
         {
             return gripService?.GetSelectedGrips()
-                .Select(grip => new SnapPointDescriptor(grip.ToSnapType(), grip.GetPoint))
+                .Select(grip => new SnapPointDescriptor(grip.ToSnapType(), grip.GetPoint, grip.Owner, grip.Index))
                 ?? Enumerable.Empty<ISnapDescriptor>();
         }
     }

@@ -187,11 +187,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            var rubberObject = host.ToolService.Viewport.GetRubberObject();
-            rubberObject.SnapPoint = null;
-            rubberObject.ClearPreview();
-            rubberObject.Cancel();
-            rubberObject.InvalidateVisual();
+            ResetRubberObject(host);
             Reset();
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
         }

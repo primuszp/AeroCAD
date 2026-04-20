@@ -12,6 +12,7 @@ namespace Primusz.AeroCAD.Core.Plugins
     public sealed class ArcEntityPlugin : EntityPluginBase
     {
         protected override string PluginName => "AeroCAD.Arc";
+        protected override EntityPluginCapability Capabilities => EntityPluginCapability.Render | EntityPluginCapability.Bounds | EntityPluginCapability.GripPreview | EntityPluginCapability.SelectionMovePreview | EntityPluginCapability.TransientPreview | EntityPluginCapability.Offset | EntityPluginCapability.TrimExtend | EntityPluginCapability.InteractiveCommand;
         protected override IEntityRenderStrategy RenderStrategy => new ArcEntityRenderStrategy();
         protected override IEntityBoundsStrategy BoundsStrategy => new ArcBoundsStrategy();
         protected override IGripPreviewStrategy GripPreviewStrategy => new ArcGripPreviewStrategy();

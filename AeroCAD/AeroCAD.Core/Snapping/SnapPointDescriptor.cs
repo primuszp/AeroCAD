@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Windows;
+using Primusz.AeroCAD.Core.Drawing.Entities;
 
 namespace Primusz.AeroCAD.Core.Snapping
 {
@@ -7,13 +8,19 @@ namespace Primusz.AeroCAD.Core.Snapping
     {
         private readonly Func<Point> pointProvider;
 
-        public SnapPointDescriptor(SnapType type, Func<Point> pointProvider)
+        public SnapPointDescriptor(SnapType type, Func<Point> pointProvider, Entity sourceEntity = null, int? sourceGripIndex = null)
         {
             Type = type;
             this.pointProvider = pointProvider ?? throw new ArgumentNullException(nameof(pointProvider));
+            SourceEntity = sourceEntity;
+            SourceGripIndex = sourceGripIndex;
         }
 
         public SnapType Type { get; }
+
+        public Entity SourceEntity { get; }
+
+        public int? SourceGripIndex { get; }
 
         public SnapResult TrySnap(Point worldPos, double toleranceWorld)
         {
@@ -22,9 +29,8 @@ namespace Primusz.AeroCAD.Core.Snapping
             double dy = point.Y - worldPos.Y;
 
             return Math.Sqrt(dx * dx + dy * dy) <= toleranceWorld
-                ? new SnapResult(point, Type)
+                ? new SnapResult(point, Type, point, SourceEntity, SourceGripIndex)
                 : null;
         }
     }
 }
-

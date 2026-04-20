@@ -69,9 +69,8 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
         {
-            // Check for Close keyword first
             CommandKeywordOption keyword;
-            if (drawing && host.CurrentStep != null && host.CurrentStep.TryResolveKeyword(token, out keyword))
+            if (drawing && TryResolveKeyword(host, token, out keyword))
             {
                 if (keyword == CloseKeyword)
                     return CloseLine(host);
@@ -89,12 +88,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            return Cancel("LINE ended.");
+            return Cancel(host, "LINE ended.");
         }
 
         public override InteractiveCommandResult TryCancel(IInteractiveCommandHost host)
         {
-            return Cancel("LINE canceled.");
+            return Cancel(host, "LINE canceled.");
         }
 
         private InteractiveCommandResult SubmitResolvedPoint(IInteractiveCommandHost host, Point point, bool logInput)
@@ -142,7 +141,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
             host.ToolService.GetService<ICommandFeedbackService>()?.LogInput("Close");
             CreateLineSegment(host, startPoint, firstPoint);
-            return Finish("LINE ended.");
+            return Finish(host, "LINE ended.");
         }
 
         private InteractiveCommandResult UndoLastSegment(IInteractiveCommandHost host)
@@ -163,16 +162,17 @@ namespace Primusz.AeroCAD.Core.Tools
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
-        private InteractiveCommandResult Cancel(string message)
+        private InteractiveCommandResult Cancel(IInteractiveCommandHost host, string message)
         {
-            return Finish(message);
+            return Finish(host, message);
         }
 
-        private InteractiveCommandResult Finish(string message)
+        private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
             drawing = false;
             vertices.Clear();
             createdSegments.Clear();
+            ResetRubberObject(host);
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
         }
     }

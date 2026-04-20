@@ -60,7 +60,7 @@ namespace Primusz.AeroCAD.Core.Tools
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
         {
             CommandKeywordOption keyword;
-            if (host.CurrentStep != null && host.CurrentStep.TryResolveKeyword(token, out keyword))
+            if (TryResolveKeyword(host, token, out keyword))
             {
                 if (keyword == CloseKeyword)
                     return ClosePolyline(host);
@@ -171,15 +171,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            var rubberObject = host.ToolService.Viewport.GetRubberObject();
-            if (rubberObject != null)
-            {
-                rubberObject.SnapPoint = null;
-                rubberObject.ClearPreview();
-                rubberObject.Cancel();
-                rubberObject.InvalidateVisual();
-            }
-
+            ResetRubberObject(host);
             points.Clear();
             currentPolyline = null;
             return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);

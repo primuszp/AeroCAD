@@ -23,6 +23,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         public EntityPluginDescriptor Descriptor => descriptor ??= BuildDescriptor();
 
         protected virtual string PluginName => GetType().Name;
+        protected virtual EntityPluginCapability Capabilities => EntityPluginCapability.None;
         protected abstract IEntityRenderStrategy RenderStrategy { get; }
         protected abstract IEntityBoundsStrategy BoundsStrategy { get; }
         protected virtual IGripPreviewStrategy GripPreviewStrategy => null;
@@ -40,6 +41,7 @@ namespace Primusz.AeroCAD.Core.Plugins
                 PluginName,
                 RenderStrategy,
                 BoundsStrategy,
+                capabilities: Capabilities,
                 gripPreviewStrategy: GripPreviewStrategy,
                 selectionMovePreviewStrategy: SelectionMovePreviewStrategy,
                 transientEntityPreviewStrategy: TransientEntityPreviewStrategy,

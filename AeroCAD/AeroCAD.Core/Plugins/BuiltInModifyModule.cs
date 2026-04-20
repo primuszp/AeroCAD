@@ -21,7 +21,7 @@ namespace Primusz.AeroCAD.Core.Plugins
             {
                 yield return new InteractiveCommandRegistration(
                     "MOVE",
-                    CreateControllerFactory(() => new MoveSelectionCommandController()),
+                    CreateControllerFactory(() => new MoveCommandController()),
                     aliases: new[] { "M" },
                     description: "Move selected entities.",
                     policy: new EditorCommandPolicy(CommandSelectionRequirement.Any, selectionFailureMessage: "MOVE requires a preselection."),
@@ -30,7 +30,7 @@ namespace Primusz.AeroCAD.Core.Plugins
 
                 yield return new InteractiveCommandRegistration(
                     "COPY",
-                    CreateControllerFactory(() => new CopySelectionCommandController()),
+                    CreateControllerFactory(() => new CopyCommandController()),
                     aliases: new[] { "CO", "CP" },
                     description: "Copy selected entities.",
                     policy: new EditorCommandPolicy(CommandSelectionRequirement.Any, selectionFailureMessage: "COPY requires a preselection."),
