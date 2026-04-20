@@ -44,13 +44,6 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
             double clickedParameter = segmentIndex + clickParameter;
 
-            if (!closed && intersections.Count == 1)
-            {
-                return clickedParameter <= intersections[0].Parameter + Epsilon
-                    ? PolylinePathOperations.BuildOpenPath(polyline, 0d, intersections[0].Parameter) is Polyline prefix ? new[] { (Entity)prefix } : Array.Empty<Entity>()
-                    : PolylinePathOperations.BuildOpenPath(polyline, intersections[0].Parameter, polyline.Points.Count - 1) is Polyline suffix ? new[] { (Entity)suffix } : Array.Empty<Entity>();
-            }
-
             var left = intersections.LastOrDefault(item => item.Parameter < clickedParameter - Epsilon);
             var right = intersections.FirstOrDefault(item => item.Parameter > clickedParameter + Epsilon);
 
