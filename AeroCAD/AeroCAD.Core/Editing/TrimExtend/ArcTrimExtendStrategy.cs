@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -9,34 +10,37 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     public class ArcTrimExtendStrategy : IEntityTrimExtendStrategy
     {
         private const double Epsilon = 1e-9;
+        private const double ParameterDedupTolerance = 1e-6;
 
         public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Arc && boundaries.Any(IsSupportedBoundary);
+            return target is Arc && boundaries.Any(TrimExtendSupport.IsSupportedBoundary);
         }
 
         public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Arc && boundaries.Any(IsSupportedBoundary);
+            return target is Arc && boundaries.Any(TrimExtendSupport.IsSupportedBoundary);
         }
 
-        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var arc = target as Arc;
             if (arc == null)
-                return null;
+                return Array.Empty<Entity>();
 
             var intersections = boundaries
-                .Where(IsSupportedBoundary)
+                .Where(TrimExtendSupport.IsSupportedBoundary)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Where(item => CircularGeometry.IsAngleOnArc(item.Angle, arc.StartAngle, arc.SweepAngle))
                 .Select(item => new { item.Angle, Parameter = CircularGeometry.GetArcParameter(arc.StartAngle, arc.SweepAngle, item.Angle) })
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
+                .GroupBy(item => Math.Round(item.Parameter / ParameterDedupTolerance))
+                .Select(g => g.First())
                 .OrderBy(item => item.Parameter)
                 .ToList();
 
             if (intersections.Count == 0)
-                return null;
+                return Array.Empty<Entity>();
 
             double clickParameter = CircularGeometry.GetArcParameter(
                 arc.StartAngle,
@@ -51,31 +55,35 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                     .OrderBy(item => item.Parameter)
                     .FirstOrDefault();
                 if (replacement == null)
-                    return null;
+                    return Array.Empty<Entity>();
 
-                double newSweep = System.Math.Sign(arc.SweepAngle) * (System.Math.Abs(arc.SweepAngle) * (1d - replacement.Parameter));
-                return CreateArc(arc, replacement.Angle, newSweep);
+                double newSweep = Math.Sign(arc.SweepAngle) * (Math.Abs(arc.SweepAngle) * (1d - replacement.Parameter));
+                var result = CreateArc(arc, replacement.Angle, newSweep);
+                return result == null ? Array.Empty<Entity>() : new[] { (Entity)result };
             }
+            else
+            {
+                var endReplacement = intersections
+                    .Where(item => item.Parameter <= clickParameter + Epsilon)
+                    .OrderByDescending(item => item.Parameter)
+                    .FirstOrDefault();
+                if (endReplacement == null)
+                    return Array.Empty<Entity>();
 
-            var endReplacement = intersections
-                .Where(item => item.Parameter <= clickParameter + Epsilon)
-                .OrderByDescending(item => item.Parameter)
-                .FirstOrDefault();
-            if (endReplacement == null)
-                return null;
-
-            double trimmedSweep = System.Math.Sign(arc.SweepAngle) * (System.Math.Abs(arc.SweepAngle) * endReplacement.Parameter);
-            return CreateArc(arc, arc.StartAngle, trimmedSweep);
+                double trimmedSweep = Math.Sign(arc.SweepAngle) * (Math.Abs(arc.SweepAngle) * endReplacement.Parameter);
+                var result = CreateArc(arc, arc.StartAngle, trimmedSweep);
+                return result == null ? Array.Empty<Entity>() : new[] { (Entity)result };
+            }
         }
 
-        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var arc = target as Arc;
             if (arc == null)
-                return null;
+                return Array.Empty<Entity>();
 
             var intersections = boundaries
-                .Where(IsSupportedBoundary)
+                .Where(TrimExtendSupport.IsSupportedBoundary)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Select(item => new
                 {
@@ -92,15 +100,15 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 .ToList();
 
             if (intersections.Count == 0)
-                return null;
+                return Array.Empty<Entity>();
 
             double clickParameter = CircularGeometry.GetArcParameter(
                 arc.StartAngle,
                 arc.SweepAngle,
                 CircularGeometry.GetAngle(arc.Center, pickPoint));
             bool extendStart = clickParameter <= 0.5d;
-            double currentSweep = System.Math.Abs(arc.SweepAngle);
-            int directionSign = System.Math.Sign(arc.SweepAngle);
+            double currentSweep = Math.Abs(arc.SweepAngle);
+            int directionSign = Math.Sign(arc.SweepAngle);
 
             if (extendStart)
             {
@@ -109,26 +117,30 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                     .OrderBy(item => item.ReverseDistance)
                     .FirstOrDefault();
                 if (candidate == null)
-                    return null;
+                    return Array.Empty<Entity>();
 
                 double newSweep = arc.SweepAngle + (directionSign * candidate.ReverseDistance);
-                return CreateArc(arc, candidate.Angle, newSweep);
+                var result = CreateArc(arc, candidate.Angle, newSweep);
+                return result == null ? Array.Empty<Entity>() : new[] { (Entity)result };
             }
+            else
+            {
+                var endCandidate = intersections
+                    .Where(item => item.ForwardDistance > currentSweep + Epsilon)
+                    .OrderBy(item => item.ForwardDistance)
+                    .FirstOrDefault();
+                if (endCandidate == null)
+                    return Array.Empty<Entity>();
 
-            var endCandidate = intersections
-                .Where(item => item.ForwardDistance > currentSweep + Epsilon)
-                .OrderBy(item => item.ForwardDistance)
-                .FirstOrDefault();
-            if (endCandidate == null)
-                return null;
-
-            double extension = endCandidate.ForwardDistance - currentSweep;
-            return CreateArc(arc, arc.StartAngle, arc.SweepAngle + (directionSign * extension));
+                double extension = endCandidate.ForwardDistance - currentSweep;
+                var result = CreateArc(arc, arc.StartAngle, arc.SweepAngle + (directionSign * extension));
+                return result == null ? Array.Empty<Entity>() : new[] { (Entity)result };
+            }
         }
 
         private static Arc CreateArc(Arc source, double startAngle, double sweepAngle)
         {
-            if (System.Math.Abs(sweepAngle) <= Epsilon)
+            if (Math.Abs(sweepAngle) <= Epsilon)
                 return null;
 
             return new Arc(source.Center, source.Radius, startAngle, sweepAngle)
@@ -137,9 +149,5 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             };
         }
 
-        private static bool IsSupportedBoundary(Entity boundary)
-        {
-            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc || boundary is Rectangle;
-        }
     }
 }

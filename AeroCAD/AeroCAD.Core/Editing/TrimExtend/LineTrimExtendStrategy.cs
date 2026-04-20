@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -11,73 +12,76 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Line && boundaries.Any(IsSupportedBoundary);
+            return target is Line && boundaries.Any(TrimExtendSupport.IsSupportedBoundary);
         }
 
         public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Line && boundaries.Any(IsSupportedBoundary);
+            return target is Line && boundaries.Any(TrimExtendSupport.IsSupportedBoundary);
         }
 
-        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var line = target as Line;
             if (line == null)
-                return null;
+                return Array.Empty<Entity>();
 
             var intersections = boundaries
-                .Where(IsSupportedBoundary)
+                .Where(TrimExtendSupport.IsSupportedBoundary)
                 .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary))
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
                 .OrderBy(item => item.Parameter)
                 .ToList();
 
             if (intersections.Count == 0)
-                return null;
+                return Array.Empty<Entity>();
 
             double clickParameter = ProjectParameter(line, pickPoint);
 
             if (intersections.Count == 1)
             {
                 return clickParameter <= intersections[0].Parameter
-                    ? CreateLine(intersections[0].Point, line.EndPoint, line.Thickness)
-                    : CreateLine(line.StartPoint, intersections[0].Point, line.Thickness);
+                    ? new[] { CreateLine(intersections[0].Point, line.EndPoint, line.Thickness) }
+                    : new[] { CreateLine(line.StartPoint, intersections[0].Point, line.Thickness) };
             }
 
             if (clickParameter < intersections[0].Parameter)
-                return CreateLine(intersections[0].Point, line.EndPoint, line.Thickness);
+                return new[] { CreateLine(intersections[0].Point, line.EndPoint, line.Thickness) };
 
             if (clickParameter > intersections[intersections.Count - 1].Parameter)
-                return CreateLine(line.StartPoint, intersections[intersections.Count - 1].Point, line.Thickness);
+                return new[] { CreateLine(line.StartPoint, intersections[intersections.Count - 1].Point, line.Thickness) };
 
-            // Click is between intersections — trim out the segment containing the click
-            var left = intersections.Last(item => item.Parameter <= clickParameter);
-            var right = intersections.First(item => item.Parameter >= clickParameter);
+            // Click is between intersections — trim out the segment containing the click, return both remaining pieces
+            var left = intersections.LastOrDefault(item => item.Parameter <= clickParameter);
+            var right = intersections.FirstOrDefault(item => item.Parameter >= clickParameter);
             if (left == null || right == null || left == right)
-                return null;
+                return Array.Empty<Entity>();
 
-            // Return the longer remaining piece
-            double leftLength = left.Parameter;
-            double rightLength = 1d - right.Parameter;
-            return leftLength >= rightLength
-                ? CreateLine(line.StartPoint, left.Point, line.Thickness)
-                : CreateLine(right.Point, line.EndPoint, line.Thickness);
+            var results = new List<Entity>(2);
+
+            if ((left.Point - line.StartPoint).LengthSquared > Epsilon)
+                results.Add(CreateLine(line.StartPoint, left.Point, line.Thickness));
+
+            if ((line.EndPoint - right.Point).LengthSquared > Epsilon)
+                results.Add(CreateLine(right.Point, line.EndPoint, line.Thickness));
+
+            return results;
         }
 
-        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var line = target as Line;
             if (line == null)
-                return null;
+                return Array.Empty<Entity>();
 
             var intersections = boundaries
-                .Where(IsSupportedBoundary)
-                .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary))
+                .Where(TrimExtendSupport.IsSupportedBoundary)
+                .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary, restrictTargetToSegment: false))
                 .OrderBy(item => item.Parameter)
                 .ToList();
 
             if (intersections.Count == 0)
-                return null;
+                return Array.Empty<Entity>();
 
             double clickParameter = ProjectParameter(line, pickPoint);
             bool extendStart = clickParameter <= 0.5d;
@@ -90,8 +94,8 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                     .FirstOrDefault();
 
                 return candidate == null
-                    ? null
-                    : CreateLine(candidate.Point, line.EndPoint, line.Thickness);
+                    ? Array.Empty<Entity>()
+                    : new[] { CreateLine(candidate.Point, line.EndPoint, line.Thickness) };
             }
 
             var endCandidate = intersections
@@ -100,16 +104,13 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 .FirstOrDefault();
 
             return endCandidate == null
-                ? null
-                : CreateLine(line.StartPoint, endCandidate.Point, line.Thickness);
+                ? Array.Empty<Entity>()
+                : new[] { CreateLine(line.StartPoint, endCandidate.Point, line.Thickness) };
         }
 
         private static Line CreateLine(Point start, Point end, double thickness)
         {
-            return new Line(start, end)
-            {
-                Thickness = thickness
-            };
+            return new Line(start, end) { Thickness = thickness };
         }
 
         private static double ProjectParameter(Line line, Point point)
@@ -123,9 +124,5 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return ((toPoint.X * direction.X) + (toPoint.Y * direction.Y)) / lengthSq;
         }
 
-        private static bool IsSupportedBoundary(Entity boundary)
-        {
-            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc || boundary is Rectangle;
-        }
     }
 }

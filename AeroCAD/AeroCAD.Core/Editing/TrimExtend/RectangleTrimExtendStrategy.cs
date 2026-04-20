@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -6,7 +7,7 @@ using Primusz.AeroCAD.Core.Drawing.Entities;
 namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 {
     /// <summary>
-    /// Converts Rectangle to a closed Polyline (4 sides) and delegates trim/extend to PolylineTrimExtendStrategy.
+    /// Converts Rectangle to a closed Polyline (4 sides) and delegates trim to PolylineTrimExtendStrategy.
     /// The result is always a Polyline since trimming a rectangle removes a corner or a side segment.
     /// </summary>
     public class RectangleTrimExtendStrategy : IEntityTrimExtendStrategy
@@ -15,7 +16,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Rectangle && boundaries.Any(IsSupportedBoundary);
+            return target is Rectangle && boundaries.Any(TrimExtendSupport.IsSupportedBoundary);
         }
 
         public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
@@ -23,19 +24,19 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return false;
         }
 
-        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var rect = target as Rectangle;
             if (rect == null)
-                return null;
+                return Array.Empty<Entity>();
 
             var polyline = ToClosedPolyline(rect);
             return PolylineStrategy.CreateTrimmed(boundaries, polyline, pickPoint);
         }
 
-        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
-            return null;
+            return Array.Empty<Entity>();
         }
 
         private static Polyline ToClosedPolyline(Rectangle rect)
@@ -51,9 +52,5 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             };
         }
 
-        private static bool IsSupportedBoundary(Entity boundary)
-        {
-            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc || boundary is Rectangle;
-        }
     }
 }

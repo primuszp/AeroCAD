@@ -69,7 +69,8 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             HighlightTarget(host, pick);
-            var previewEntity = trimService?.CreateTrimmed(boundaryEntities, pick, rawPoint);
+            var results = trimService?.CreateTrimmed(boundaryEntities, pick, rawPoint);
+            var previewEntity = results?.FirstOrDefault();
             var color = host.ToolService.GetService<ICadDocumentService>()?.GetLayerForEntity(pick)?.Color
                 ?? System.Windows.Media.Colors.White;
             rubberObject.Preview = host.ToolService.GetService<ITransientEntityPreviewService>()?.CreatePreview(previewEntity, color);
@@ -86,11 +87,8 @@ namespace Primusz.AeroCAD.Core.Tools
                 var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
                 if (picked != null && !boundaryEntities.Contains(picked))
                 {
-                    // Detach from target-highlight tracking before promoting to boundary
                     if (ReferenceEquals(highlightedTargetEntity, picked))
-                    {
                         highlightedTargetEntity = null;
-                    }
                     boundaryEntities.Add(picked);
                     HighlightBoundary(picked);
                 }
@@ -103,28 +101,27 @@ namespace Primusz.AeroCAD.Core.Tools
             if (target == null)
                 return InteractiveCommandResult.HandledOnly();
 
-            var result = trimService?.CreateTrimmed(boundaryEntities, target, rawPoint);
-            if (result == null)
+            var results = trimService?.CreateTrimmed(boundaryEntities, target, rawPoint);
+            if (results == null || results.Count == 0)
                 return InteractiveCommandResult.HandledOnly();
 
-            var command = target.GetType() == result.GetType()
-                ? (IUndoableCommand)new ModifyEntityCommand(
-                    target,
-                    target.Clone(),
-                    result,
-                    "Trim Entity",
-                    () => host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update())
-                : new ReplaceEntityCommand(
-                    documentService,
-                    target,
-                    result,
-                    "Trim Entity",
-                    () => host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update(),
-                    selectionManager);
+            var overlayUpdate = (System.Action)(() => host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update());
+            IUndoableCommand command;
+
+            if (results.Count == 1)
+            {
+                var result = results[0];
+                command = target.GetType() == result.GetType()
+                    ? (IUndoableCommand)new ModifyEntityCommand(target, target.Clone(), result, "Trim Entity", overlayUpdate)
+                    : new ReplaceEntityCommand(documentService, target, result, "Trim Entity", overlayUpdate, selectionManager);
+            }
+            else
+            {
+                command = new SplitEntityCommand(documentService, target, results, "Trim Entity", overlayUpdate, selectionManager);
+            }
 
             host.ToolService.GetService<IUndoRedoService>()?.Execute(command);
             ClearTargetHighlight(host);
-            // Stay in target step — user can trim more
             return InteractiveCommandResult.HandledOnly();
         }
 

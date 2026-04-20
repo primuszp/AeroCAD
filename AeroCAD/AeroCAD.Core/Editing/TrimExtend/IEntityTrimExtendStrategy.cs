@@ -10,8 +10,8 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target);
 
-        Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint);
+        IReadOnlyList<Entity> CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint);
 
-        Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint);
+        IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint);
     }
 }

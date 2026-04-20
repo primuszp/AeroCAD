@@ -13,18 +13,23 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         public static IReadOnlyList<LineIntersectionPoint> GetLineBoundaryIntersections(Line target, Entity boundary)
         {
+            return GetLineBoundaryIntersections(target, boundary, restrictTargetToSegment: true);
+        }
+
+        public static IReadOnlyList<LineIntersectionPoint> GetLineBoundaryIntersections(Line target, Entity boundary, bool restrictTargetToSegment)
+        {
             if (boundary is Line boundaryLine)
-                return GetLineLineIntersections(target, boundaryLine);
+                return GetLineLineIntersections(target, boundaryLine, restrictTargetToSegment);
 
             if (boundary is Circle boundaryCircle)
-                return GetLineCircleIntersections(target, boundaryCircle);
+                return GetLineCircleIntersections(target, boundaryCircle, restrictTargetToSegment);
 
             if (boundary is Polyline boundaryPolyline)
-                return GetPolylineLineIntersections(target, boundaryPolyline);
+                return GetPolylineLineIntersections(target, boundaryPolyline, restrictTargetToSegment);
 
             if (boundary is Arc boundaryArc)
             {
-                return GetLineCircleIntersections(target, new Circle(boundaryArc.Center, boundaryArc.Radius))
+                return GetLineCircleIntersections(target, new Circle(boundaryArc.Center, boundaryArc.Radius), restrictTargetToSegment)
                     .Where(item => CircularGeometry.IsAngleOnArc(
                         CircularGeometry.GetAngle(boundaryArc.Center, item.Point),
                         boundaryArc.StartAngle,
@@ -33,7 +38,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             }
 
             if (boundary is Rectangle boundaryRect)
-                return GetRectangleLineIntersections(target, boundaryRect);
+                return GetRectangleLineIntersections(target, boundaryRect, restrictTargetToSegment);
 
             return Array.Empty<LineIntersectionPoint>();
         }
@@ -42,7 +47,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
         {
             if (boundary is Line boundaryLine)
             {
-                return GetLineCircleIntersections(boundaryLine, new Circle(center, radius))
+                return GetLineCircleIntersections(boundaryLine, new Circle(center, radius), restrictTargetToSegment: true)
                     .Select(item => new CircularIntersectionPoint(item.Point, CircularGeometry.GetAngle(center, item.Point)))
                     .ToList();
             }
@@ -69,7 +74,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return Array.Empty<CircularIntersectionPoint>();
         }
 
-        private static IReadOnlyList<LineIntersectionPoint> GetPolylineLineIntersections(Line target, Polyline boundary)
+        private static IReadOnlyList<LineIntersectionPoint> GetPolylineLineIntersections(Line target, Polyline boundary, bool restrictTargetToSegment)
         {
             var intersections = new List<LineIntersectionPoint>();
             if (boundary?.Points == null || boundary.Points.Count < 2)
@@ -78,16 +83,18 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             for (int i = 0; i < boundary.Points.Count - 1; i++)
             {
                 var boundarySegment = new Line(boundary.Points[i], boundary.Points[i + 1]);
-                intersections.AddRange(GetLineLineIntersections(target, boundarySegment));
+                intersections.AddRange(GetLineLineIntersections(target, boundarySegment, restrictTargetToSegment));
             }
 
-            return intersections
-                .GroupBy(item => Math.Round(item.Parameter, 9))
-                .Select(group => group.First())
-                .ToList();
+            return TrimExtendIntersectionDeduper.ByParameter(intersections, item => item.Parameter, 1e-9).ToList();
         }
 
         private static IReadOnlyList<CircularIntersectionPoint> GetPolylineCircleIntersections(Point center, double radius, Polyline boundary)
+        {
+            return GetPolylineCircleIntersections(center, radius, boundary, restrictTargetToSegment: true);
+        }
+
+        private static IReadOnlyList<CircularIntersectionPoint> GetPolylineCircleIntersections(Point center, double radius, Polyline boundary, bool restrictTargetToSegment)
         {
             var intersections = new List<CircularIntersectionPoint>();
             if (boundary?.Points == null || boundary.Points.Count < 2)
@@ -98,17 +105,14 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             {
                 var segment = new Line(boundary.Points[i], boundary.Points[i + 1]);
                 intersections.AddRange(
-                    GetLineCircleIntersections(segment, circle)
+                    GetLineCircleIntersections(segment, circle, restrictTargetToSegment)
                         .Select(item => new CircularIntersectionPoint(item.Point, CircularGeometry.GetAngle(center, item.Point))));
             }
 
-            return intersections
-                .GroupBy(item => Math.Round(item.Angle, 9))
-                .Select(group => group.First())
-                .ToList();
+            return TrimExtendIntersectionDeduper.ByAngle(intersections, item => item.Angle, 1e-9).ToList();
         }
 
-        private static IReadOnlyList<LineIntersectionPoint> GetLineLineIntersections(Line target, Line boundary)
+        private static IReadOnlyList<LineIntersectionPoint> GetLineLineIntersections(Line target, Line boundary, bool restrictTargetToSegment)
         {
             Vector r = target.EndPoint - target.StartPoint;
             Vector s = boundary.EndPoint - boundary.StartPoint;
@@ -121,6 +125,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             double t = Cross(qp, s) / denominator;
             double u = Cross(qp, r) / denominator;
 
+            if (restrictTargetToSegment && (t < -Epsilon || t > 1d + Epsilon))
+                return Array.Empty<LineIntersectionPoint>();
+
             if (u < -Epsilon || u > 1d + Epsilon)
                 return Array.Empty<LineIntersectionPoint>();
 
@@ -131,6 +138,11 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
         }
 
         private static IReadOnlyList<LineIntersectionPoint> GetLineCircleIntersections(Line target, Circle boundary)
+        {
+            return GetLineCircleIntersections(target, boundary, restrictTargetToSegment: true);
+        }
+
+        private static IReadOnlyList<LineIntersectionPoint> GetLineCircleIntersections(Line target, Circle boundary, bool restrictTargetToSegment)
         {
             Vector d = target.EndPoint - target.StartPoint;
             Vector f = target.StartPoint - boundary.Center;
@@ -161,7 +173,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (Math.Abs(t2 - t1) > Epsilon)
                 intersections.Add(new LineIntersectionPoint(target.StartPoint + (d * t2), t2));
 
-            return intersections;
+            return restrictTargetToSegment
+                ? intersections.Where(item => item.Parameter >= -Epsilon && item.Parameter <= 1d + Epsilon).ToList()
+                : intersections;
         }
 
         private static IReadOnlyList<CircularIntersectionPoint> GetCircleCircleIntersections(
@@ -172,12 +186,18 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
         {
             Vector delta = secondCenter - firstCenter;
             double distance = delta.Length;
-            if (distance <= Epsilon || distance > firstRadius + secondRadius + Epsilon || distance < Math.Abs(firstRadius - secondRadius) - Epsilon)
+            double radiusSum = firstRadius + secondRadius;
+            double radiusDiff = Math.Abs(firstRadius - secondRadius);
+            double relTol = Epsilon * (firstRadius + secondRadius + 1d);
+
+            if (distance <= relTol
+                || distance > radiusSum + relTol
+                || distance < radiusDiff - relTol)
                 return Array.Empty<CircularIntersectionPoint>();
 
             double a = ((firstRadius * firstRadius) - (secondRadius * secondRadius) + (distance * distance)) / (2d * distance);
             double hSq = (firstRadius * firstRadius) - (a * a);
-            if (hSq < -Epsilon)
+            if (hSq < -relTol * firstRadius)
                 return Array.Empty<CircularIntersectionPoint>();
 
             if (hSq < 0d)
@@ -196,7 +216,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 new CircularIntersectionPoint(firstPoint, CircularGeometry.GetAngle(firstCenter, firstPoint))
             };
 
-            if (h > Epsilon)
+            if (h > relTol)
             {
                 var secondPoint = midpoint - offset;
                 intersections.Add(new CircularIntersectionPoint(secondPoint, CircularGeometry.GetAngle(firstCenter, secondPoint)));
@@ -205,22 +225,24 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return intersections;
         }
 
-        private static IReadOnlyList<LineIntersectionPoint> GetRectangleLineIntersections(Line target, Rectangle rect)
+        private static IReadOnlyList<LineIntersectionPoint> GetRectangleLineIntersections(Line target, Rectangle rect, bool restrictTargetToSegment)
         {
             var corners = GetRectangleCorners(rect);
             var intersections = new List<LineIntersectionPoint>();
             for (int i = 0; i < 4; i++)
             {
                 var segment = new Line(corners[i], corners[(i + 1) % 4]);
-                intersections.AddRange(GetLineLineIntersections(target, segment));
+                intersections.AddRange(GetLineLineIntersections(target, segment, restrictTargetToSegment));
             }
-            return intersections
-                .GroupBy(item => Math.Round(item.Parameter, 9))
-                .Select(group => group.First())
-                .ToList();
+            return TrimExtendIntersectionDeduper.ByParameter(intersections, item => item.Parameter, 1e-9).ToList();
         }
 
         private static IReadOnlyList<CircularIntersectionPoint> GetRectangleCircleIntersections(Point center, double radius, Rectangle rect)
+        {
+            return GetRectangleCircleIntersections(center, radius, rect, restrictTargetToSegment: true);
+        }
+
+        private static IReadOnlyList<CircularIntersectionPoint> GetRectangleCircleIntersections(Point center, double radius, Rectangle rect, bool restrictTargetToSegment)
         {
             var corners = GetRectangleCorners(rect);
             var circle = new Circle(center, radius);
@@ -229,13 +251,10 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             {
                 var segment = new Line(corners[i], corners[(i + 1) % 4]);
                 intersections.AddRange(
-                    GetLineCircleIntersections(segment, circle)
+                    GetLineCircleIntersections(segment, circle, restrictTargetToSegment)
                         .Select(item => new CircularIntersectionPoint(item.Point, CircularGeometry.GetAngle(center, item.Point))));
             }
-            return intersections
-                .GroupBy(item => Math.Round(item.Angle, 9))
-                .Select(group => group.First())
-                .ToList();
+            return TrimExtendIntersectionDeduper.ByAngle(intersections, item => item.Angle, 1e-9).ToList();
         }
 
         private static Point[] GetRectangleCorners(Rectangle rect)

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroCAD.View", "AeroCAD.Vie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroCAD.Core", "AeroCAD.Core\AeroCAD.Core.csproj", "{9A435FD2-5EC8-42A3-8F1F-EEF4836FA443}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroCAD.Core.Tests", "AeroCAD.Core.Tests\AeroCAD.Core.Tests.csproj", "{8C1D0F7A-2C27-4C3C-8E21-3C4F1D7AE2A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{9A435FD2-5EC8-42A3-8F1F-EEF4836FA443}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A435FD2-5EC8-42A3-8F1F-EEF4836FA443}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A435FD2-5EC8-42A3-8F1F-EEF4836FA443}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C1D0F7A-2C27-4C3C-8E21-3C4F1D7AE2A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C1D0F7A-2C27-4C3C-8E21-3C4F1D7AE2A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C1D0F7A-2C27-4C3C-8E21-3C4F1D7AE2A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C1D0F7A-2C27-4C3C-8E21-3C4F1D7AE2A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

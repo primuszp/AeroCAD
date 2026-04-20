@@ -69,7 +69,8 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             HighlightTarget(host, pick);
-            var previewEntity = extendService?.CreateExtended(boundaryEntities, pick, rawPoint);
+            var results = extendService?.CreateExtended(boundaryEntities, pick, rawPoint);
+            var previewEntity = results?.FirstOrDefault();
             var color = host.ToolService.GetService<ICadDocumentService>()?.GetLayerForEntity(pick)?.Color
                 ?? System.Windows.Media.Colors.White;
             rubberObject.Preview = host.ToolService.GetService<ITransientEntityPreviewService>()?.CreatePreview(previewEntity, color);
@@ -86,11 +87,8 @@ namespace Primusz.AeroCAD.Core.Tools
                 var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
                 if (picked != null && !boundaryEntities.Contains(picked))
                 {
-                    // Detach from target-highlight tracking before promoting to boundary
                     if (ReferenceEquals(highlightedTargetEntity, picked))
-                    {
                         highlightedTargetEntity = null;
-                    }
                     boundaryEntities.Add(picked);
                     HighlightBoundary(picked);
                 }
@@ -103,28 +101,19 @@ namespace Primusz.AeroCAD.Core.Tools
             if (target == null)
                 return InteractiveCommandResult.HandledOnly();
 
-            var result = extendService?.CreateExtended(boundaryEntities, target, rawPoint);
-            if (result == null)
+            var results = extendService?.CreateExtended(boundaryEntities, target, rawPoint);
+            if (results == null || results.Count == 0)
                 return InteractiveCommandResult.HandledOnly();
 
+            // Extend always returns a single entity (closed shapes cannot be extended)
+            var result = results[0];
+            var overlayUpdate = (System.Action)(() => host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update());
             var command = target.GetType() == result.GetType()
-                ? (IUndoableCommand)new ModifyEntityCommand(
-                    target,
-                    target.Clone(),
-                    result,
-                    "Extend Entity",
-                    () => host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update())
-                : new ReplaceEntityCommand(
-                    documentService,
-                    target,
-                    result,
-                    "Extend Entity",
-                    () => host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update(),
-                    selectionManager);
+                ? (IUndoableCommand)new ModifyEntityCommand(target, target.Clone(), result, "Extend Entity", overlayUpdate)
+                : new ReplaceEntityCommand(documentService, target, result, "Extend Entity", overlayUpdate, selectionManager);
 
             host.ToolService.GetService<IUndoRedoService>()?.Execute(command);
             ClearTargetHighlight(host);
-            // Stay in target step — user can extend more
             return InteractiveCommandResult.HandledOnly();
         }
 

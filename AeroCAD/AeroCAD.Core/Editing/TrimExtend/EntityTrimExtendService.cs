@@ -27,7 +27,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return ResolveExtendStrategy(boundaries, target) != null;
         }
 
-        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var strategy = ResolveTrimStrategy(boundaries, target);
             if (strategy == null)
@@ -36,7 +36,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return strategy.CreateTrimmed(boundaries, target, pickPoint);
         }
 
-        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var strategy = ResolveExtendStrategy(boundaries, target);
             if (strategy == null)

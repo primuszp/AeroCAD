@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
 using Primusz.AeroCAD.Core.Editing.MovePreviews;
+using Primusz.AeroCAD.Core.Editing.Offsets;
 using Primusz.AeroCAD.Core.Editing.TransientPreviews;
 using Primusz.AeroCAD.Core.Editing.TrimExtend;
 using Primusz.AeroCAD.Core.Rendering;
@@ -16,6 +17,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         protected override IGripPreviewStrategy GripPreviewStrategy => new RectangleGripPreviewStrategy();
         protected override ISelectionMovePreviewStrategy SelectionMovePreviewStrategy => new RectangleSelectionMovePreviewStrategy();
         protected override ITransientEntityPreviewStrategy TransientEntityPreviewStrategy => new RectangleTransientEntityPreviewStrategy();
+        protected override IEntityOffsetStrategy OffsetStrategy => new RectangleOffsetStrategy();
         protected override IEntityTrimExtendStrategy TrimExtendStrategy => new RectangleTrimExtendStrategy();
 
         protected override IEnumerable<InteractiveCommandRegistration> CreateInteractiveCommands()

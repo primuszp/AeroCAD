@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -9,10 +10,11 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     public class CircleTrimExtendStrategy : IEntityTrimExtendStrategy
     {
         private const double Epsilon = 1e-9;
+        private const double AngleDedupTolerance = 1e-6;
 
         public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)
         {
-            return target is Circle && boundaries.Any(IsSupportedBoundary);
+            return target is Circle && boundaries.Any(TrimExtendSupport.IsSupportedBoundary);
         }
 
         public bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target)
@@ -20,20 +22,23 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return false;
         }
 
-        public Entity CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateTrimmed(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
             var circle = target as Circle;
             if (circle == null)
-                return null;
+                return Array.Empty<Entity>();
 
             var intersections = boundaries
-                .Where(IsSupportedBoundary)
+                .Where(TrimExtendSupport.IsSupportedBoundary)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(circle.Center, circle.Radius, boundary))
+                .OrderBy(item => item.Angle)
+                .GroupBy(item => Math.Round(item.Angle / AngleDedupTolerance))
+                .Select(g => g.First())
                 .OrderBy(item => item.Angle)
                 .ToList();
 
             if (intersections.Count < 2)
-                return null;
+                return Array.Empty<Entity>();
 
             double pickAngle = CircularGeometry.GetAngle(circle.Center, pickPoint);
             int nextIndex = intersections.FindIndex(item => item.Angle > pickAngle + Epsilon);
@@ -47,7 +52,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             double candidateSweepContainingPick = CircularGeometry.GetDirectionalDistance(previousAngle, nextAngle, 1);
             double oppositeSweep = CircularGeometry.TwoPi - candidateSweepContainingPick;
             if (candidateSweepContainingPick <= Epsilon || oppositeSweep <= Epsilon)
-                return null;
+                return Array.Empty<Entity>();
 
             var candidateContainingPick = new Arc(circle.Center, circle.Radius, previousAngle, candidateSweepContainingPick)
             {
@@ -60,22 +65,15 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 candidateContainingPick.SweepAngle);
 
             if (!pickIsOnCandidate)
-                return candidateContainingPick;
+                return new[] { (Entity)candidateContainingPick };
 
-            return new Arc(circle.Center, circle.Radius, nextAngle, oppositeSweep)
-            {
-                Thickness = circle.Thickness
-            };
+            return new[] { (Entity)new Arc(circle.Center, circle.Radius, nextAngle, oppositeSweep) { Thickness = circle.Thickness } };
         }
 
-        public Entity CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
+        public IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
         {
-            return null;
+            return Array.Empty<Entity>();
         }
 
-        private static bool IsSupportedBoundary(Entity boundary)
-        {
-            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc || boundary is Rectangle;
-        }
     }
 }

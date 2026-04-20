@@ -144,6 +144,11 @@ namespace Primusz.AeroCAD.Core.Drawing
                 ApplyCoordinateSpace(element);
                 element.InvalidateVisual();
             }
+
+            foreach (var overlay in Children.OfType<Layers.Overlay>())
+                overlay.Update();
+
+            GetRubberObject()?.InvalidateVisual();
         }
 
         public RubberObject GetRubberObject()
