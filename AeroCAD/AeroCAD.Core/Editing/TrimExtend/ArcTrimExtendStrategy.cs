@@ -28,8 +28,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (arc == null)
                 return Array.Empty<Entity>();
 
-            var intersections = boundaries
-                .Where(TrimExtendSupport.IsSupportedBoundary)
+            var intersections = TrimExtendSupport.GetSupportedBoundaries(boundaries)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Where(item => CircularGeometry.IsAngleOnArc(item.Angle, arc.StartAngle, arc.SweepAngle))
                 .Select(item => new { item.Angle, Parameter = CircularGeometry.GetArcParameter(arc.StartAngle, arc.SweepAngle, item.Angle) })
@@ -82,8 +81,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (arc == null)
                 return Array.Empty<Entity>();
 
-            var intersections = boundaries
-                .Where(TrimExtendSupport.IsSupportedBoundary)
+            var intersections = TrimExtendSupport.GetSupportedBoundaries(boundaries)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Select(item => new
                 {

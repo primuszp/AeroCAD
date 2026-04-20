@@ -26,8 +26,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (line == null)
                 return Array.Empty<Entity>();
 
-            var intersections = boundaries
-                .Where(TrimExtendSupport.IsSupportedBoundary)
+            var intersections = TrimExtendSupport.GetSupportedBoundaries(boundaries)
                 .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary))
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
                 .OrderBy(item => item.Parameter)
@@ -74,8 +73,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (line == null)
                 return Array.Empty<Entity>();
 
-            var intersections = boundaries
-                .Where(TrimExtendSupport.IsSupportedBoundary)
+            var intersections = TrimExtendSupport.GetSupportedBoundaries(boundaries)
                 .SelectMany(boundary => TrimExtendGeometry.GetLineBoundaryIntersections(line, boundary, restrictTargetToSegment: false))
                 .OrderBy(item => item.Parameter)
                 .ToList();

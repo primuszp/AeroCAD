@@ -23,6 +23,7 @@ namespace Primusz.AeroCAD.View.Controls
             switch (e.Key)
             {
                 case Key.Enter:
+                case Key.Space:
                     viewModel.SubmitCurrentInput();
                     scroll.ScrollToEnd();
                     e.Handled = true;

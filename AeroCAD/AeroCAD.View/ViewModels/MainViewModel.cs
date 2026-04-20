@@ -39,6 +39,7 @@ namespace Primusz.AeroCAD.View.ViewModels
         private readonly Viewport viewport;
         private string statusText = "Ready";
         private string activeToolName = string.Empty;
+        private string lastExecutedCommand = string.Empty;
 
         public MainViewModel(Viewport viewport)
         {
@@ -296,6 +297,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             var trimmedInput = (input ?? string.Empty).Trim();
             var normalized = trimmedInput.ToUpperInvariant();
             var token = commandFeedbackService?.ParseInput(trimmedInput) ?? CommandInputToken.Text(trimmedInput, trimmedInput);
+            var activeCommandName = commandFeedbackService?.ActiveCommandName;
 
             if (trimmedInput.Length == 0)
             {
@@ -303,6 +305,13 @@ namespace Primusz.AeroCAD.View.ViewModels
                 {
                     activeInteractiveTool.TryComplete();
                     RefreshViewportVisuals();
+                    if (!string.IsNullOrWhiteSpace(activeCommandName))
+                        lastExecutedCommand = activeCommandName;
+                }
+                else if (!string.IsNullOrWhiteSpace(lastExecutedCommand))
+                {
+                    if (commandRuntime.Execute(lastExecutedCommand))
+                        RefreshViewportVisuals();
                 }
                 return;
             }
@@ -310,11 +319,14 @@ namespace Primusz.AeroCAD.View.ViewModels
             if (activeInteractiveTool != null && activeInteractiveTool.TrySubmitToken(token))
             {
                 RefreshViewportVisuals();
+                if (!string.IsNullOrWhiteSpace(activeCommandName))
+                    lastExecutedCommand = activeCommandName;
                 return;
             }
 
             if (commandRuntime.TryResolveAndExecute(normalized))
             {
+                lastExecutedCommand = normalized;
                 RefreshViewportVisuals();
                 return;
             }

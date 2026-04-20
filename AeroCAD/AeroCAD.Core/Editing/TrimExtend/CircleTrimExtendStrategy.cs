@@ -28,8 +28,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (circle == null)
                 return Array.Empty<Entity>();
 
-            var intersections = boundaries
-                .Where(TrimExtendSupport.IsSupportedBoundary)
+            var intersections = TrimExtendSupport.GetSupportedBoundaries(boundaries)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(circle.Center, circle.Radius, boundary))
                 .OrderBy(item => item.Angle)
                 .GroupBy(item => Math.Round(item.Angle / AngleDedupTolerance))

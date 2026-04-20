@@ -11,7 +11,7 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class PolylineCommandController : CommandControllerBase
     {
-        private static readonly CommandKeywordOption CloseKeyword = new CommandKeywordOption("CLOSE", new[] { "CL" }, "Close the polyline.");
+        private static readonly CommandKeywordOption CloseKeyword = new CommandKeywordOption("CLOSE", new[] { "C" }, "Close the polyline.");
         private static readonly CommandKeywordOption UndoKeyword = new CommandKeywordOption("UNDO", new[] { "U" }, "Undo last point.");
         private static readonly CommandStep FirstPointStep = new CommandStep("FirstPoint", "Specify start point:");
         private static readonly CommandStep NextPointStep = new CommandStep("NextPoint", "Specify next point:", keywords: new[] { CloseKeyword, UndoKeyword });
