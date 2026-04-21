@@ -248,6 +248,12 @@ namespace Primusz.AeroCAD.Core.Drawing
             if (element == null)
                 return;
 
+            if (element is Layers.ViewportHostedScreenLayerBase)
+            {
+                element.RenderTransform = Transform.Identity;
+                return;
+            }
+
             if (GetCoordinateSpace(element) == ViewportCoordinateSpace.World)
                 element.RenderTransform = worldTransform;
             else
