@@ -81,7 +81,7 @@ namespace Primusz.AeroCAD.Core.Rendering
 
         private static PenCacheKey CreateBaseKey(Entity entity, Layer layer)
         {
-            return new PenCacheKey(ResolveColor(entity, layer), GetLineWeight(layer) * entity.Scale, 1.0d, GetLineStyle(layer));
+            return new PenCacheKey(ResolveColor(entity, layer), GetScreenLineWeight(layer, entity), 1.0d, GetLineStyle(layer));
         }
 
         private static PenCacheKey? CreateHighlightKey(Entity entity, Layer layer)
@@ -89,10 +89,10 @@ namespace Primusz.AeroCAD.Core.Rendering
             if (!entity.HasVisualHighlight)
                 return null;
 
-            double opacity = entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 0.65d : 0.9d;
-            double baseThickness = GetLineWeight(layer) * entity.Scale;
+            double opacity = entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 0.65d : 0.75d;
+            double baseThickness = GetScreenLineWeight(layer, entity);
             double outlineThickness = baseThickness +
-                ((entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 1.25d : 2.0d) * entity.Scale);
+                GetScreenExtraThickness(entity, entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 0.85d : 1.2d);
             return new PenCacheKey(ResolveColor(entity, layer), outlineThickness, opacity, GetLineStyle(layer));
         }
 
@@ -108,10 +108,10 @@ namespace Primusz.AeroCAD.Core.Rendering
                 (byte)(baseColor.G + ((255 - baseColor.G) * 0.65)),
                 (byte)(baseColor.B + ((255 - baseColor.B) * 0.65)));
 
-            double opacity = entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? (170d / 255d) : (220d / 255d);
-            double baseThickness = GetLineWeight(layer) * entity.Scale;
+            double opacity = entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? (170d / 255d) : (180d / 255d);
+            double baseThickness = GetScreenLineWeight(layer, entity);
             double glowThickness = baseThickness +
-                ((entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 3.25d : 5.0d) * entity.Scale);
+                GetScreenExtraThickness(entity, entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 2.25d : 3.25d);
             return new PenCacheKey(glowColor, glowThickness, opacity, GetLineStyle(layer));
         }
 
@@ -119,8 +119,20 @@ namespace Primusz.AeroCAD.Core.Rendering
         {
             var style = layer?.Style;
             double mm = style != null && style.LineWeight > 0d ? style.LineWeight : Default;
-            // Convert mm → screen pixels: 0.25 mm = 1 px (zoom-independent via entity.Scale)
             return mm * PixelsPerMm;
+        }
+
+        private static double GetScreenLineWeight(Layer layer, Entity entity)
+        {
+            double baseThickness = GetLineWeight(layer);
+            double zoom = entity != null && entity.Scale > 1e-6 ? entity.Scale : 1.0d;
+            return baseThickness / zoom;
+        }
+
+        private static double GetScreenExtraThickness(Entity entity, double extraWorldThickness)
+        {
+            double zoom = entity != null && entity.Scale > 1e-6 ? entity.Scale : 1.0d;
+            return extraWorldThickness / zoom;
         }
 
         private static LineStyle GetLineStyle(Layer layer)

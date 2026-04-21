@@ -6,21 +6,14 @@ using Primusz.AeroCAD.Core.Editor;
 
 namespace Primusz.AeroCAD.Core.Drawing.Layers
 {
-    public class GridLayer : FrameworkElement, IViewportSpaceElement, IViewportHostedElement
+    public class GridLayer : ViewportHostedScreenLayerBase
     {
-        private readonly Viewport viewport;
         private readonly IGridSettingsService gridSettingsService;
 
-        public ViewportCoordinateSpace CoordinateSpace => ViewportCoordinateSpace.Screen;
-
         public GridLayer(Viewport viewport, IGridSettingsService gridSettingsService)
+            : base(viewport, 0)
         {
-            this.viewport = viewport;
             this.gridSettingsService = gridSettingsService;
-            IsHitTestVisible = false;
-
-            viewport.Children.Add(this);
-            Panel.SetZIndex(this, 0);
 
             if (this.gridSettingsService != null)
                 this.gridSettingsService.StateChanged += (s, e) => InvalidateVisual();
@@ -53,12 +46,6 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                 gridSettingsService.MinimumScreenSpacing,
                 gridSettingsService.MinorLineColor,
                 gridSettingsService.MajorLineColor);
-        }
-
-        public void UpdateViewportBounds(Size viewportSize)
-        {
-            Width = viewportSize.Width;
-            Height = viewportSize.Height;
         }
 
         private void DrawGridLines(

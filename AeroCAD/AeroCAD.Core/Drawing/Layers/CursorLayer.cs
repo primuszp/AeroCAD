@@ -6,23 +6,17 @@ using System.Windows.Media;
 
 namespace Primusz.AeroCAD.Core.Drawing.Layers
 {
-    public class CursorLayer : FrameworkElement, IViewportSpaceElement, IViewportHostedElement
+    public class CursorLayer : ViewportHostedScreenLayerBase
     {
         private Point mouseScreenPos;
-        private readonly Viewport viewport;
         private readonly Pen crosshairPen;
         private readonly Pen pickboxPen;
         private readonly double pickboxSize = 10.0;
 
-        public ViewportCoordinateSpace CoordinateSpace => ViewportCoordinateSpace.Screen;
-
         public CursorLayer(Viewport viewport)
+            : base(viewport, 2000)
         {
-            this.viewport = viewport;
-            IsHitTestVisible = false;
             SnapsToDevicePixels = true;
-            viewport.Children.Add(this);
-            Panel.SetZIndex(this, 2000);
 
             crosshairPen = new Pen(Brushes.White, 1.0);
             pickboxPen = new Pen(Brushes.White, 1.0);
@@ -92,14 +86,6 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                 double half = pickboxSize / 2.0;
                 context.DrawRectangle(null, pickboxPen, new Rect(center.X - half, center.Y - half, pickboxSize, pickboxSize));
             }
-        }
-
-        public void UpdateViewportBounds(Size viewportSize)
-        {
-            Width = viewportSize.Width;
-            Height = viewportSize.Height;
-            InvalidateMeasure();
-            InvalidateArrange();
         }
 
         private Point GetSnappedScreenPos()

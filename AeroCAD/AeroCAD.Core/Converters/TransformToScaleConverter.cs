@@ -9,9 +9,19 @@ namespace Primusz.AeroCAD.Core.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is ScaleTransform transform)
+            if (value is ScaleTransform scaleTransform)
             {
-                return transform.ScaleX;
+                return System.Math.Abs(scaleTransform.ScaleX);
+            }
+
+            if (value is MatrixTransform matrixTransform)
+            {
+                return System.Math.Abs(matrixTransform.Matrix.M11);
+            }
+
+            if (value is Transform transform)
+            {
+                return System.Math.Abs(transform.Value.M11);
             }
 
             return 1.0;
