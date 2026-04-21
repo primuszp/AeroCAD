@@ -205,11 +205,7 @@ namespace Primusz.AeroCAD.View.ViewModels
         {
             get
             {
-                var selectionLayer = ResolveSelectedEntitiesLayer();
-                if (selectionLayer != null || HasMixedSelectedEntityLayers())
-                    return selectionLayer;
-
-                return selectedLayer;
+                return GetDisplayedLayer();
             }
             set
             {
@@ -321,9 +317,9 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         public Layer GetActiveLayer()
         {
-            var displayLayer = GetDisplayedLayer();
-            if (displayLayer != null)
-                return displayLayer.Layer;
+            var selected = GetDisplayedLayer();
+            if (selected != null)
+                return selected.Layer;
 
             return GetCreationLayer();
         }
