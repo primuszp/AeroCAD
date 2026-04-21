@@ -21,5 +21,21 @@ namespace Primusz.AeroCAD.Core.Tests.TrimExtend
             Assert.NotNull(polyline);
             Assert.True(polyline.Points.Count >= 4);
         }
+
+        [Fact]
+        public void Trim_WithCircleBoundary_ReturnsPolyline()
+        {
+            var strategy = new RectangleTrimExtendStrategy();
+            var target = new Rectangle(new Point(0, 0), new Point(10, 10));
+            var boundaries = new List<Entity> { new Circle(new Point(5, 5), 6) };
+
+            var result = strategy.CreateTrimmed(boundaries, target, new Point(9, 5));
+
+            var polyline = Assert.Single(result) as Polyline;
+            Assert.NotNull(polyline);
+            Assert.True(polyline.Points.Count >= 4);
+            Assert.Contains(polyline.Points, p => System.Math.Abs(p.X - 10d) < 1e-6 && System.Math.Abs(p.Y - 1.683375209644602d) < 1e-6);
+            Assert.Contains(polyline.Points, p => System.Math.Abs(p.X - 10d) < 1e-6 && System.Math.Abs(p.Y - 8.316624790355398d) < 1e-6);
+        }
     }
 }

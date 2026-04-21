@@ -128,8 +128,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                 case nameof(LayerStyle.Color):
                 case nameof(LayerStyle.LineStyle):
                 case nameof(LayerStyle.LineWeight):
-                    RenderService?.InvalidateLayerCache(this);
-                    RefreshEntityVisuals();
+                    RefreshLayerRendering();
                     break;
                 case nameof(LayerStyle.IsVisible):
                 case nameof(LayerStyle.IsFrozen):
@@ -143,6 +142,12 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                     RefreshEntityVisuals();
                     break;
             }
+        }
+
+        private void RefreshLayerRendering()
+        {
+            RenderService?.InvalidateLayerCache(this);
+            RefreshEntityVisuals();
         }
 
         // Layer.OnRender is intentionally NOT overriding entity rendering.
@@ -308,4 +313,3 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         #endregion
     }
 }
-

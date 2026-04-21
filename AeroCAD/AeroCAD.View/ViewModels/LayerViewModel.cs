@@ -42,8 +42,7 @@ namespace Primusz.AeroCAD.View.ViewModels
                     return;
 
                 layer.Color = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(ColorText));
+                NotifyColorChanged();
             }
         }
 
@@ -57,8 +56,7 @@ namespace Primusz.AeroCAD.View.ViewModels
                 if (TryParseColor(value, out var color) && layer.Color != color)
                 {
                     layer.Color = color;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(ColorText));
+                    NotifyColorChanged();
                 }
             }
         }
@@ -98,8 +96,7 @@ namespace Primusz.AeroCAD.View.ViewModels
                     return;
 
                 layer.Style.IsVisible = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanBeActive));
+                NotifyCanBeActiveChanged();
             }
         }
 
@@ -112,8 +109,7 @@ namespace Primusz.AeroCAD.View.ViewModels
                     return;
 
                 layer.Style.IsFrozen = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanBeActive));
+                NotifyCanBeActiveChanged();
             }
         }
 
@@ -126,8 +122,7 @@ namespace Primusz.AeroCAD.View.ViewModels
                     return;
 
                 layer.Style.IsLocked = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanBeActive));
+                NotifyCanBeActiveChanged();
             }
         }
 
@@ -168,9 +163,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             switch (e.PropertyName)
             {
                 case nameof(LayerStyle.Color):
-                    OnPropertyChanged(nameof(Color));
-                    OnPropertyChanged(nameof(ColorText));
-                    RefreshColorBrush();
+                    NotifyColorChanged();
                     break;
                 case nameof(LayerStyle.LineStyle):
                     OnPropertyChanged(nameof(LineStyle));
@@ -179,16 +172,13 @@ namespace Primusz.AeroCAD.View.ViewModels
                     OnPropertyChanged(nameof(LineWeight));
                     break;
                 case nameof(LayerStyle.IsVisible):
-                    OnPropertyChanged(nameof(IsVisible));
-                    OnPropertyChanged(nameof(CanBeActive));
+                    NotifyCanBeActiveChanged();
                     break;
                 case nameof(LayerStyle.IsFrozen):
-                    OnPropertyChanged(nameof(IsFrozen));
-                    OnPropertyChanged(nameof(CanBeActive));
+                    NotifyCanBeActiveChanged();
                     break;
                 case nameof(LayerStyle.IsLocked):
-                    OnPropertyChanged(nameof(IsLocked));
-                    OnPropertyChanged(nameof(CanBeActive));
+                    NotifyCanBeActiveChanged();
                     break;
             }
         }
@@ -227,6 +217,21 @@ namespace Primusz.AeroCAD.View.ViewModels
 
             colorBrush = brush;
             OnPropertyChanged(nameof(ColorBrush));
+        }
+
+        private void NotifyColorChanged()
+        {
+            OnPropertyChanged(nameof(Color));
+            OnPropertyChanged(nameof(ColorText));
+            RefreshColorBrush();
+        }
+
+        private void NotifyCanBeActiveChanged()
+        {
+            OnPropertyChanged(nameof(IsVisible));
+            OnPropertyChanged(nameof(IsFrozen));
+            OnPropertyChanged(nameof(IsLocked));
+            OnPropertyChanged(nameof(CanBeActive));
         }
     }
 }

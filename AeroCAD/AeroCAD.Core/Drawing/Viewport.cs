@@ -138,12 +138,7 @@ namespace Primusz.AeroCAD.Core.Drawing
                 Translate.X,
                 ActualHeight + Translate.Y));
 
-            foreach (FrameworkElement element in Children.OfType<FrameworkElement>())
-            {
-                UpdateHostedElementBounds(element);
-                ApplyCoordinateSpace(element);
-                element.InvalidateVisual();
-            }
+            RefreshHostedElements();
 
             foreach (var overlay in Children.OfType<Layers.Overlay>())
                 overlay.Update();
@@ -275,6 +270,16 @@ namespace Primusz.AeroCAD.Core.Drawing
             Canvas.SetLeft(element, 0.0d);
             Canvas.SetTop(element, 0.0d);
             hostedElement.UpdateViewportBounds(new Size(ActualWidth, ActualHeight));
+        }
+
+        private void RefreshHostedElements()
+        {
+            foreach (FrameworkElement element in Children.OfType<FrameworkElement>())
+            {
+                UpdateHostedElementBounds(element);
+                ApplyCoordinateSpace(element);
+                element.InvalidateVisual();
+            }
         }
 
         private void EnsureCursorLayer()
