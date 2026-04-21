@@ -667,9 +667,7 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         private void RefreshViewportVisuals()
         {
-            viewport.GetRubberObject()?.InvalidateVisual();
             viewport.RefreshView();
-            viewport.InvalidateVisual();
         }
 
         private bool HasSelectedGrips()
