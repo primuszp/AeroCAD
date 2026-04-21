@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Media;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
+using static Primusz.AeroCAD.Core.Drawing.Layers.LineWeightPalette;
 
 namespace Primusz.AeroCAD.Core.Rendering
 {
@@ -15,6 +16,11 @@ namespace Primusz.AeroCAD.Core.Rendering
         public EntityRenderService(IEnumerable<IEntityRenderStrategy> strategies)
         {
             this.strategies = strategies?.ToList() ?? throw new ArgumentNullException(nameof(strategies));
+        }
+
+        public void InvalidateLayerCache(Layer layer)
+        {
+            penCache.Clear();
         }
 
         public void Render(Entity entity, Layer layer, EntityVisual visual)
@@ -55,7 +61,7 @@ namespace Primusz.AeroCAD.Core.Rendering
 
             var pen = new Pen(brush, key.Value.Thickness)
             {
-                DashStyle = DashStyles.Solid,
+                DashStyle = GetDashStyle(key.Value.LineStyle),
                 StartLineCap = PenLineCap.Round,
                 EndLineCap = PenLineCap.Round,
                 LineJoin = PenLineJoin.Round
@@ -68,9 +74,14 @@ namespace Primusz.AeroCAD.Core.Rendering
             return pen;
         }
 
+        private static Color ResolveColor(Entity entity, Layer layer)
+        {
+            return entity.Color.Resolve(layer.Color);
+        }
+
         private static PenCacheKey CreateBaseKey(Entity entity, Layer layer)
         {
-            return new PenCacheKey(layer.Color, entity.Thickness * entity.Scale, 1.0d);
+            return new PenCacheKey(ResolveColor(entity, layer), GetLineWeight(layer) * entity.Scale, 1.0d, GetLineStyle(layer));
         }
 
         private static PenCacheKey? CreateHighlightKey(Entity entity, Layer layer)
@@ -79,9 +90,10 @@ namespace Primusz.AeroCAD.Core.Rendering
                 return null;
 
             double opacity = entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 0.65d : 0.9d;
-            double outlineThickness = entity.Thickness * entity.Scale +
+            double baseThickness = GetLineWeight(layer) * entity.Scale;
+            double outlineThickness = baseThickness +
                 ((entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 1.25d : 2.0d) * entity.Scale);
-            return new PenCacheKey(layer.Color, outlineThickness, opacity);
+            return new PenCacheKey(ResolveColor(entity, layer), outlineThickness, opacity, GetLineStyle(layer));
         }
 
         private static PenCacheKey? CreateGlowKey(Entity entity, Layer layer)
@@ -89,7 +101,7 @@ namespace Primusz.AeroCAD.Core.Rendering
             if (!entity.HasVisualHighlight)
                 return null;
 
-            Color baseColor = layer.Color;
+            Color baseColor = ResolveColor(entity, layer);
             var glowColor = Color.FromArgb(
                 255,
                 (byte)(baseColor.R + ((255 - baseColor.R) * 0.65)),
@@ -97,18 +109,48 @@ namespace Primusz.AeroCAD.Core.Rendering
                 (byte)(baseColor.B + ((255 - baseColor.B) * 0.65)));
 
             double opacity = entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? (170d / 255d) : (220d / 255d);
-            double glowThickness = entity.Thickness * entity.Scale +
+            double baseThickness = GetLineWeight(layer) * entity.Scale;
+            double glowThickness = baseThickness +
                 ((entity.CommandHighlight == EntityCommandHighlightKind.Hover && !entity.IsSelected ? 3.25d : 5.0d) * entity.Scale);
-            return new PenCacheKey(glowColor, glowThickness, opacity);
+            return new PenCacheKey(glowColor, glowThickness, opacity, GetLineStyle(layer));
+        }
+
+        private static double GetLineWeight(Layer layer)
+        {
+            var style = layer?.Style;
+            double mm = style != null && style.LineWeight > 0d ? style.LineWeight : Default;
+            // Convert mm → screen pixels: 0.25 mm = 1 px (zoom-independent via entity.Scale)
+            return mm * PixelsPerMm;
+        }
+
+        private static LineStyle GetLineStyle(Layer layer)
+        {
+            return layer?.Style?.LineStyle ?? LineStyle.Solid;
+        }
+
+        private static DashStyle GetDashStyle(LineStyle lineStyle)
+        {
+            switch (lineStyle)
+            {
+                case LineStyle.Dashed:
+                    return DashStyles.Dash;
+                case LineStyle.DotDash:
+                    return DashStyles.DashDot;
+                case LineStyle.Dotted:
+                    return DashStyles.Dot;
+                default:
+                    return DashStyles.Solid;
+            }
         }
 
         private readonly struct PenCacheKey : IEquatable<PenCacheKey>
         {
-            public PenCacheKey(Color color, double thickness, double opacity)
+            public PenCacheKey(Color color, double thickness, double opacity, LineStyle lineStyle)
             {
                 Color = color;
                 Thickness = thickness;
                 Opacity = opacity;
+                LineStyle = lineStyle;
             }
 
             public Color Color { get; }
@@ -117,11 +159,14 @@ namespace Primusz.AeroCAD.Core.Rendering
 
             public double Opacity { get; }
 
+            public LineStyle LineStyle { get; }
+
             public bool Equals(PenCacheKey other)
             {
                 return Color.Equals(other.Color)
                     && Thickness.Equals(other.Thickness)
-                    && Opacity.Equals(other.Opacity);
+                    && Opacity.Equals(other.Opacity)
+                    && LineStyle == other.LineStyle;
             }
 
             public override bool Equals(object obj)
@@ -136,6 +181,7 @@ namespace Primusz.AeroCAD.Core.Rendering
                     int hashCode = Color.GetHashCode();
                     hashCode = (hashCode * 397) ^ Thickness.GetHashCode();
                     hashCode = (hashCode * 397) ^ Opacity.GetHashCode();
+                    hashCode = (hashCode * 397) ^ LineStyle.GetHashCode();
                     return hashCode;
                 }
             }

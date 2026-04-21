@@ -3,8 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:drawing="clr-namespace:Primusz.AeroCAD.Core.Drawing;assembly=AeroCAD.Core"
         xmlns:controls="clr-namespace:Primusz.AeroCAD.View.Controls"
+        xmlns:converters="clr-namespace:Primusz.AeroCAD.View.Converters"
         Title="AeroCAD" Height="600" Width="900">
     <Window.Resources>
+        <converters:LineWeightTextConverter x:Key="LineWeightTextConverter"/>
         <Style x:Key="HorizontalBevelGrip" TargetType="{x:Type controls:DockPanelSplitter}">
             <Setter Property="Thickness" Value="6"/>
             <Setter Property="Template">
@@ -78,6 +80,67 @@
                 <Separator Margin="2,0"/>
             </StackPanel>
         </DataTemplate>
+
+        <DataTemplate x:Key="LayerComboItemTemplate">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Visible indicator: bright dot = on, dim = off -->
+                <TextBlock Width="14" TextAlignment="Center" FontSize="10" VerticalAlignment="Center" Margin="0,0,2,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="●"/>
+                            <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsVisible}" Value="False">
+                                    <Setter Property="Foreground" Value="#FF444444"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <!-- Frozen indicator: snowflake = cyan if frozen, invisible if not -->
+                <TextBlock Width="14" Text="❄" TextAlignment="Center" FontSize="10" VerticalAlignment="Center" Margin="0,0,2,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFrozen}" Value="True">
+                                    <Setter Property="Foreground" Value="#FF6BB5FF"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <!-- Lock indicator: padlock = gold if locked, invisible if not -->
+                <TextBlock Width="14" Text="🔒" TextAlignment="Center" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                    <Setter Property="Foreground" Value="#FFFFD700"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <!-- Color swatch -->
+                <Rectangle Width="12" Height="12"
+                           Fill="{Binding ColorBrush}"
+                           Stroke="#FF000000"
+                           StrokeThickness="0.5"
+                           Margin="0,0,6,0"/>
+                <!-- Layer name -->
+                <TextBlock Text="{Binding Name}" Foreground="White" FontWeight="SemiBold" MinWidth="80"/>
+                <!-- Line weight -->
+                <TextBlock Text="{Binding LineWeight, StringFormat=LW {0:0.##}}"
+                           Foreground="#FF9AA4B2"
+                           Margin="8,0,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <Style x:Key="LayerComboItemContainerStyle" TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="4,2"/>
+        </Style>
     </Window.Resources>
     <DockPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="Auto" Width="Auto">
@@ -138,6 +201,68 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
+            </ToolBar>
+            <ToolBar>
+                <TextBlock Text="Layer" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="White"/>
+                <ComboBox Width="260"
+                          ItemsSource="{Binding Layers}"
+                          SelectedItem="{Binding SelectedLayer, Mode=TwoWay}"
+                          ItemTemplate="{StaticResource LayerComboItemTemplate}"
+                          ItemContainerStyle="{StaticResource LayerComboItemContainerStyle}"
+                          Background="#FF12161C"
+                          Foreground="White"
+                          BorderBrush="#FF3B4657"
+                          Padding="4,2"
+                          Margin="0,0,8,0"/>
+                <Button ToolTip="Change layer color"
+                        Command="{Binding ChangeLayerColorCommand}"
+                        Margin="0,0,4,0"
+                        Padding="6,2"
+                        Width="24" Height="24"
+                        Background="{Binding SelectedLayer.ColorBrush}"
+                        BorderBrush="#FF3B4657"/>
+                <Button Content="New"
+                        Command="{Binding AddLayerCommand}"
+                        Margin="0,0,8,0"
+                        Padding="10,2"/>
+                <Button Content="Move Sel"
+                        Command="{Binding MoveSelectionToLayerCommand}"
+                        Margin="0,0,8,0"
+                        Padding="10,2"/>
+                <Button Content="Remove"
+                        Command="{Binding RemoveLayerCommand}"
+                        Margin="0,0,8,0"
+                        Padding="10,2"/>
+                <TextBlock Text="LW" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#FF9AA4B2"/>
+                <TextBox Width="60"
+                         Text="{Binding SelectedLayer.LineWeight, Mode=TwoWay, UpdateSourceTrigger=LostFocus, Converter={StaticResource LineWeightTextConverter}}"
+                         Margin="0,0,8,0"
+                         Background="#FF12161C"
+                         Foreground="White"
+                         BorderBrush="#FF3B4657"
+                         Padding="4,2"/>
+                <ComboBox Width="110"
+                          ItemsSource="{Binding LayerLineStyles}"
+                          SelectedItem="{Binding SelectedLayer.LineStyle, Mode=TwoWay}"
+                          Margin="0,0,8,0"
+                          Background="#FF12161C"
+                          Foreground="White"
+                          BorderBrush="#FF3B4657"
+                          Padding="4,2"/>
+                <CheckBox Content="Visible"
+                          IsChecked="{Binding SelectedLayer.IsVisible, Mode=TwoWay}"
+                          Foreground="White"
+                          Margin="0,0,8,0"
+                          VerticalAlignment="Center"/>
+                <CheckBox Content="Frozen"
+                          IsChecked="{Binding SelectedLayer.IsFrozen, Mode=TwoWay}"
+                          Foreground="White"
+                          Margin="0,0,8,0"
+                          VerticalAlignment="Center"/>
+                <CheckBox Content="Locked"
+                          IsChecked="{Binding SelectedLayer.IsLocked, Mode=TwoWay}"
+                          Foreground="White"
+                          VerticalAlignment="Center"/>
             </ToolBar>
         </ToolBarTray>
 

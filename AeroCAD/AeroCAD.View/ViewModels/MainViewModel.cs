@@ -25,9 +25,20 @@ using Primusz.AeroCAD.View.Plugins;
 
 namespace Primusz.AeroCAD.View.ViewModels
 {
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public class MainViewModel : ViewModelBase
     {
         private static readonly string[] MenuGroupOrder = { "Edit", "Draw", "Modify", "View" };
+        private static readonly Color[] DefaultLayerPalette =
+        {
+            Colors.White,
+            Colors.Red,
+            Colors.Turquoise,
+            Colors.Gold,
+            Colors.LawnGreen,
+            Colors.Orange,
+            Colors.MediumPurple
+        };
 
         private readonly ModelSpace modelSpace;
         private readonly ICadDocumentService documentService;
@@ -45,10 +56,14 @@ namespace Primusz.AeroCAD.View.ViewModels
         private readonly IOrthoService orthoService;
         private readonly IGridSettingsService gridSettingsService;
         private readonly KeyboardShortcutService keyboardShortcutService;
-        private readonly CommandRepeatCoordinator commandRepeatCoordinator;
+        private readonly CommandLifecycleService commandLifecycleService;
+        private readonly IHoverFeedbackService hoverFeedbackService;
         private readonly Viewport viewport;
+        private int nextLayerNumber = 1;
         private string statusText = "Ready";
         private string activeToolName = string.Empty;
+        private LayerViewModel selectedLayer;
+        private bool suppressSelectionDrivenLayerUpdates;
 
         public MainViewModel(Viewport viewport)
         {
@@ -72,7 +87,9 @@ namespace Primusz.AeroCAD.View.ViewModels
             orthoService = modelSpace.GetService<IOrthoService>();
             gridSettingsService = modelSpace.GetService<IGridSettingsService>();
             keyboardShortcutService = new KeyboardShortcutService();
-            commandRepeatCoordinator = new CommandRepeatCoordinator();
+            commandLifecycleService = new CommandLifecycleService(new CommandRepeatCoordinator());
+            hoverFeedbackService = new HoverFeedbackService();
+            modelSpace.RegisterService<IHoverFeedbackService, HoverFeedbackService>((HoverFeedbackService)hoverFeedbackService);
 
             commandRuntime = new EditorCommandRuntime(
                 modelSpace.GetService<IEditorCommandCatalog>(),
@@ -85,7 +102,7 @@ namespace Primusz.AeroCAD.View.ViewModels
                 toolRuntime,
                 documentService,
                 viewport,
-                GetActiveLayer,
+                GetCreationLayer,
                 toolName => ActiveToolName = toolName);
 
             modelSpace.RegisterService<IEditorCommandRuntime, EditorCommandRuntime>(commandRuntime);
@@ -98,7 +115,14 @@ namespace Primusz.AeroCAD.View.ViewModels
                 .ToList()
                 .AsReadOnly();
 
-            CommandLine = new CommandLineViewModel(HandleCommandLineInput, CancelCurrentCommand);
+            CommandLine = new CommandLineViewModel(
+                input => HandleCommandLineInput(input),
+                () => CancelCurrentCommand());
+            AddLayerCommand = new RelayCommand(AddDefaultLayer);
+            RemoveLayerCommand = new RelayCommand(RemoveSelectedLayer, CanRemoveSelectedLayer);
+            MoveSelectionToLayerCommand = new RelayCommand(() => MoveSelectedEntitiesToSelectedLayer(SelectedLayer), CanMoveSelectedEntitiesToSelectedLayer);
+            ChangeLayerColorCommand = new RelayCommand(ChangeSelectedLayerColor, () => SelectedLayer != null);
+            LayerLineStyles = Enum.GetValues(typeof(LineStyle)).Cast<LineStyle>().ToList().AsReadOnly();
 
             undoRedoService.StateChanged += (s, e) =>
             {
@@ -121,6 +145,8 @@ namespace Primusz.AeroCAD.View.ViewModels
                 orthoService.StateChanged += (s, e) => OnPropertyChanged(nameof(IsOrthoActive));
             if (gridSettingsService != null)
                 gridSettingsService.StateChanged += (s, e) => OnPropertyChanged(nameof(IsGridVisible));
+            if (selectionManager != null)
+                selectionManager.SelectionChanged += OnSelectionChanged;
 
             DependencyPropertyDescriptor
                 .FromProperty(Viewport.PositionProperty, typeof(Viewport))
@@ -163,7 +189,51 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         public ObservableCollection<LayerViewModel> Layers { get; } = new ObservableCollection<LayerViewModel>();
 
+        public IReadOnlyList<LineStyle> LayerLineStyles { get; }
+
         public CommandLineViewModel CommandLine { get; }
+
+        public ICommand AddLayerCommand { get; }
+
+        public ICommand RemoveLayerCommand { get; }
+
+        public ICommand MoveSelectionToLayerCommand { get; }
+
+        public ICommand ChangeLayerColorCommand { get; }
+
+        public LayerViewModel SelectedLayer
+        {
+            get
+            {
+                var selectionLayer = ResolveSelectedEntitiesLayer();
+                if (selectionLayer != null || HasMixedSelectedEntityLayers())
+                    return selectionLayer;
+
+                return selectedLayer;
+            }
+            set
+            {
+                var displayedLayer = GetDisplayedLayer();
+                if (ReferenceEquals(displayedLayer, value))
+                    return;
+
+                selectedLayer = value;
+                OnPropertyChanged();
+
+                if (suppressSelectionDrivenLayerUpdates)
+                    return;
+
+                if (selectedLayer != null && selectedLayer.CanBeActive)
+                {
+                    if (selectionManager?.SelectedEntities?.Count > 0)
+                        MoveSelectedEntitiesToSelectedLayer(selectedLayer);
+                    else
+                        SetActiveLayer(selectedLayer);
+                }
+
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
 
         /// <summary>
         /// Menu groups built from the command catalog. Each group maps to a top-level menu item;
@@ -205,19 +275,40 @@ namespace Primusz.AeroCAD.View.ViewModels
             return DeleteSelectedEntities();
         }
 
-        public LayerViewModel AddLayer(string name, Color color)
+        public LayerViewModel AddLayer(
+            string name,
+            Color color,
+            double lineWeight = 0.13d,
+            LineStyle lineStyle = LineStyle.Solid,
+            bool isVisible = true,
+            bool isFrozen = false,
+            bool isLocked = false)
         {
             var layer = documentService.CreateLayer(name, color);
+            layer.Style.LineWeight = lineWeight;
+            layer.Style.LineStyle = lineStyle;
+            layer.Style.IsVisible = isVisible;
+            layer.Style.IsFrozen = isFrozen;
+            layer.Style.IsLocked = isLocked;
+
             var vm = new LayerViewModel(layer);
+            vm.PropertyChanged += OnLayerViewModelPropertyChanged;
             Layers.Add(vm);
+            nextLayerNumber = Math.Max(nextLayerNumber, Layers.Count + 1);
 
             if (Layers.Count == 1)
             {
-                vm.IsActive = true;
-                editorStateService?.SetActiveLayer(layer);
+                SetActiveLayer(vm);
             }
 
+            SelectLayerWithoutSelectionSideEffects(vm);
             return vm;
+        }
+
+        public LayerViewModel AddLayer()
+        {
+            var color = DefaultLayerPalette[(nextLayerNumber - 1) % DefaultLayerPalette.Length];
+            return AddLayer($"Layer {nextLayerNumber++}", color);
         }
 
         public void AddEntity(Layer layer, Entity entity)
@@ -230,16 +321,11 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         public Layer GetActiveLayer()
         {
-            if (editorStateService?.ActiveLayer != null)
-                return editorStateService.ActiveLayer;
+            var displayLayer = GetDisplayedLayer();
+            if (displayLayer != null)
+                return displayLayer.Layer;
 
-            foreach (var vm in Layers)
-            {
-                if (vm.IsActive)
-                    return vm.Layer;
-            }
-
-            return Layers.Count > 0 ? Layers[0].Layer : null;
+            return GetCreationLayer();
         }
 
         private IReadOnlyList<MenuGroupViewModel> BuildMenuGroups(IEditorCommandCatalog catalog)
@@ -322,16 +408,9 @@ namespace Primusz.AeroCAD.View.ViewModels
         private void OnSnapPointChanged(object sender, EventArgs e)
         {
             var snapResult = viewport.GetRubberObject()?.SnapPoint;
-            if (snapResult == null)
-                return;
-
-            Point snapped;
-            if (snapResult.SourceEntity != null && snapResult.SourceGripIndex.HasValue)
-                snapped = snapResult.SourceEntity.GetGripPoint(snapResult.SourceGripIndex.Value);
-            else
-                snapped = snapResult.SourcePoint ?? snapResult.Point;
-
-            StatusText = FormatCoordinates(snapped);
+            var snapped = hoverFeedbackService.ResolveStatusPoint(editorStateService?.Mode ?? EditorMode.Idle, HasSelectedGrips(), snapResult);
+            if (snapped.HasValue)
+                StatusText = FormatCoordinates(snapped.Value);
         }
 
         private void OnViewportMouseLeave(object sender, MouseEventArgs e)
@@ -343,13 +422,7 @@ namespace Primusz.AeroCAD.View.ViewModels
         private Point? ResolveHoverStatusPoint(Point worldPoint)
         {
             var snapResult = viewport.GetRubberObject()?.SnapPoint;
-            if (snapResult != null && snapResult.SourceEntity != null && snapResult.SourceGripIndex.HasValue)
-                return snapResult.SourceEntity.GetGripPoint(snapResult.SourceGripIndex.Value);
-
-            if (snapResult != null)
-                return snapResult.SourcePoint ?? snapResult.Point;
-
-            return null;
+            return hoverFeedbackService.ResolveStatusPoint(editorStateService?.Mode ?? EditorMode.Idle, HasSelectedGrips(), snapResult);
         }
 
         private static string FormatCoordinates(Point point)
@@ -360,45 +433,253 @@ namespace Primusz.AeroCAD.View.ViewModels
         private void HandleCommandLineInput(string input)
         {
             var activeInteractiveTool = toolRuntime?.GetActiveInteractiveTool();
-            var trimmedInput = (input ?? string.Empty).Trim();
-            var normalized = trimmedInput.ToUpperInvariant();
-            var token = commandFeedbackService?.ParseInput(trimmedInput) ?? CommandInputToken.Text(trimmedInput, trimmedInput);
-
-            if (trimmedInput.Length == 0)
-            {
-                commandRepeatCoordinator.HandleBlankSubmit(
-                    activeInteractiveTool,
-                    commandRuntime.Execute,
-                    () => commandFeedbackService?.ActiveCommandName,
-                    RefreshViewportVisuals);
-                return;
-            }
-
-            if (activeInteractiveTool != null && activeInteractiveTool.TrySubmitToken(token))
-            {
-                RefreshViewportVisuals();
-                if (!string.IsNullOrWhiteSpace(commandFeedbackService?.ActiveCommandName))
-                    commandRepeatCoordinator.RememberExecutedCommand(commandFeedbackService.ActiveCommandName);
-                return;
-            }
-
-            if (commandRuntime.TryResolveAndExecute(normalized))
-            {
-                commandRepeatCoordinator.RememberExecutedCommand(normalized);
-                RefreshViewportVisuals();
-                return;
-            }
-
-            if (activeInteractiveTool != null)
-                commandFeedbackService?.LogMessage($"Invalid input for active command: {input}");
-            else
-                commandFeedbackService?.LogMessage($"Unknown command: {input}");
+            commandLifecycleService.TryHandleCommandLineInput(
+                input,
+                activeInteractiveTool,
+                trimmed => commandFeedbackService?.ParseInput(trimmed) ?? CommandInputToken.Text(trimmed, trimmed),
+                token => activeInteractiveTool?.TrySubmitToken(token) ?? false,
+                commandRuntime.Execute,
+                () => commandFeedbackService?.ActiveCommandName,
+                RefreshViewportVisuals,
+                message => commandFeedbackService?.LogMessage(message));
         }
 
         private void CancelCurrentCommand()
         {
             commandRuntime.CancelCurrentCommand();
             RefreshViewportVisuals();
+        }
+
+        private void AddDefaultLayer()
+        {
+            AddLayer();
+        }
+
+        private void ChangeSelectedLayerColor()
+        {
+            if (SelectedLayer == null) return;
+
+            var dialog = new System.Windows.Forms.ColorDialog
+            {
+                Color = System.Drawing.Color.FromArgb(
+                    SelectedLayer.Color.A,
+                    SelectedLayer.Color.R,
+                    SelectedLayer.Color.G,
+                    SelectedLayer.Color.B),
+                FullOpen = true
+            };
+
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                return;
+
+            var c = dialog.Color;
+            SelectedLayer.Color = System.Windows.Media.Color.FromArgb(c.A, c.R, c.G, c.B);
+        }
+
+        private bool CanRemoveSelectedLayer()
+        {
+            return SelectedLayer != null && Layers.Count > 1;
+        }
+
+        private void RemoveSelectedLayer()
+        {
+            var layerToRemove = SelectedLayer;
+            if (layerToRemove == null || Layers.Count <= 1)
+                return;
+
+            var wasActive = layerToRemove.IsActive;
+            layerToRemove.PropertyChanged -= OnLayerViewModelPropertyChanged;
+            layerToRemove.Dispose();
+            documentService.RemoveLayer(layerToRemove.Layer.Id);
+            Layers.Remove(layerToRemove);
+
+            if (ReferenceEquals(SelectedLayer, layerToRemove))
+                SelectLayerWithoutSelectionSideEffects(Layers.FirstOrDefault());
+
+            if (wasActive)
+                EnsureActiveLayerIsValid();
+        }
+
+        private void SetActiveLayer(LayerViewModel target, bool force = false)
+        {
+            if (target == null || (!force && !target.CanBeActive))
+                return;
+
+            foreach (var layerVm in Layers)
+                layerVm.SetActive(ReferenceEquals(layerVm, target));
+
+            SelectLayerWithoutSelectionSideEffects(target);
+            editorStateService?.SetActiveLayer(target.Layer);
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private bool CanMoveSelectedEntitiesToSelectedLayer()
+        {
+            return SelectedLayer != null
+                && SelectedLayer.CanBeActive
+                && selectionManager?.SelectedEntities?.Count > 0;
+        }
+
+        private void MoveSelectedEntitiesToSelectedLayer(LayerViewModel targetLayerVm)
+        {
+            if (targetLayerVm == null || !targetLayerVm.CanBeActive || selectionManager?.SelectedEntities?.Count <= 0)
+                return;
+
+            var targetLayer = targetLayerVm.Layer;
+            var selectedEntities = selectionManager.SelectedEntities.ToList();
+            foreach (var entity in selectedEntities)
+                documentService.AddEntity(targetLayer.Id, entity);
+
+            SelectLayerWithoutSelectionSideEffects(targetLayerVm);
+            RefreshViewportVisuals();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void EnsureActiveLayerIsValid()
+        {
+            var active = Layers.FirstOrDefault(vm => vm.IsActive && vm.CanBeActive);
+            if (active != null)
+            {
+                editorStateService?.SetActiveLayer(active.Layer);
+                if (!ReferenceEquals(SelectedLayer, active))
+                    SelectedLayer = active;
+                return;
+            }
+
+            var fallback = Layers.FirstOrDefault(vm => vm.CanBeActive) ?? Layers.FirstOrDefault();
+            if (fallback == null)
+            {
+                editorStateService?.SetActiveLayer(null);
+                if (SelectedLayer != null)
+                    SelectedLayer = null;
+                return;
+            }
+
+            if (!ReferenceEquals(SelectedLayer, fallback))
+                SelectLayerWithoutSelectionSideEffects(fallback);
+
+            SetActiveLayer(fallback, true);
+        }
+
+        private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (suppressSelectionDrivenLayerUpdates)
+                return;
+
+            OnPropertyChanged(nameof(SelectedLayer));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private LayerViewModel ResolveSelectedEntitiesLayer()
+        {
+            if (selectionManager?.SelectedEntities == null || selectionManager.SelectedEntities.Count == 0)
+                return null;
+
+            Layer commonLayer = null;
+            foreach (var entity in selectionManager.SelectedEntities)
+            {
+                var entityLayer = documentService.GetLayerForEntity(entity);
+                if (entityLayer == null)
+                    return null;
+
+                if (commonLayer == null)
+                {
+                    commonLayer = entityLayer;
+                    continue;
+                }
+
+                if (commonLayer.Id != entityLayer.Id)
+                    return null;
+            }
+
+            return Layers.FirstOrDefault(vm => vm.Layer.Id == commonLayer.Id);
+        }
+
+        private bool HasMixedSelectedEntityLayers()
+        {
+            if (selectionManager?.SelectedEntities == null || selectionManager.SelectedEntities.Count <= 1)
+                return false;
+
+            Layer commonLayer = null;
+            foreach (var entity in selectionManager.SelectedEntities)
+            {
+                var entityLayer = documentService.GetLayerForEntity(entity);
+                if (entityLayer == null)
+                    return true;
+
+                if (commonLayer == null)
+                {
+                    commonLayer = entityLayer;
+                    continue;
+                }
+
+                if (commonLayer.Id != entityLayer.Id)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void SelectLayerWithoutSelectionSideEffects(LayerViewModel layerViewModel)
+        {
+            suppressSelectionDrivenLayerUpdates = true;
+            try
+            {
+                selectedLayer = layerViewModel;
+                OnPropertyChanged(nameof(SelectedLayer));
+            }
+            finally
+            {
+                suppressSelectionDrivenLayerUpdates = false;
+            }
+        }
+
+        private LayerViewModel GetDisplayedLayer()
+        {
+            var selectionLayer = ResolveSelectedEntitiesLayer();
+            if (selectionLayer != null || HasMixedSelectedEntityLayers())
+                return selectionLayer;
+
+            return selectedLayer;
+        }
+
+        private Layer GetCreationLayer()
+        {
+            if (selectedLayer != null && selectedLayer.CanBeActive)
+                return selectedLayer.Layer;
+
+            if (editorStateService?.ActiveLayer != null)
+            {
+                var activeVm = Layers.FirstOrDefault(vm => vm.Layer == editorStateService.ActiveLayer);
+                if (activeVm != null && activeVm.CanBeActive)
+                    return activeVm.Layer;
+            }
+
+            var active = Layers.FirstOrDefault(vm => vm.IsActive && vm.CanBeActive);
+            if (active != null)
+                return active.Layer;
+
+            var firstEditable = Layers.FirstOrDefault(vm => vm.CanBeActive);
+            if (firstEditable != null)
+                return firstEditable.Layer;
+
+            return Layers.Count > 0 ? Layers[0].Layer : null;
+        }
+
+        private void OnLayerViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(LayerViewModel.IsVisible) ||
+                e.PropertyName == nameof(LayerViewModel.IsFrozen) ||
+                e.PropertyName == nameof(LayerViewModel.IsLocked) ||
+                e.PropertyName == nameof(LayerViewModel.LineStyle) ||
+                e.PropertyName == nameof(LayerViewModel.LineWeight) ||
+                e.PropertyName == nameof(LayerViewModel.Color) ||
+                e.PropertyName == nameof(LayerViewModel.ColorText))
+            {
+                EnsureActiveLayerIsValid();
+            }
+
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private bool DeleteSelectedEntities()
@@ -414,6 +695,11 @@ namespace Primusz.AeroCAD.View.ViewModels
             viewport.GetRubberObject()?.InvalidateVisual();
             viewport.RefreshView();
             viewport.InvalidateVisual();
+        }
+
+        private bool HasSelectedGrips()
+        {
+            return gripService?.GetSelectedGrips()?.Count > 0;
         }
     }
 }
