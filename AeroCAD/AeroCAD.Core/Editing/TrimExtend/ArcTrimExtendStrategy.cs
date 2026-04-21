@@ -31,7 +31,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             var intersections = TrimExtendSupport.GetSupportedBoundaries(boundaries)
                 .SelectMany(boundary => TrimExtendGeometry.GetCircularBoundaryIntersections(arc.Center, arc.Radius, boundary))
                 .Where(item => CircularGeometry.IsAngleOnArc(item.Angle, arc.StartAngle, arc.SweepAngle))
-                .Select(item => new { item.Angle, Parameter = CircularGeometry.GetArcParameter(arc.StartAngle, arc.SweepAngle, item.Angle) })
+                .Select(item => new IntersectionPoint(item.Angle, CircularGeometry.GetArcParameter(arc.StartAngle, arc.SweepAngle, item.Angle)))
                 .Where(item => item.Parameter > Epsilon && item.Parameter < 1d - Epsilon)
                 .GroupBy(item => Math.Round(item.Parameter / ParameterDedupTolerance))
                 .Select(g => g.First())
@@ -46,33 +46,39 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 arc.SweepAngle,
                 CircularGeometry.GetAngle(arc.Center, pickPoint));
 
-            bool trimStart = clickParameter <= 0.5d;
-            if (trimStart)
+            if (intersections.Count == 1)
             {
-                var replacement = intersections
-                    .Where(item => item.Parameter >= clickParameter - Epsilon)
-                    .OrderBy(item => item.Parameter)
-                    .FirstOrDefault();
-                if (replacement == null)
-                    return Array.Empty<Entity>();
-
-                double newSweep = Math.Sign(arc.SweepAngle) * (Math.Abs(arc.SweepAngle) * (1d - replacement.Parameter));
-                var result = CreateArc(arc, replacement.Angle, newSweep);
-                return result == null ? Array.Empty<Entity>() : new[] { (Entity)result };
+                var only = intersections[0];
+                return clickParameter <= only.Parameter + Epsilon
+                    ? ToResult(CreateTailArc(arc, only))
+                    : ToResult(CreateHeadArc(arc, only));
             }
-            else
-            {
-                var endReplacement = intersections
-                    .Where(item => item.Parameter <= clickParameter + Epsilon)
-                    .OrderByDescending(item => item.Parameter)
-                    .FirstOrDefault();
-                if (endReplacement == null)
-                    return Array.Empty<Entity>();
 
-                double trimmedSweep = Math.Sign(arc.SweepAngle) * (Math.Abs(arc.SweepAngle) * endReplacement.Parameter);
-                var result = CreateArc(arc, arc.StartAngle, trimmedSweep);
-                return result == null ? Array.Empty<Entity>() : new[] { (Entity)result };
-            }
+            if (clickParameter <= intersections[0].Parameter + Epsilon)
+                return ToResult(CreateTailArc(arc, intersections[0]));
+
+            if (clickParameter >= intersections[intersections.Count - 1].Parameter - Epsilon)
+                return ToResult(CreateHeadArc(arc, intersections[intersections.Count - 1]));
+
+            var left = intersections.LastOrDefault(item => item.Parameter < clickParameter - Epsilon);
+            var right = intersections.FirstOrDefault(item => item.Parameter > clickParameter + Epsilon);
+            if (left == null || right == null || ReferenceEquals(left, right))
+                return Array.Empty<Entity>();
+
+            var results = new List<Entity>(2);
+            var head = CreateHeadArc(arc, left);
+            if (head != null)
+                results.Add(head);
+
+            var tail = CreateTailArc(arc, right);
+            if (tail != null)
+                results.Add(tail);
+
+            return results
+                .OfType<Arc>()
+                .OrderBy(item => item.StartAngle)
+                .Cast<Entity>()
+                .ToList();
         }
 
         public IReadOnlyList<Entity> CreateExtended(IReadOnlyList<Entity> boundaries, Entity target, Point pickPoint)
@@ -145,6 +151,36 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             {
                 Thickness = source.Thickness
             };
+        }
+
+        private static Arc CreateHeadArc(Arc source, IntersectionPoint intersection)
+        {
+            double sweep = source.SweepAngle * intersection.Parameter;
+            return CreateArc(source, source.StartAngle, sweep);
+        }
+
+        private static Arc CreateTailArc(Arc source, IntersectionPoint intersection)
+        {
+            double sweep = source.SweepAngle * (1d - intersection.Parameter);
+            return CreateArc(source, intersection.Angle, sweep);
+        }
+
+        private static IReadOnlyList<Entity> ToResult(Arc arc)
+        {
+            return arc == null ? Array.Empty<Entity>() : new[] { (Entity)arc };
+        }
+
+        private sealed class IntersectionPoint
+        {
+            public IntersectionPoint(double angle, double parameter)
+            {
+                Angle = angle;
+                Parameter = parameter;
+            }
+
+            public double Angle { get; }
+
+            public double Parameter { get; }
         }
 
     }
