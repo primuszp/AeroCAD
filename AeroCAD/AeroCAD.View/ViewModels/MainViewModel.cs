@@ -547,52 +547,12 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         private LayerViewModel ResolveSelectedEntitiesLayer()
         {
-            if (selectionManager?.SelectedEntities == null || selectionManager.SelectedEntities.Count == 0)
-                return null;
-
-            Layer commonLayer = null;
-            foreach (var entity in selectionManager.SelectedEntities)
-            {
-                var entityLayer = documentService.GetLayerForEntity(entity);
-                if (entityLayer == null)
-                    return null;
-
-                if (commonLayer == null)
-                {
-                    commonLayer = entityLayer;
-                    continue;
-                }
-
-                if (commonLayer.Id != entityLayer.Id)
-                    return null;
-            }
-
-            return Layers.FirstOrDefault(vm => vm.Layer.Id == commonLayer.Id);
+            return GetSelectedEntitiesLayerState().Layer;
         }
 
         private bool HasMixedSelectedEntityLayers()
         {
-            if (selectionManager?.SelectedEntities == null || selectionManager.SelectedEntities.Count <= 1)
-                return false;
-
-            Layer commonLayer = null;
-            foreach (var entity in selectionManager.SelectedEntities)
-            {
-                var entityLayer = documentService.GetLayerForEntity(entity);
-                if (entityLayer == null)
-                    return true;
-
-                if (commonLayer == null)
-                {
-                    commonLayer = entityLayer;
-                    continue;
-                }
-
-                if (commonLayer.Id != entityLayer.Id)
-                    return true;
-            }
-
-            return false;
+            return GetSelectedEntitiesLayerState().IsMixed;
         }
 
         private void SelectLayerWithoutSelectionSideEffects(LayerViewModel layerViewModel)
@@ -611,11 +571,49 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         private LayerViewModel GetDisplayedLayer()
         {
-            var selectionLayer = ResolveSelectedEntitiesLayer();
-            if (selectionLayer != null || HasMixedSelectedEntityLayers())
-                return selectionLayer;
+            var selectionState = GetSelectedEntitiesLayerState();
+            if (selectionState.Layer != null || selectionState.IsMixed)
+                return selectionState.Layer;
 
             return selectedLayer;
+        }
+
+        private SelectedEntitiesLayerState GetSelectedEntitiesLayerState()
+        {
+            if (selectionManager?.SelectedEntities == null || selectionManager.SelectedEntities.Count == 0)
+                return default;
+
+            Layer commonLayer = null;
+            foreach (var entity in selectionManager.SelectedEntities)
+            {
+                var entityLayer = documentService.GetLayerForEntity(entity);
+                if (entityLayer == null)
+                    return new SelectedEntitiesLayerState(null, true);
+
+                if (commonLayer == null)
+                {
+                    commonLayer = entityLayer;
+                    continue;
+                }
+
+                if (commonLayer.Id != entityLayer.Id)
+                    return new SelectedEntitiesLayerState(null, true);
+            }
+
+            return new SelectedEntitiesLayerState(Layers.FirstOrDefault(vm => vm.Layer.Id == commonLayer.Id), false);
+        }
+
+        private readonly struct SelectedEntitiesLayerState
+        {
+            public SelectedEntitiesLayerState(LayerViewModel layer, bool isMixed)
+            {
+                Layer = layer;
+                IsMixed = isMixed;
+            }
+
+            public LayerViewModel Layer { get; }
+
+            public bool IsMixed { get; }
         }
 
         private Layer GetCreationLayer()
