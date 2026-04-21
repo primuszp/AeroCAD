@@ -1,8 +1,7 @@
-﻿using System;
-using System.Windows;
+using System;
+using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Globalization;
 
 namespace Primusz.AeroCAD.Core.Converters
 {
@@ -10,22 +9,17 @@ namespace Primusz.AeroCAD.Core.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            Transform transform = value as Transform;
-
-            if (targetType == typeof(double) && transform != null)
+            if (value is ScaleTransform transform)
             {
-                double scaleX = Math.Abs(1.0d / transform.Value.M11);
-                double scaleY = Math.Abs(1.0d / transform.Value.M22);
-                double retval = Math.Sqrt((scaleX * scaleX + scaleY * scaleY) / 2.0d);
-
-                return retval;
+                return transform.ScaleX;
             }
-            return DependencyProperty.UnsetValue;
+
+            return 1.0;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            return value;
         }
     }
 }

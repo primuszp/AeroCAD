@@ -39,7 +39,8 @@ namespace Primusz.AeroCAD.Core.Tests.Rendering
 
                     Assert.NotNull(strategy.Context);
                     Assert.Equal(DashStyles.DashDot, strategy.Context.Pen.DashStyle);
-                    Assert.Equal(2.5d, strategy.Context.Pen.Thickness, 3);
+                    // 2.5 mm × 4.0 px/mm = 10.0 screen pixels (entity.Scale = 1.0 default)
+                    Assert.Equal(10.0d, strategy.Context.Pen.Thickness, 3);
                 }
                 catch (Exception ex)
                 {

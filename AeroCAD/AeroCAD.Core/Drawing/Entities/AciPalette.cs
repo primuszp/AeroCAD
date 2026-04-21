@@ -12,6 +12,23 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
         public static Color GetColor(byte index) => palette[index];
 
+        public static byte GetIndex(Color color)
+        {
+            for (int i = 0; i < palette.Length; i++)
+            {
+                if (palette[i] == color)
+                    return (byte)i;
+            }
+
+            return 0;
+        }
+
+        public static bool TryGetIndex(Color color, out byte index)
+        {
+            index = GetIndex(color);
+            return index != 0 || palette[0] == color;
+        }
+
         private static Color[] BuildPalette()
         {
             var colors = new Color[256];

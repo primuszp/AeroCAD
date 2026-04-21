@@ -31,8 +31,9 @@ namespace Primusz.AeroCAD.Core.Tests.TrimExtend
         }
 
         [Fact]
-        public void PolylineTrim_WithLineBoundary_ReturnsCorrectRemainingSegment()
+        public void PolylineTrim_WithLineBoundary_ClickRightOfBoundary_KeepsLeftPart()
         {
+            // Click is to the RIGHT of the boundary (x=5) → the right part is trimmed → keep left
             var strategy = new PolylineTrimExtendStrategy();
             var target = new Polyline(new[]
             {
@@ -49,13 +50,41 @@ namespace Primusz.AeroCAD.Core.Tests.TrimExtend
 
             var polyline = Assert.Single(result) as Polyline;
             Assert.NotNull(polyline);
-            Assert.Equal(new Point(5, 0), polyline.Points[0]);
-            Assert.Equal(new Point(10, 0), polyline.Points[1]);
+            Assert.Equal(2, polyline.Points.Count);
+            Assert.Equal(new Point(0, 0), polyline.Points[0]);
+            Assert.Equal(new Point(5, 0), polyline.Points[1]);
         }
 
         [Fact]
-        public void PolylineTrim_WithPolylineBoundary_ReturnsCorrectRemainingSegment()
+        public void PolylineTrim_WithLineBoundary_ClickLeftOfBoundary_KeepsRightPart()
         {
+            // Click is to the LEFT of the boundary (x=5) → the left part is trimmed → keep right
+            var strategy = new PolylineTrimExtendStrategy();
+            var target = new Polyline(new[]
+            {
+                new Point(0, 0),
+                new Point(10, 0),
+                new Point(20, 0)
+            });
+            var boundaries = new List<Entity>
+            {
+                new Line(new Point(5, -5), new Point(5, 5))
+            };
+
+            var result = strategy.CreateTrimmed(boundaries, target, new Point(2, 0));
+
+            var polyline = Assert.Single(result) as Polyline;
+            Assert.NotNull(polyline);
+            Assert.Equal(3, polyline.Points.Count);
+            Assert.Equal(new Point(5, 0), polyline.Points[0]);
+            Assert.Equal(new Point(10, 0), polyline.Points[1]);
+            Assert.Equal(new Point(20, 0), polyline.Points[2]);
+        }
+
+        [Fact]
+        public void PolylineTrim_WithPolylineBoundary_ClickRightOfBoundary_KeepsLeftPart()
+        {
+            // Click is to the RIGHT of the boundary (x=15) → the right part is trimmed → keep left
             var strategy = new PolylineTrimExtendStrategy();
             var target = new Polyline(new[]
             {
@@ -72,12 +101,14 @@ namespace Primusz.AeroCAD.Core.Tests.TrimExtend
                 })
             };
 
-            var result = strategy.CreateTrimmed(boundaries, target, new Point(15, 0));
+            var result = strategy.CreateTrimmed(boundaries, target, new Point(18, 0));
 
             var polyline = Assert.Single(result) as Polyline;
             Assert.NotNull(polyline);
+            Assert.Equal(3, polyline.Points.Count);
             Assert.Equal(new Point(0, 0), polyline.Points[0]);
             Assert.Equal(new Point(10, 0), polyline.Points[1]);
+            Assert.Equal(new Point(15, 0), polyline.Points[2]);
         }
     }
 }

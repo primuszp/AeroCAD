@@ -43,6 +43,26 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 return Array.Empty<Entity>();
 
             double clickedParameter = segmentIndex + clickParameter;
+            var closestIntersection = intersections
+                .OrderBy(item => Math.Abs(item.Parameter - clickedParameter))
+                .First();
+
+            if (!closed && intersections.Count == 1)
+            {
+                // Click is on the part to remove; return the opposite side.
+                if (clickedParameter >= closestIntersection.Parameter)
+                {
+                    // Click is after (right of) the intersection → keep the left part
+                    var prefix = PolylinePathOperations.BuildOpenPath(polyline, 0d, closestIntersection.Parameter);
+                    return prefix != null ? new[] { (Entity)prefix } : Array.Empty<Entity>();
+                }
+                else
+                {
+                    // Click is before (left of) the intersection → keep the right part
+                    var suffix = PolylinePathOperations.BuildOpenPath(polyline, closestIntersection.Parameter, polyline.Points.Count - 1);
+                    return suffix != null ? new[] { (Entity)suffix } : Array.Empty<Entity>();
+                }
+            }
 
             var left = intersections.LastOrDefault(item => item.Parameter < clickedParameter - Epsilon);
             var right = intersections.FirstOrDefault(item => item.Parameter > clickedParameter + Epsilon);

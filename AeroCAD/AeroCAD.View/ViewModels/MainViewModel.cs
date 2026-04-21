@@ -121,7 +121,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             AddLayerCommand = new RelayCommand(AddDefaultLayer);
             RemoveLayerCommand = new RelayCommand(RemoveSelectedLayer, CanRemoveSelectedLayer);
             MoveSelectionToLayerCommand = new RelayCommand(() => MoveSelectedEntitiesToSelectedLayer(SelectedLayer), CanMoveSelectedEntitiesToSelectedLayer);
-            ChangeLayerColorCommand = new RelayCommand(ChangeSelectedLayerColor, () => SelectedLayer != null);
+            LayerLineWeights = LineWeightPalette.StandardValues.ToList().AsReadOnly();
             LayerLineStyles = Enum.GetValues(typeof(LineStyle)).Cast<LineStyle>().ToList().AsReadOnly();
 
             undoRedoService.StateChanged += (s, e) =>
@@ -189,6 +189,8 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         public ObservableCollection<LayerViewModel> Layers { get; } = new ObservableCollection<LayerViewModel>();
 
+        public IReadOnlyList<double> LayerLineWeights { get; }
+
         public IReadOnlyList<LineStyle> LayerLineStyles { get; }
 
         public CommandLineViewModel CommandLine { get; }
@@ -198,8 +200,6 @@ namespace Primusz.AeroCAD.View.ViewModels
         public ICommand RemoveLayerCommand { get; }
 
         public ICommand MoveSelectionToLayerCommand { get; }
-
-        public ICommand ChangeLayerColorCommand { get; }
 
         public LayerViewModel SelectedLayer
         {
@@ -453,27 +453,6 @@ namespace Primusz.AeroCAD.View.ViewModels
         private void AddDefaultLayer()
         {
             AddLayer();
-        }
-
-        private void ChangeSelectedLayerColor()
-        {
-            if (SelectedLayer == null) return;
-
-            var dialog = new System.Windows.Forms.ColorDialog
-            {
-                Color = System.Drawing.Color.FromArgb(
-                    SelectedLayer.Color.A,
-                    SelectedLayer.Color.R,
-                    SelectedLayer.Color.G,
-                    SelectedLayer.Color.B),
-                FullOpen = true
-            };
-
-            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                return;
-
-            var c = dialog.Color;
-            SelectedLayer.Color = System.Windows.Media.Color.FromArgb(c.A, c.R, c.G, c.B);
         }
 
         private bool CanRemoveSelectedLayer()

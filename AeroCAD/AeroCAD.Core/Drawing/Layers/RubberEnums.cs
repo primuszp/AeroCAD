@@ -1,4 +1,4 @@
-﻿namespace Primusz.AeroCAD.Core.Drawing.Layers
+namespace Primusz.AeroCAD.Core.Drawing.Layers
 {
     public enum RubberStyle { Line, Rectangle, Circle, CircleDiameter, Select }
 

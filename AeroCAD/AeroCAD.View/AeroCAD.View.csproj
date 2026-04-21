@@ -3,8 +3,6 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
-    <SupportedOSPlatformVersion>6.1</SupportedOSPlatformVersion>
     <RootNamespace>Primusz.AeroCAD.View</RootNamespace>
     <AssemblyName>AeroCAD.View</AssemblyName>
     <ImplicitUsings>disable</ImplicitUsings>

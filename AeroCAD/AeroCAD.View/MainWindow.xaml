@@ -4,9 +4,12 @@
         xmlns:drawing="clr-namespace:Primusz.AeroCAD.Core.Drawing;assembly=AeroCAD.Core"
         xmlns:controls="clr-namespace:Primusz.AeroCAD.View.Controls"
         xmlns:converters="clr-namespace:Primusz.AeroCAD.View.Converters"
+        xmlns:controls2="clr-namespace:Primusz.AeroCAD.View.Controls"
         Title="AeroCAD" Height="600" Width="900">
     <Window.Resources>
-        <converters:LineWeightTextConverter x:Key="LineWeightTextConverter"/>
+        <DataTemplate x:Key="LineWeightItemTemplate">
+            <TextBlock Text="{Binding StringFormat=LW {0:0.##}}" Foreground="White"/>
+        </DataTemplate>
         <Style x:Key="HorizontalBevelGrip" TargetType="{x:Type controls:DockPanelSplitter}">
             <Setter Property="Thickness" Value="6"/>
             <Setter Property="Template">
@@ -214,13 +217,6 @@
                           BorderBrush="#FF3B4657"
                           Padding="4,2"
                           Margin="0,0,8,0"/>
-                <Button ToolTip="Change layer color"
-                        Command="{Binding ChangeLayerColorCommand}"
-                        Margin="0,0,4,0"
-                        Padding="6,2"
-                        Width="24" Height="24"
-                        Background="{Binding SelectedLayer.ColorBrush}"
-                        BorderBrush="#FF3B4657"/>
                 <Button Content="New"
                         Command="{Binding AddLayerCommand}"
                         Margin="0,0,8,0"
@@ -234,13 +230,20 @@
                         Margin="0,0,8,0"
                         Padding="10,2"/>
                 <TextBlock Text="LW" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#FF9AA4B2"/>
-                <TextBox Width="60"
-                         Text="{Binding SelectedLayer.LineWeight, Mode=TwoWay, UpdateSourceTrigger=LostFocus, Converter={StaticResource LineWeightTextConverter}}"
-                         Margin="0,0,8,0"
-                         Background="#FF12161C"
-                         Foreground="White"
-                         BorderBrush="#FF3B4657"
-                         Padding="4,2"/>
+                <ComboBox Width="90"
+                          ItemsSource="{Binding LayerLineWeights}"
+                          SelectedItem="{Binding SelectedLayer.LineWeight, Mode=TwoWay}"
+                          ItemTemplate="{StaticResource LineWeightItemTemplate}"
+                          Margin="0,0,8,0"
+                          Background="#FF12161C"
+                          Foreground="White"
+                          BorderBrush="#FF3B4657"
+                          Padding="4,2"/>
+                <TextBlock Text="Color" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#FF9AA4B2"/>
+                <controls2:AciColorPicker Width="32"
+                                          Height="24"
+                                          SelectedColor="{Binding SelectedLayer.Color, Mode=TwoWay}"
+                                          Margin="0,0,8,0"/>
                 <ComboBox Width="110"
                           ItemsSource="{Binding LayerLineStyles}"
                           SelectedItem="{Binding SelectedLayer.LineStyle, Mode=TwoWay}"

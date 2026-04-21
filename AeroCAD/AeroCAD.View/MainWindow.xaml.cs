@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Runtime.Versioning;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.View.ViewModels;
 
@@ -11,6 +12,7 @@ namespace Primusz.AeroCAD.View
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    [SupportedOSPlatform("windows")]
     public partial class MainWindow : Window
     {
         public MainWindow()
