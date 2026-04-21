@@ -80,8 +80,7 @@ namespace Primusz.AeroCAD.View.Tools
             else if (hasCenter && hasCenterModeChoice)
             {
                 var final = host.ResolveFinalPoint(center, rawPoint);
-                rbo.CurrentStyle = RubberStyle.Circle;
-                rbo.SetMove(final);
+                rbo.Cancel();
                 SetPreview(rbo, CreateCenterPreview(final));
             }
         }
@@ -224,8 +223,7 @@ namespace Primusz.AeroCAD.View.Tools
                 var rbo = host.ToolService.Viewport.GetRubberObject();
                 rbo.ClearPreview();
                 rbo.SnapPoint = null;
-                rbo.CurrentStyle = RubberStyle.Circle;
-                rbo.SetStart(center);
+                rbo.Cancel();
                 return InteractiveCommandResult.MoveToStep(CenterModeStep);
             }
 
@@ -360,7 +358,8 @@ namespace Primusz.AeroCAD.View.Tools
 
             return new GripPreview(new[]
             {
-                GripPreviewStroke.CreateScreenConstant(circleGeometry, Colors.Gray, 1.0d),
+                GripPreviewStroke.CreateScreenConstant(new LineGeometry(center, cursorPoint), Colors.Orange, 1.5d, DashStyles.Dash),
+                GripPreviewStroke.CreateScreenConstant(circleGeometry, Colors.LightGray, 0.5d),
                 GripPreviewStroke.CreateScreenConstant(polygonGeometry, Colors.White, 1.5d)
             });
         }

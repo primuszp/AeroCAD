@@ -22,19 +22,34 @@ namespace Primusz.AeroCAD.Core.Editing.GripPreviews
                 return GripPreview.Empty;
 
             var previewPoints = new List<Point>(polyline.Points);
+            if (gripIndex < 0 || gripIndex >= previewPoints.Count)
+                return GripPreview.Empty;
+
             Point originalGrip = previewPoints[gripIndex];
             previewPoints[gripIndex] = newPosition;
 
-            return new GripPreview(new[]
+            var strokes = new List<GripPreviewStroke>
             {
-                GripPreviewStroke.CreateScreenConstant(new LineGeometry(originalGrip, newPosition), Colors.Orange, HelperStrokeThickness, DashStyles.Dash),
-                GripPreviewStroke.CreateScreenConstant(BuildGeometry(previewPoints), GetEntityColor(entity), entity.Thickness)
-            });
-        }
+                GripPreviewStroke.CreateScreenConstant(new LineGeometry(originalGrip, newPosition), Colors.Orange, HelperStrokeThickness, DashStyles.Dash)
+            };
 
-        private static Geometry BuildGeometry(IReadOnlyList<Point> sourcePoints)
-        {
-            return Polyline.BuildGeometry(sourcePoints);
+            if (gripIndex > 0)
+            {
+                strokes.Add(GripPreviewStroke.CreateScreenConstant(
+                    new LineGeometry(previewPoints[gripIndex - 1], previewPoints[gripIndex]),
+                    GetEntityColor(entity),
+                    entity.Thickness));
+            }
+
+            if (gripIndex < previewPoints.Count - 1)
+            {
+                strokes.Add(GripPreviewStroke.CreateScreenConstant(
+                    new LineGeometry(previewPoints[gripIndex], previewPoints[gripIndex + 1]),
+                    GetEntityColor(entity),
+                    entity.Thickness));
+            }
+
+            return new GripPreview(strokes);
         }
 
         private static Color GetEntityColor(Entity entity)
