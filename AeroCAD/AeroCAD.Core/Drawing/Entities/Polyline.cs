@@ -83,7 +83,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
             points.Clear();
             points.AddRange(source.points);
-            Thickness = source.Thickness;
+            RestoreBaseFrom(source);
             InvalidateGeometry();
         }
 

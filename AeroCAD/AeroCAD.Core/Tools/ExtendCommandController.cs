@@ -176,12 +176,7 @@ namespace Primusz.AeroCAD.Core.Tools
             ClearAllBoundaryHighlights();
             ClearTargetHighlight(host);
             boundaryEntities.Clear();
-            var rubberObject = host.ToolService.Viewport.GetRubberObject();
-            rubberObject.ClearPreview();
-            rubberObject.SnapPoint = null;
-            rubberObject.Cancel();
-            rubberObject.InvalidateVisual();
-            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
+            return EndCommand(host, message);
         }
 
         private static bool IsSupportedBoundary(Entity entity)

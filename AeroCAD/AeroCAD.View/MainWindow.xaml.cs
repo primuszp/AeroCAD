@@ -1,7 +1,9 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.View.ViewModels;
 
 namespace Primusz.AeroCAD.View
@@ -23,16 +25,17 @@ namespace Primusz.AeroCAD.View
                 DataContext = vm;
 
                 // Sample data
-                var layer1 = vm.AddLayer("Layer 1", Colors.Red);
-                var layer2 = vm.AddLayer("Layer 2", Colors.Turquoise);
+                var layers = LayerDefaults.CreateAutoCadSeeds()
+                    .Select(seed => vm.AddLayer(seed.Name, seed.Color, seed.LineWeight, seed.LineStyle, seed.IsVisible, seed.IsFrozen, seed.IsLocked))
+                    .ToArray();
 
-                layer1.IsActive = true;
+                vm.SelectedLayer = layers[3];
 
                 var line1 = new Core.Drawing.Entities.Line(new Point(0, 0), new Point(100, 100)) { Thickness = 3 };
                 var line2 = new Core.Drawing.Entities.Line(new Point(100, 100), new Point(400, 100)) { Thickness = 3 };
 
-                vm.AddEntity(layer1.Layer, line1);
-                vm.AddEntity(layer2.Layer, line2);
+                vm.AddEntity(layers[0].Layer, line1);
+                vm.AddEntity(layers[4].Layer, line2);
 
                 CommandInput.FocusInput();
             };

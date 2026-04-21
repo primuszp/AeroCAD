@@ -144,7 +144,7 @@ namespace Primusz.AeroCAD.Core.Tools
             stateBeforeDrag = null;
             ignoreNextMouseUp = false;
             dragBasePoint = default(Point);
-            return InteractiveCommandResult.End(message, deactivateTool: true);
+            return EndCommand(host, message, returnToSelectionMode: false);
         }
     }
 }

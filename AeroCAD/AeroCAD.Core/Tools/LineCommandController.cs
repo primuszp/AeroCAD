@@ -172,8 +172,7 @@ namespace Primusz.AeroCAD.Core.Tools
             drawing = false;
             vertices.Clear();
             createdSegments.Clear();
-            ResetRubberObject(host);
-            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
+            return EndCommand(host, message);
         }
     }
 }

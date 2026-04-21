@@ -101,7 +101,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
             center = source.Center;
             radius = source.Radius;
-            Thickness = source.Thickness;
+            RestoreBaseFrom(source);
             InvalidateGeometry();
         }
 

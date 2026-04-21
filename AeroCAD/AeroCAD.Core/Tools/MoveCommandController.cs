@@ -133,21 +133,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            var rbo = host.ToolService.Viewport.GetRubberObject();
-            if (rbo != null)
-            {
-                rbo.SnapPoint = null;
-                rbo.ClearPreview();
-                rbo.Cancel();
-                rbo.InvalidateVisual();
-            }
-
             selectedEntities = System.Array.Empty<Entity>();
             stateRecords = System.Array.Empty<ModifyEntitiesCommand.EntityStateRecord>();
             hasBasePoint = false;
             basePoint = default(Point);
 
-            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
+            return EndCommand(host, message);
         }
 
         private GripPreview BuildPreview(IInteractiveCommandHost host, Vector displacement, Point currentPoint)

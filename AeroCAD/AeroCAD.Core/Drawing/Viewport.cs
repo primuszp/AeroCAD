@@ -167,7 +167,12 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
+            {
+                if (!layer.IsQueryable)
+                    continue;
+
                 result.AddRange(layer.QueryHitEntities(point));
+            }
             return result;
         }
 
@@ -175,7 +180,12 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
+            {
+                if (!layer.IsQueryable)
+                    continue;
+
                 result.AddRange(layer.QueryHitEntities(point, toleranceWorld));
+            }
             return result;
         }
 
@@ -183,7 +193,12 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
+            {
+                if (!layer.IsQueryable)
+                    continue;
+
                 result.AddRange(layer.QueryHitEntities(point, candidates));
+            }
             return result;
         }
 
@@ -191,7 +206,12 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
+            {
+                if (!layer.IsQueryable)
+                    continue;
+
                 result.AddRange(layer.QueryHitEntities(point, toleranceWorld, candidates));
+            }
             return result;
         }
 
@@ -199,7 +219,12 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
+            {
+                if (!layer.IsQueryable)
+                    continue;
+
                 result.AddRange(layer.QueryHitEntities(rect, requireFullyInside));
+            }
             return result;
         }
 
@@ -207,7 +232,12 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             var result = new List<Entity>();
             foreach (Layer layer in Children.OfType<Layer>())
+            {
+                if (!layer.IsQueryable)
+                    continue;
+
                 result.AddRange(layer.QueryHitEntities(rect, requireFullyInside, candidates));
+            }
             return result;
         }
 

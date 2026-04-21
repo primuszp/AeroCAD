@@ -192,7 +192,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             radius = source.Radius;
             startAngle = source.StartAngle;
             sweepAngle = source.SweepAngle;
-            Thickness = source.Thickness;
+            RestoreBaseFrom(source);
             InvalidateGeometry();
         }
 

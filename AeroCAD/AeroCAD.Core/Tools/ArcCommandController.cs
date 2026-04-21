@@ -187,9 +187,8 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            ResetRubberObject(host);
             Reset();
-            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
+            return EndCommand(host, message);
         }
 
         private void Reset()

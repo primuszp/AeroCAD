@@ -99,7 +99,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
             startPoint = source.StartPoint;
             endPoint = source.EndPoint;
-            Thickness = source.Thickness;
+            RestoreBaseFrom(source);
             InvalidateGeometry();
         }
 

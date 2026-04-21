@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using Primusz.AeroCAD.Core.Plugins;
 
 namespace Primusz.AeroCAD.Core.Drawing
@@ -27,6 +30,43 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             composition.RegisterPlugin(plugin);
             return this;
+        }
+
+        public ModelSpace LoadExtensionsFromAssemblies(IEnumerable<Assembly> assemblies)
+        {
+            var discovery = new PluginDiscoveryService();
+            var result = discovery.Discover(assemblies);
+
+            foreach (var module in result.Modules)
+                RegisterModule(module);
+
+            foreach (var plugin in result.Plugins)
+                RegisterPlugin(plugin);
+
+            return this;
+        }
+
+        public ModelSpace LoadExtensionsFromDirectory(string directory, string searchPattern = "*.dll")
+        {
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+                return this;
+
+            var assemblies = Directory.GetFiles(directory, searchPattern)
+                .Select(path =>
+                {
+                    try
+                    {
+                        return Assembly.LoadFrom(path);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                })
+                .Where(assembly => assembly != null)
+                .ToArray();
+
+            return LoadExtensionsFromAssemblies(assemblies);
         }
 
         /// <summary>

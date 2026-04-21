@@ -171,10 +171,9 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            ResetRubberObject(host);
             points.Clear();
             currentPolyline = null;
-            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
+            return EndCommand(host, message);
         }
     }
 }

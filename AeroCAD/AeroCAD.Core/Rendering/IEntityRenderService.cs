@@ -6,6 +6,8 @@ namespace Primusz.AeroCAD.Core.Rendering
     public interface IEntityRenderService
     {
         void Render(Entity entity, Layer layer, EntityVisual visual);
+
+        void InvalidateLayerCache(Layer layer);
     }
 }
 

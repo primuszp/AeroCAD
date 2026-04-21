@@ -52,6 +52,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             var pluginCatalog = new EntityPluginCatalog(entityPlugins);
             var moduleCatalog = new CadModuleCatalog(modules);
             var interactiveCommandRegistry = new InteractiveCommandRegistry(entityPlugins, modules);
+            var pluginDiscoveryService = new PluginDiscoveryService();
             var selectionManager = new SelectionManager();
             var gripService = new GripService(selectionManager);
             var markerAppearance = new MarkerAppearanceService();
@@ -127,6 +128,8 @@ namespace Primusz.AeroCAD.Core.Drawing
                 { typeof(EditorCommandCatalog), commandCatalog },
                 { typeof(IEntityPluginCatalog), pluginCatalog },
                 { typeof(EntityPluginCatalog), pluginCatalog },
+                { typeof(IPluginDiscoveryService), pluginDiscoveryService },
+                { typeof(PluginDiscoveryService), pluginDiscoveryService },
                 { typeof(ICadModuleCatalog), moduleCatalog },
                 { typeof(CadModuleCatalog), moduleCatalog },
                 { typeof(IInteractiveCommandRegistry), interactiveCommandRegistry },

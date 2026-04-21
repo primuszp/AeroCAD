@@ -64,6 +64,15 @@ namespace Primusz.AeroCAD.Core.Tools
         }
 
         /// <summary>
+        /// Ends an interactive command using the standard cleanup path.
+        /// </summary>
+        protected InteractiveCommandResult EndCommand(IInteractiveCommandHost host, string message, bool returnToSelectionMode = true)
+        {
+            ResetRubberObject(host);
+            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: returnToSelectionMode);
+        }
+
+        /// <summary>
         /// Updates the snap engine with nearby entities and refreshes the rubber object's snap indicator.
         /// </summary>
         protected void UpdateSnap(IInteractiveCommandHost host, Point rawPoint)

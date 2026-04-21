@@ -123,7 +123,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
             topLeft = source.topLeft;
             bottomRight = source.bottomRight;
-            Thickness = source.Thickness;
+            RestoreBaseFrom(source);
             InvalidateGeometry();
         }
 

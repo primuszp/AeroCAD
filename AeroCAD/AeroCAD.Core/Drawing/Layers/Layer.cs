@@ -15,7 +15,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         #region Members
 
         private readonly Dictionary<Guid, EntityVisual> entityVisuals = new Dictionary<Guid, EntityVisual>();
-        private Color color;
+        private LayerStyle style;
 
         #endregion
 
@@ -27,17 +27,40 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
 
         public Color Color
         {
-            get { return color; }
+            get { return Style.Color; }
             set
             {
-                if (value != color)
-                {
-                    color = value;
-                    foreach (var entity in entityVisuals.Values.Select(visual => visual.Entity))
-                        RenderEntity(entity);
-                }
+                Style.Color = value;
             }
         }
+
+        public new LayerStyle Style
+        {
+            get { return style; }
+            set
+            {
+                if (ReferenceEquals(style, value))
+                    return;
+
+                if (style != null)
+                    style.PropertyChanged -= OnStylePropertyChanged;
+
+                style = value ?? new LayerStyle();
+                style.PropertyChanged += OnStylePropertyChanged;
+                UpdateLayerPresentation();
+                RefreshEntityVisuals();
+            }
+        }
+
+        public bool IsFrozen => Style.IsFrozen;
+
+        public bool IsLocked => Style.IsLocked;
+
+        public bool IsRenderable => Style.IsVisible && !Style.IsFrozen;
+
+        public bool IsQueryable => IsRenderable;
+
+        public bool IsEditable => IsRenderable && !IsLocked;
 
         public IEntityRenderService RenderService { get; set; }
 
@@ -55,7 +78,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         public Layer()
         {
             Id = Guid.NewGuid();
-            Color = Colors.White;
+            Style = new LayerStyle();
         }
 
         #endregion
@@ -70,6 +93,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             entity.RenderHost = this;
             entity.Scale = Scale; // inherit current zoom-corrected scale before first render
             Visuals.Add(visual);
+
+            if (IsRenderable)
+                RenderEntity(entity);
         }
 
         public void Remove(Entity entity)
@@ -95,6 +121,30 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             Visuals.Clear();
         }
 
+        private void OnStylePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(LayerStyle.Color):
+                case nameof(LayerStyle.LineStyle):
+                case nameof(LayerStyle.LineWeight):
+                    RenderService?.InvalidateLayerCache(this);
+                    RefreshEntityVisuals();
+                    break;
+                case nameof(LayerStyle.IsVisible):
+                case nameof(LayerStyle.IsFrozen):
+                    UpdateLayerPresentation();
+                    if (IsRenderable)
+                        RefreshEntityVisuals();
+                    break;
+                case nameof(LayerStyle.IsLocked):
+                    break;
+                default:
+                    RefreshEntityVisuals();
+                    break;
+            }
+        }
+
         // Layer.OnRender is intentionally NOT overriding entity rendering.
         // Entities draw in world-space (Layer.RenderTransform = ViewTransform handles zoom/pan via GPU).
         // Entities render themselves via Render() when their geometry or visual state changes.
@@ -107,7 +157,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
 
         public void RenderEntity(Entity entity)
         {
-            if (entity == null)
+            if (entity == null || !IsRenderable)
                 return;
 
             EntityVisual visual;
@@ -140,6 +190,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
 
         public IList<Entity> QueryHitEntities(Point point, double toleranceWorld, IEnumerable<Entity> candidates)
         {
+            if (!IsQueryable)
+                return new List<Entity>();
+
             double effectiveTolerance = toleranceWorld > 0 ? toleranceWorld : 4d * Scale;
             Rect rectangle = new Rect(
                 point.X - effectiveTolerance,
@@ -162,6 +215,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
 
         public IList<Entity> QueryHitEntities(Rect rect, bool requireFullyInside, IEnumerable<Entity> candidates)
         {
+            if (!IsQueryable)
+                return new List<Entity>();
+
             var hits = new List<Entity>();
             var candidateIds = candidates != null
                 ? new HashSet<Guid>(candidates.Select(entity => entity.Id))
@@ -210,6 +266,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
 
         private void AddPointPickFallbackHits(Point point, double tolerance, IEnumerable<Entity> candidates, IList<Entity> hits)
         {
+            if (!IsQueryable)
+                return;
+
             IEnumerable<Entity> source = candidates ?? Entities;
 
             foreach (var entity in source)
@@ -233,6 +292,17 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                 .FirstOrDefault(descriptor => descriptor.Type == SnapType.Nearest);
 
             return nearestDescriptor?.TrySnap(point, double.MaxValue)?.Point;
+        }
+
+        private void UpdateLayerPresentation()
+        {
+            Visibility = IsRenderable ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void RefreshEntityVisuals()
+        {
+            foreach (var entity in entityVisuals.Values.Select(visual => visual.Entity))
+                RenderEntity(entity);
         }
 
         #endregion

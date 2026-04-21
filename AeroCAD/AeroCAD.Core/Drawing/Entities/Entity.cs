@@ -14,6 +14,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
 
         private double scale = 1.0;
         private double thickness = 1.0;
+        private EntityColor color = EntityColor.ByLayer;
 
         #endregion
 
@@ -39,6 +40,20 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             set
             {
                 thickness = value;
+                Render();
+            }
+        }
+
+        /// <summary>
+        /// Entity color. Default is <see cref="EntityColor.ByLayer"/> — inherits the layer color at render time.
+        /// Set to an ACI index or explicit RGB to override the layer color for this entity.
+        /// </summary>
+        public EntityColor Color
+        {
+            get => color;
+            set
+            {
+                color = value;
                 Render();
             }
         }
@@ -112,6 +127,18 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
         protected void CopyIdentityTo(Entity clone)
         {
             clone.Id = Id;
+            clone.color = color;
+            clone.thickness = thickness;
+        }
+
+        /// <summary>
+        /// Copies base visual properties (Color, Thickness) from <paramref name="source"/>.
+        /// Call this in <see cref="RestoreState"/> implementations.
+        /// </summary>
+        protected void RestoreBaseFrom(Entity source)
+        {
+            color = source.color;
+            thickness = source.thickness;
         }
 
         /// <summary>

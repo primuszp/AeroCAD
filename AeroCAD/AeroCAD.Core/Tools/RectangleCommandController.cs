@@ -64,12 +64,12 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TryComplete(IInteractiveCommandHost host)
         {
-            return Finish("RECTANGLE ended.");
+            return Finish(host, "RECTANGLE ended.");
         }
 
         public override InteractiveCommandResult TryCancel(IInteractiveCommandHost host)
         {
-            return Finish("RECTANGLE canceled.");
+            return Finish(host, "RECTANGLE canceled.");
         }
 
         private InteractiveCommandResult SubmitPoint(IInteractiveCommandHost host, Point point)
@@ -87,7 +87,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             CreateRectangle(host, firstCorner, point);
-            return Finish("RECTANGLE created.");
+            return Finish(host, "RECTANGLE created.");
         }
 
         private void CreateRectangle(IInteractiveCommandHost host, Point corner1, Point corner2)
@@ -101,9 +101,9 @@ namespace Primusz.AeroCAD.Core.Tools
             host.ToolService.GetService<IUndoRedoService>()?.Execute(cmd);
         }
 
-        private static InteractiveCommandResult Finish(string message)
+        private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            return InteractiveCommandResult.End(message, deactivateTool: true, returnToSelectionMode: true);
+            return EndCommand(host, message);
         }
     }
 }

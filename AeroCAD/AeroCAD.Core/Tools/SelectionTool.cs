@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Input;
 using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Handles;
@@ -209,7 +210,8 @@ namespace Primusz.AeroCAD.Core.Tools
             var editorState = ToolService.GetService<IEditorStateService>();
             var gripService = ToolService.GetService<IGripService>();
             var hasSelectedGrips = gripService?.GetSelectedGrips()?.Count > 0;
-            if (editorState == null || (!hasSelectedGrips && editorState.Mode != EditorMode.CommandInput && editorState.Mode != EditorMode.GripEditing))
+            var hoverFeedbackService = ToolService.GetService<IHoverFeedbackService>();
+            if (editorState == null || hoverFeedbackService == null || !hoverFeedbackService.CanUpdateSnap(editorState.Mode, hasSelectedGrips))
             {
                 ClearSnapPreview();
                 return;
@@ -224,8 +226,17 @@ namespace Primusz.AeroCAD.Core.Tools
                 return;
 
             var worldPoint = ToolService.Viewport.Position;
-            var candidates = spatial?.QueryNearby(worldPoint, snapEngine.ToleranceWorld) ?? GetAllEntities();
-            var descriptors = descriptorService.GetEntityAndSelectedGripDescriptors(candidates);
+            var isCommandActive = editorState.Mode == EditorMode.CommandInput || editorState.Mode == EditorMode.GripEditing;
+            IEnumerable<ISnapDescriptor> descriptors;
+            if (isCommandActive)
+            {
+                var candidates = spatial?.QueryNearby(worldPoint, snapEngine.ToleranceWorld) ?? GetAllEntities();
+                descriptors = descriptorService.GetEntityAndSelectedGripDescriptors(candidates);
+            }
+            else
+            {
+                descriptors = descriptorService.GetSelectedGripDescriptors();
+            }
             snapEngine.Update(worldPoint, descriptors);
             if (snapEngine.CurrentSnap == null)
             {

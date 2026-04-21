@@ -64,7 +64,7 @@ namespace Primusz.AeroCAD.Core.Documents
                 return false;
 
             foreach (var entity in layer.Entities.ToList())
-                RemoveEntity(entity);
+                RemoveEntityInternal(entity, true);
 
             layers.Remove(layer);
             LayerRemoved?.Invoke(this, new LayerChangedEventArgs(layer));
@@ -100,8 +100,15 @@ namespace Primusz.AeroCAD.Core.Documents
                 if (currentOwner.Id == layerId)
                     return;
 
-                currentOwner.Remove(entity);
+                if (!currentOwner.IsEditable)
+                    throw new InvalidOperationException($"The source layer '{currentOwner.LayerName}' is locked or hidden.");
             }
+
+            if (!layer.IsEditable)
+                throw new InvalidOperationException($"The target layer '{layer.LayerName}' is locked or hidden.");
+
+            if (entityOwners.TryGetValue(entity.Id, out currentOwner))
+                currentOwner.Remove(entity);
 
             layer.Add(entity);
             entityOwners[entity.Id] = layer;
@@ -110,12 +117,20 @@ namespace Primusz.AeroCAD.Core.Documents
 
         public void RemoveEntity(Entity entity)
         {
+            RemoveEntityInternal(entity, false);
+        }
+
+        private void RemoveEntityInternal(Entity entity, bool bypassLayerPolicy)
+        {
             if (entity == null)
                 return;
 
             Layer owner;
             if (!entityOwners.TryGetValue(entity.Id, out owner))
                 return;
+
+            if (!bypassLayerPolicy && !owner.IsEditable)
+                throw new InvalidOperationException($"The layer '{owner.LayerName}' is locked or hidden.");
 
             owner.Remove(entity);
             entityOwners.Remove(entity.Id);
