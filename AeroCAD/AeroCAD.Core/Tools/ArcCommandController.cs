@@ -72,8 +72,7 @@ namespace Primusz.AeroCAD.Core.Tools
                     break;
 
                 case ArcPhase.WaitingForSecondPoint:
-                    rubberObject.SetMove(host.ResolveFinalPoint(startPoint, rawPoint));
-                    rubberObject.Preview = BuildLinePreview(startPoint, rubberObject.End);
+                    rubberObject.Preview = BuildLinePreview(startPoint, host.ResolveFinalPoint(startPoint, rawPoint));
                     rubberObject.InvalidateVisual();
                     break;
 
@@ -144,8 +143,8 @@ namespace Primusz.AeroCAD.Core.Tools
                     startPoint = point;
                     phase = ArcPhase.WaitingForSecondPoint;
                     var rubberObject = host.ToolService.Viewport.GetRubberObject();
-                    rubberObject.CurrentStyle = RubberStyle.Line;
-                    rubberObject.SetStart(startPoint);
+                    rubberObject.Cancel();
+                    rubberObject.ClearPreview();
                     return InteractiveCommandResult.MoveToStep(SecondPointStep);
                 }
 
@@ -247,7 +246,7 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             return new GripPreview(new[]
             {
-                GripPreviewStroke.CreateScreenConstant(new LineGeometry(from, to), Colors.Gray, 1.5d, DashStyles.Dash)
+                GripPreviewStroke.CreateScreenConstant(new LineGeometry(from, to), Colors.Orange, 1.5d, DashStyles.Dash)
             });
         }
 
@@ -261,7 +260,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
             return new GripPreview(new[]
             {
-                GripPreviewStroke.CreateScreenConstant(new LineGeometry(start, end), Colors.Gray, 1.0d, DashStyles.Dash),
+                GripPreviewStroke.CreateScreenConstant(new LineGeometry(start, end), Colors.Orange, 1.0d, DashStyles.Dash),
                 GripPreviewStroke.CreateScreenConstant(arcGeometry, Colors.White, 1.5d)
             });
         }

@@ -110,5 +110,77 @@ namespace Primusz.AeroCAD.Core.Tests.TrimExtend
             Assert.Equal(new Point(10, 0), polyline.Points[1]);
             Assert.Equal(new Point(15, 0), polyline.Points[2]);
         }
+
+        [Fact]
+        public void ClosedPolylineTrim_WithLineBoundary_ReturnsTwoSplitPaths()
+        {
+            var strategy = new PolylineTrimExtendStrategy();
+            var target = new Polyline(new[]
+            {
+                new Point(0, 0),
+                new Point(10, 0),
+                new Point(10, 10),
+                new Point(0, 10),
+                new Point(0, 0)
+            });
+            var boundaries = new List<Entity>
+            {
+                new Line(new Point(5, -5), new Point(5, 15))
+            };
+
+            var result = strategy.CreateTrimmed(boundaries, target, new Point(8, 5));
+
+            Assert.Single(result);
+            Assert.IsType<Polyline>(result[0]);
+        }
+
+        [Fact]
+        public void ClosedPolylineTrim_WithLineBoundary_KeepsOppositeSide()
+        {
+            var strategy = new PolylineTrimExtendStrategy();
+            var target = new Polyline(new[]
+            {
+                new Point(0, 0),
+                new Point(10, 0),
+                new Point(10, 10),
+                new Point(0, 10),
+                new Point(0, 0)
+            });
+            var boundaries = new List<Entity>
+            {
+                new Line(new Point(5, -5), new Point(5, 15))
+            };
+
+            var result = strategy.CreateTrimmed(boundaries, target, new Point(8, 5));
+
+            var polyline = Assert.Single(result) as Polyline;
+            Assert.NotNull(polyline);
+            Assert.DoesNotContain(polyline.Points, p => p.X > 5.0d && p.Y > 0.0d && p.Y < 10.0d);
+        }
+
+        [Fact]
+        public void ClosedPolylineTrim_WithLineBoundary_ClickLeft_RemovesLeftSide()
+        {
+            var strategy = new PolylineTrimExtendStrategy();
+            var target = new Polyline(new[]
+            {
+                new Point(0, 0),
+                new Point(10, 0),
+                new Point(10, 10),
+                new Point(0, 10),
+                new Point(0, 0)
+            });
+            var boundaries = new List<Entity>
+            {
+                new Line(new Point(5, -5), new Point(5, 15))
+            };
+
+            var result = strategy.CreateTrimmed(boundaries, target, new Point(2, 5));
+
+            var polyline = Assert.Single(result) as Polyline;
+            Assert.NotNull(polyline);
+            Assert.DoesNotContain(polyline.Points, p => p.X < 5.0d && p.Y > 0.0d && p.Y < 10.0d);
+        }
+
     }
 }

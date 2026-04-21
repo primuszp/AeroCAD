@@ -33,6 +33,15 @@ namespace Primusz.AeroCAD.Core.Editor
 
             if (trimmedInput.Length == 0)
             {
+                if (activeInteractiveTool != null && submitToActiveTool != null && submitToActiveTool(CommandInputToken.Empty()))
+                {
+                    refreshViewport?.Invoke();
+                    var activeCommandName = activeCommandNameProvider?.Invoke();
+                    if (!string.IsNullOrWhiteSpace(activeCommandName))
+                        repeatCoordinator.RememberExecutedCommand(activeCommandName);
+                    return true;
+                }
+
                 repeatCoordinator.HandleBlankSubmit(
                     activeInteractiveTool,
                     executeCommand,

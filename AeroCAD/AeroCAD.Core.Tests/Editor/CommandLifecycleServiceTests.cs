@@ -33,6 +33,31 @@ namespace Primusz.AeroCAD.Core.Tests.Editor
         }
 
         [Fact]
+        public void BlankSubmit_WithActiveTool_UsesEmptyTokenBeforeComplete()
+        {
+            var repeat = new CommandRepeatCoordinator();
+            var service = new CommandLifecycleService(repeat);
+            var activeTool = new StubInteractiveTool { SubmitEmptyResult = true };
+            var refreshCount = 0;
+
+            var handled = service.TryHandleCommandLineInput(
+                string.Empty,
+                activeTool,
+                token => CommandInputToken.Empty(),
+                token => activeTool.TrySubmitToken(token),
+                command => false,
+                () => "POLYGON",
+                () => refreshCount++,
+                message => { });
+
+            Assert.True(handled);
+            Assert.Equal(1, refreshCount);
+            Assert.Equal("POLYGON", repeat.LastExecutedCommand);
+            Assert.Equal(0, activeTool.CompleteCalls);
+            Assert.Equal(1, activeTool.EmptySubmitCalls);
+        }
+
+        [Fact]
         public void BlankSubmit_WithoutLastCommand_IsStillHandled()
         {
             var repeat = new CommandRepeatCoordinator();
@@ -75,8 +100,19 @@ namespace Primusz.AeroCAD.Core.Tests.Editor
         private sealed class StubInteractiveTool : ICommandInteractiveTool
         {
             public int CompleteCalls { get; private set; }
+            public int EmptySubmitCalls { get; private set; }
+            public bool SubmitEmptyResult { get; set; }
 
-            public bool TrySubmitToken(CommandInputToken token) => false;
+            public bool TrySubmitToken(CommandInputToken token)
+            {
+                if (token != null && token.IsEmpty)
+                {
+                    EmptySubmitCalls++;
+                    return SubmitEmptyResult;
+                }
+
+                return false;
+            }
 
             public bool TrySubmitText(string input) => false;
 

@@ -16,7 +16,6 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         private Point start, end;
         private RubberState currentState = RubberState.Idle;
         private RubberStyle currentStyle = RubberStyle.Line;
-        private readonly Pen pen;
         private readonly Viewport viewport; // cached at construction
         private readonly IMarkerAppearanceService appearanceService;
         private GripPreview preview = GripPreview.Empty;
@@ -113,7 +112,6 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             IsHitTestVisible = false;
             viewport.Children.Add(this);
             Panel.SetZIndex(this, 1000);
-            pen = new Pen(Brushes.White, 1.5);
             RefreshAppearanceCache();
             if (this.appearanceService != null)
                 this.appearanceService.AppearanceChanged += (s, e) =>
@@ -198,6 +196,28 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             return pen;
         }
 
+        private Pen CreateDashedHelperPen()
+        {
+            var thickness = 1.5d / viewport.Zoom;
+            var pen = new Pen(CreateFrozenBrush(Colors.Orange), thickness)
+            {
+                DashStyle = DashStyles.Dash
+            };
+
+            if (pen.CanFreeze)
+                pen.Freeze();
+
+            return pen;
+        }
+
+        private Pen CreateSolidEntityPen()
+        {
+            var pen = new Pen(CreateFrozenBrush(Colors.White), 1.5d / viewport.Zoom);
+            if (pen.CanFreeze)
+                pen.Freeze();
+            return pen;
+        }
+
         #endregion
 
         #region Renders
@@ -249,10 +269,7 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
                         brush = selectionCrossingBrush;
                 }
 
-                pen.Thickness = 1.5 / viewport.Zoom;
-
-                Geometry geometry = GetCurrentGeometry();
-                context.DrawGeometry(brush, pen, geometry);
+                DrawRubberGeometry(context, brush);
             }
 
             // Snap marker is drawn regardless of rubber state (active during grip drag too)
@@ -331,6 +348,40 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
         public void ClearPreview()
         {
             Preview = GripPreview.Empty;
+        }
+
+        private void DrawRubberGeometry(DrawingContext context, Brush brush)
+        {
+            switch (CurrentStyle)
+            {
+                case RubberStyle.Line:
+                    context.DrawGeometry(brush, CreateSolidEntityPen(), new LineGeometry(start, end));
+                    break;
+
+                case RubberStyle.Rectangle:
+                    context.DrawGeometry(brush, CreateSolidEntityPen(), new RectangleGeometry(new Rect(start, end)));
+                    break;
+
+                case RubberStyle.Select:
+                    context.DrawGeometry(brush, CreateSolidEntityPen(), new RectangleGeometry(new Rect(start, end)));
+                    break;
+
+                case RubberStyle.Circle:
+                {
+                    double radius = (Start - End).Length;
+                    context.DrawGeometry(null, CreateDashedHelperPen(), new LineGeometry(start, end));
+                    context.DrawGeometry(null, CreateSolidEntityPen(), new EllipseGeometry(start, radius, radius));
+                    break;
+                }
+
+                case RubberStyle.CircleDiameter:
+                {
+                    double radius = (Start - End).Length / 2;
+                    context.DrawGeometry(null, CreateDashedHelperPen(), new LineGeometry(start, end));
+                    context.DrawGeometry(null, CreateSolidEntityPen(), new EllipseGeometry(start, radius, radius));
+                    break;
+                }
+            }
         }
 
         #endregion

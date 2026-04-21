@@ -64,11 +64,11 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 }
             }
 
-            var left = intersections.LastOrDefault(item => item.Parameter < clickedParameter - Epsilon);
-            var right = intersections.FirstOrDefault(item => item.Parameter > clickedParameter + Epsilon);
-
             if (!closed)
             {
+                var left = intersections.LastOrDefault(item => item.Parameter < clickedParameter - Epsilon);
+                var right = intersections.FirstOrDefault(item => item.Parameter > clickedParameter + Epsilon);
+
                 if (left == null && right != null)
                     return PolylinePathOperations.BuildOpenPath(polyline, right.Parameter, polyline.Points.Count - 1) is Polyline suffix ? new[] { (Entity)suffix } : Array.Empty<Entity>();
 
@@ -86,10 +86,13 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 return results;
             }
 
-            if (left == null || right == null || ReferenceEquals(left, right))
+            var closedLeft = intersections.LastOrDefault(item => item.Parameter < clickedParameter - Epsilon) ?? intersections.LastOrDefault();
+            var closedRight = intersections.FirstOrDefault(item => item.Parameter > clickedParameter + Epsilon) ?? intersections.FirstOrDefault();
+
+            if (closedLeft == null || closedRight == null || ReferenceEquals(closedLeft, closedRight))
                 return Array.Empty<Entity>();
 
-            var closedPath = PolylinePathOperations.BuildClosedPath(polyline, right.Parameter, left.Parameter);
+            var closedPath = PolylinePathOperations.BuildClosedPath(polyline, closedRight.Parameter, closedLeft.Parameter);
             return closedPath != null ? new[] { (Entity)closedPath } : Array.Empty<Entity>();
         }
 
@@ -173,7 +176,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         private static IReadOnlyList<IntersectionPoint> GetTrimIntersections(Polyline polyline, IReadOnlyList<Entity> boundaries, bool closed)
         {
-            var points = polyline.Points.ToList();
+            var points = closed ? PolylinePathOperations.GetRingPoints(polyline).ToList() : polyline.Points.ToList();
             var intersections = new List<IntersectionPoint>();
             int segmentCount = closed ? points.Count : points.Count - 1;
 
@@ -198,7 +201,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         private static double GetPolylineLengthParameter(Polyline polyline, bool closed)
         {
-            return closed ? polyline.Points.Count - 1 : polyline.Points.Count - 1;
+            return closed ? PolylinePathOperations.GetRingPoints(polyline).Count : polyline.Points.Count - 1;
         }
 
         private static double ProjectParameter(Line line, Point point)

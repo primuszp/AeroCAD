@@ -20,14 +20,14 @@ namespace Primusz.AeroCAD.View.Plugins
             get
             {
                 yield return new InteractiveCommandRegistration(
-                    "DIAMOND",
-                    layerProvider => new DiamondCommandController(layerProvider),
-                    aliases: new[] { "DM" },
-                    description: "Draw a diamond centered on a picked point.",
+                    "POLYGON",
+                    layerProvider => new PolygonCommandController(layerProvider),
+                    aliases: new[] { "POL" },
+                    description: "Draw a regular polygon.",
                     policy: new EditorCommandPolicy(CommandSelectionRequirement.None),
                     assignActiveLayer: true,
                     menuGroup: "Draw",
-                    menuLabel: "_Diamond");
+                    menuLabel: "_Polygon");
             }
         }
     }

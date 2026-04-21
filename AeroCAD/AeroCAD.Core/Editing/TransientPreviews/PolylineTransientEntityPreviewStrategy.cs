@@ -19,7 +19,7 @@ namespace Primusz.AeroCAD.Core.Editing.TransientPreviews
 
             return new GripPreview(new[]
             {
-                GripPreviewStroke.CreateScreenConstant(Polyline.BuildGeometry(polyline.Points), color, polyline.Thickness)
+                GripPreviewStroke.CreateScreenConstant(Polyline.BuildGeometry(polyline.Points), Colors.White, polyline.Thickness)
             });
         }
     }

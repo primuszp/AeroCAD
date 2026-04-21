@@ -101,6 +101,22 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             return CreatePolyline(source, result);
         }
 
+        public static IReadOnlyList<Polyline> BuildClosedSplitPaths(Polyline source, double startParam, double endParam)
+        {
+            var points = GetRingPoints(source);
+            if (points.Count < 3)
+                return Array.Empty<Polyline>();
+
+            double total = points.Count;
+            if (endParam < startParam)
+                endParam += total;
+
+            var first = BuildClosedSidePath(source, points, startParam, endParam);
+            var second = BuildClosedSidePath(source, points, endParam, startParam + total);
+
+            return new[] { first, second }.Where(item => item != null).ToList();
+        }
+
         public static Polyline ReplaceEndpoint(Polyline source, bool replaceStart, Point replacementPoint)
         {
             var points = GetPoints(source);
@@ -123,6 +139,17 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
         private static Polyline CreatePolyline(Polyline source, List<Point> points)
         {
             return points.Count >= 2 ? new Polyline(points) { Thickness = source.Thickness } : null;
+        }
+
+        private static Polyline BuildClosedSidePath(Polyline source, IReadOnlyList<Point> points, double startParam, double endParam)
+        {
+            var result = new List<Point> { GetPointAtClosedParameter(points, startParam) };
+            int startIndex = (int)Math.Floor(startParam + Epsilon);
+            int endIndex = (int)Math.Floor(endParam - Epsilon);
+            for (int i = startIndex + 1; i <= endIndex; i++)
+                AddPoint(result, points[i % points.Count]);
+            AddPoint(result, GetPointAtClosedParameter(points, endParam));
+            return CreatePolyline(source, result);
         }
 
         private static IReadOnlyList<Point> GetRingPointsFromPoints(IReadOnlyList<Point> points)

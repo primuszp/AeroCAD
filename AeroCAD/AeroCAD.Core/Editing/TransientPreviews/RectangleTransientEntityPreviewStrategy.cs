@@ -17,7 +17,7 @@ namespace Primusz.AeroCAD.Core.Editing.TransientPreviews
             var geometry = new RectangleGeometry(new Rect(rect.TopLeft, rect.BottomRight));
             return new GripPreview(new[]
             {
-                GripPreviewStroke.CreateScreenConstant(geometry, color, rect.Thickness)
+                GripPreviewStroke.CreateScreenConstant(geometry, Colors.White, rect.Thickness)
             });
         }
     }

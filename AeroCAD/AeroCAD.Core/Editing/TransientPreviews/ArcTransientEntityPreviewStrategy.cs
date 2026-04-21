@@ -21,7 +21,7 @@ namespace Primusz.AeroCAD.Core.Editing.TransientPreviews
             {
                 GripPreviewStroke.CreateScreenConstant(
                     Arc.BuildGeometry(arc.Center, arc.Radius, arc.StartAngle, arc.SweepAngle),
-                    color,
+                    Colors.White,
                     arc.Thickness)
             });
         }

@@ -396,6 +396,8 @@ namespace Primusz.AeroCAD.View.ViewModels
         {
             var screenPoint = e.GetPosition(viewport);
             var worldPoint = viewport.Unproject(screenPoint);
+            if ((editorStateService?.Mode ?? EditorMode.Idle) == EditorMode.Idle && !HasSelectedGrips())
+                viewport.GetRubberObject().SnapPoint = null;
             var statusPoint = ResolveHoverStatusPoint(worldPoint);
 
             StatusText = FormatCoordinates(statusPoint ?? worldPoint);

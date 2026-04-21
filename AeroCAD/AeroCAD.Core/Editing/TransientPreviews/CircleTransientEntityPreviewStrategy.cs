@@ -19,7 +19,7 @@ namespace Primusz.AeroCAD.Core.Editing.TransientPreviews
 
             return new GripPreview(new[]
             {
-                GripPreviewStroke.CreateScreenConstant(Circle.BuildGeometry(circle.Center, circle.Radius), color, circle.Thickness)
+                GripPreviewStroke.CreateScreenConstant(Circle.BuildGeometry(circle.Center, circle.Radius), Colors.White, circle.Thickness)
             });
         }
     }
