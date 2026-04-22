@@ -52,6 +52,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             var pluginCatalog = new EntityPluginCatalog(entityPlugins);
             var moduleCatalog = new CadModuleCatalog(modules);
             var interactiveCommandRegistry = new InteractiveCommandRegistry(entityPlugins, modules);
+            var shapeRegistry = new InteractiveShapeRegistry(modules.SelectMany(module => module?.Shapes ?? Enumerable.Empty<IInteractiveShapeDefinition>()));
             var pluginDiscoveryService = new PluginDiscoveryService();
             var selectionManager = new SelectionManager();
             var gripService = new GripService(selectionManager);
@@ -100,7 +101,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             var snapEngine = new SnapEngine(snapModePolicy);
             var undoRedoService = new UndoRedoService();
             var orthoService = new OrthoService();
-            var runtimeBootstrapper = new ModelSpaceRuntimeBootstrapper(viewport, document, selectionManager, editorState, overlay, toolService, commandCatalog, entityPlugins, modules.AsReadOnly());
+            var runtimeBootstrapper = new ModelSpaceRuntimeBootstrapper(viewport, document, selectionManager, editorState, overlay, toolService, commandCatalog, shapeRegistry, entityPlugins, modules.AsReadOnly());
 
             Services = new Dictionary<Type, object>
             {
@@ -134,6 +135,8 @@ namespace Primusz.AeroCAD.Core.Drawing
                 { typeof(CadModuleCatalog), moduleCatalog },
                 { typeof(IInteractiveCommandRegistry), interactiveCommandRegistry },
                 { typeof(InteractiveCommandRegistry), interactiveCommandRegistry },
+                { typeof(IInteractiveShapeRegistry), shapeRegistry },
+                { typeof(InteractiveShapeRegistry), shapeRegistry },
                 { typeof(IEntityRenderService), entityRenderService },
                 { typeof(EntityRenderService), entityRenderService },
                 { typeof(IEntityBoundsService), entityBoundsService },

@@ -18,6 +18,7 @@ namespace Primusz.AeroCAD.Core.Drawing
         private readonly IToolService toolService;
         private readonly IEditorCommandCatalog commandCatalog;
         private readonly IInteractiveCommandRegistry interactiveCommandRegistry;
+        private readonly IInteractiveShapeRegistry shapeRegistry;
         private readonly IEntityPluginCatalog pluginCatalog;
         private readonly ICadModuleCatalog moduleCatalog;
 
@@ -29,6 +30,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             Overlay overlay,
             IToolService toolService,
             IEditorCommandCatalog commandCatalog,
+            IInteractiveShapeRegistry shapeRegistry,
             IReadOnlyList<IEntityPlugin> plugins,
             IReadOnlyList<ICadModule> modules)
         {
@@ -39,6 +41,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             this.overlay = overlay;
             this.toolService = toolService;
             this.commandCatalog = commandCatalog;
+            this.shapeRegistry = shapeRegistry;
             this.pluginCatalog = new EntityPluginCatalog(plugins);
             this.interactiveCommandRegistry = new InteractiveCommandRegistry(plugins, modules);
             this.moduleCatalog = new CadModuleCatalog(modules);
@@ -49,6 +52,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             WireEvents();
             RegisterDefaultTools();
             RegisterPluginTools();
+            RegisterModuleShapes();
             RegisterPluginInteractiveCommands();
             RegisterPluginCommands();
             RegisterModuleCommands();
@@ -83,6 +87,19 @@ namespace Primusz.AeroCAD.Core.Drawing
         {
             foreach (var registration in interactiveCommandRegistry.Registrations)
             {
+                toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
+                commandCatalog.Register(registration.CreateCommandDefinition());
+            }
+        }
+
+        private void RegisterModuleShapes()
+        {
+            foreach (var shape in shapeRegistry?.Definitions ?? System.Linq.Enumerable.Empty<IInteractiveShapeDefinition>())
+            {
+                if (shape == null)
+                    continue;
+
+                var registration = shape.CreateCommandRegistration();
                 toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
                 commandCatalog.Register(registration.CreateCommandDefinition());
             }

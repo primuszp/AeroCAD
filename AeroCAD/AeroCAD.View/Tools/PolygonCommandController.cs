@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using Primusz.AeroCAD.Core.Commands;
@@ -8,9 +7,8 @@ using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editor;
-using Primusz.AeroCAD.Core.GeometryMath;
-using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.View.Tools
@@ -29,15 +27,7 @@ namespace Primusz.AeroCAD.View.Tools
         private static readonly CommandKeywordOption CircumscribedKeyword = new CommandKeywordOption("CIRCUMSCRIBED", new[] { "C" }, "Sides touch the circle.");
 
         private readonly Func<Layer> activeLayerResolver;
-        private int sides;
-        private bool hasSides;
-        private bool useEdgeMode;
-        private bool hasCenter;
-        private bool hasCenterModeChoice;
-        private bool useInscribed = true;
-        private Point center;
-        private bool hasFirstEdgePoint;
-        private Point firstEdgePoint;
+        private readonly PolygonInteractiveShapeSession session = new PolygonInteractiveShapeSession();
 
         public PolygonCommandController(Func<Layer> activeLayerResolver)
         {
@@ -51,15 +41,7 @@ namespace Primusz.AeroCAD.View.Tools
         public override void OnActivated(IInteractiveCommandHost host)
         {
             ResetRubberObject(host);
-            sides = 0;
-            hasSides = false;
-            useEdgeMode = false;
-            hasCenter = false;
-            hasCenterModeChoice = false;
-            useInscribed = true;
-            hasFirstEdgePoint = false;
-            firstEdgePoint = default(Point);
-            center = default(Point);
+            session.Reset();
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
@@ -67,27 +49,27 @@ namespace Primusz.AeroCAD.View.Tools
             UpdateSnap(host, rawPoint);
 
             var rbo = host.ToolService.Viewport.GetRubberObject();
-            if (useEdgeMode)
+            if (session.UseEdgeMode)
             {
-                if (hasFirstEdgePoint)
+                if (session.HasFirstEdgePoint)
                 {
-                    var final = host.ResolveFinalPoint(firstEdgePoint, rawPoint);
+                    var final = host.ResolveFinalPoint(session.FirstEdgePoint, rawPoint);
                     rbo.CurrentStyle = RubberStyle.Line;
                     rbo.SetMove(final);
-                    SetPreview(host, rbo, CreatePreviewPolygon(null, firstEdgePoint, final));
+                    SetPreview(host, rbo, session.BuildPreview(final));
                 }
             }
-            else if (hasCenter && hasCenterModeChoice)
+            else if (session.HasCenter && session.HasCenterModeChoice)
             {
-                var final = host.ResolveFinalPoint(center, rawPoint);
+                var final = host.ResolveFinalPoint(session.Center, rawPoint);
                 rbo.Cancel();
-                SetPreview(rbo, CreateCenterPreview(final));
+                SetPreview(rbo, session.BuildCenterPreview(final));
             }
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            if (!useEdgeMode && host.CurrentStep == CenterModeStep)
+            if (!session.UseEdgeMode && host.CurrentStep == CenterModeStep)
                 return InteractiveCommandResult.HandledOnly();
 
             Point final = ResolvePoint(host, rawPoint);
@@ -108,22 +90,19 @@ namespace Primusz.AeroCAD.View.Tools
 
                 if (token == null || token.IsEmpty || modeText.Length == 0)
                 {
-                    useInscribed = true;
-                    hasCenterModeChoice = true;
+                    session.ChooseCenterMode(true);
                     return InteractiveCommandResult.MoveToStep(RadiusStep);
                 }
 
                 if (modeText == "I" || modeText == "INSCRIBED")
                 {
-                    useInscribed = true;
-                    hasCenterModeChoice = true;
+                    session.ChooseCenterMode(true);
                     return InteractiveCommandResult.MoveToStep(RadiusStep);
                 }
 
                 if (modeText == "C" || modeText == "CIRCUMSCRIBED")
                 {
-                    useInscribed = false;
-                    hasCenterModeChoice = true;
+                    session.ChooseCenterMode(false);
                     return InteractiveCommandResult.MoveToStep(RadiusStep);
                 }
 
@@ -135,9 +114,7 @@ namespace Primusz.AeroCAD.View.Tools
                 var placementText = (token?.TextValue ?? token?.RawText ?? string.Empty).Trim().ToUpperInvariant();
                 if (placementText == "E" || placementText == "EDGE")
                 {
-                    useEdgeMode = true;
-                    hasCenter = false;
-                    hasCenterModeChoice = false;
+                    session.BeginEdgeMode();
                     var rbo = host.ToolService.Viewport.GetRubberObject();
                     rbo.ClearPreview();
                     rbo.SnapPoint = null;
@@ -149,9 +126,9 @@ namespace Primusz.AeroCAD.View.Tools
             CommandKeywordOption keyword;
             if (TryResolveKeyword(host, token, out keyword))
             {
-                if (keyword == EdgeKeyword && !hasCenter)
+                if (keyword == EdgeKeyword && !session.HasCenter)
                 {
-                    useEdgeMode = true;
+                    session.BeginEdgeMode();
                     var rbo = host.ToolService.Viewport.GetRubberObject();
                     rbo.ClearPreview();
                     rbo.CurrentStyle = RubberStyle.Line;
@@ -159,13 +136,13 @@ namespace Primusz.AeroCAD.View.Tools
                 }
             }
 
-            if (token?.ScalarValue != null && !hasSides)
+            if (token?.ScalarValue != null && !session.HasSides)
                 return SubmitSides(host, token.ScalarValue.Value);
 
             Point point;
-            var basePoint = useEdgeMode
-                ? (hasFirstEdgePoint ? firstEdgePoint : (Point?)null)
-                : (hasCenter ? center : (Point?)null);
+            var basePoint = session.UseEdgeMode
+                ? (session.HasFirstEdgePoint ? session.FirstEdgePoint : (Point?)null)
+                : (session.HasCenter ? session.Center : (Point?)null);
 
             if (!host.TryResolvePointInput(token, basePoint, out point))
                 return InteractiveCommandResult.Unhandled();
@@ -189,37 +166,36 @@ namespace Primusz.AeroCAD.View.Tools
             if (count < 3 || count > 1024)
                 return InteractiveCommandResult.HandledOnly();
 
-            sides = count;
-            hasSides = true;
+            if (!session.TrySetSides(value))
+                return InteractiveCommandResult.HandledOnly();
+
             host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(count.ToString());
             return InteractiveCommandResult.MoveToStep(PlacementStep);
         }
 
         private InteractiveCommandResult SubmitPoint(IInteractiveCommandHost host, Point point)
         {
-            if (!hasSides)
+            if (!session.HasSides)
                 return InteractiveCommandResult.HandledOnly();
 
             host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
-            if (useEdgeMode)
+            if (session.UseEdgeMode)
             {
-                if (!hasFirstEdgePoint)
+                if (!session.HasFirstEdgePoint)
                 {
-                    hasFirstEdgePoint = true;
-                    firstEdgePoint = point;
-                    host.ToolService.Viewport.GetRubberObject().SetStart(firstEdgePoint);
+                    session.SetFirstEdgePoint(point);
+                    host.ToolService.Viewport.GetRubberObject().SetStart(session.FirstEdgePoint);
                     return InteractiveCommandResult.MoveToStep(SecondEdgeStep);
                 }
 
-                CreatePolygonFromEdge(host, firstEdgePoint, point);
+                CreatePolygonFromEdge(host, session.FirstEdgePoint, point);
                 return Finish(host, "POLYGON created.");
             }
 
-            if (!hasCenter)
+            if (!session.HasCenter)
             {
-                hasCenter = true;
-                center = point;
+                session.SetCenter(point);
                 var rbo = host.ToolService.Viewport.GetRubberObject();
                 rbo.ClearPreview();
                 rbo.SnapPoint = null;
@@ -227,7 +203,7 @@ namespace Primusz.AeroCAD.View.Tools
                 return InteractiveCommandResult.MoveToStep(CenterModeStep);
             }
 
-            CreatePolygonFromCenter(host, center, point);
+            CreatePolygonFromCenter(host, session.Center, point);
             return Finish(host, "POLYGON created.");
         }
 
@@ -237,15 +213,9 @@ namespace Primusz.AeroCAD.View.Tools
             if (layer == null)
                 return;
 
-            double radius = (radiusPoint - polygonCenter).Length;
-            if (radius <= 1e-9)
+            if (!session.TryBuildCenterPolygon(radiusPoint, out var points))
                 return;
 
-            double rotationOffset = CircularGeometry.GetAngle(polygonCenter, radiusPoint);
-            if (!useInscribed)
-                rotationOffset -= Math.PI / sides;
-
-            var points = RegularPolygonGeometry.BuildClosedPolygon(polygonCenter, sides, radius, rotationOffset, useInscribed);
             AddPolygon(host, layer, points);
         }
 
@@ -255,9 +225,9 @@ namespace Primusz.AeroCAD.View.Tools
             if (layer == null)
                 return;
 
-            Point centerPoint;
-            double rotationOffset;
-            var points = RegularPolygonGeometry.BuildSidePolygon(first, second, sides, out centerPoint, out rotationOffset);
+            if (!session.TryBuildEdgePolygon(second, out var points))
+                return;
+
             AddPolygon(host, layer, points);
         }
 
@@ -303,84 +273,10 @@ namespace Primusz.AeroCAD.View.Tools
 
         private Point ResolvePoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            if (useEdgeMode)
-                return host.ResolveFinalPoint(hasFirstEdgePoint ? firstEdgePoint : (Point?)null, rawPoint);
+            if (session.UseEdgeMode)
+                return host.ResolveFinalPoint(session.HasFirstEdgePoint ? session.FirstEdgePoint : (Point?)null, rawPoint);
 
-            return host.ResolveFinalPoint(hasCenter ? center : (Point?)null, rawPoint);
-        }
-
-        private Polyline CreatePreviewPolygon(Point? centerPoint, Point? edgeStart, Point cursorPoint)
-        {
-            if (useEdgeMode && edgeStart.HasValue)
-            {
-                Point c;
-                double rotation;
-                var points = RegularPolygonGeometry.BuildSidePolygon(edgeStart.Value, cursorPoint, sides, out c, out rotation);
-                return points.Length >= 4 ? new Polyline(points) : null;
-            }
-
-            if (centerPoint.HasValue)
-            {
-                double previewRadius = (cursorPoint - centerPoint.Value).Length;
-                if (previewRadius <= 1e-9)
-                    return null;
-
-                double rotationOffset = CircularGeometry.GetAngle(centerPoint.Value, cursorPoint);
-                if (!useInscribed)
-                    rotationOffset -= Math.PI / sides;
-
-                var points = RegularPolygonGeometry.BuildClosedPolygon(centerPoint.Value, sides, previewRadius, rotationOffset, useInscribed);
-                return points.Count >= 4 ? new Polyline(points) : null;
-            }
-
-            return null;
-        }
-
-        private GripPreview CreateCenterPreview(Point cursorPoint)
-        {
-            if (!hasCenter)
-                return GripPreview.Empty;
-
-            double previewRadius = (cursorPoint - center).Length;
-            if (previewRadius <= 1e-9)
-                return GripPreview.Empty;
-
-            double rotationOffset = CircularGeometry.GetAngle(center, cursorPoint);
-            if (!useInscribed)
-                rotationOffset -= Math.PI / sides;
-
-            var points = RegularPolygonGeometry.BuildClosedPolygon(center, sides, previewRadius, rotationOffset, useInscribed);
-            if (points.Count < 4)
-                return GripPreview.Empty;
-
-            var polygonGeometry = BuildPolylineGeometry(points);
-            var circleGeometry = new EllipseGeometry(center, previewRadius, previewRadius);
-
-            return new GripPreview(new[]
-            {
-                GripPreviewStroke.CreateScreenConstant(new LineGeometry(center, cursorPoint), Colors.Orange, 1.5d, DashStyles.Dash),
-                GripPreviewStroke.CreateScreenConstant(circleGeometry, Colors.LightGray, 0.5d),
-                GripPreviewStroke.CreateScreenConstant(polygonGeometry, Colors.White, 1.5d)
-            });
-        }
-
-        private static Geometry BuildPolylineGeometry(IReadOnlyList<Point> points)
-        {
-            if (points == null || points.Count < 2)
-                return Geometry.Empty;
-
-            var geometry = new StreamGeometry();
-            using (var context = geometry.Open())
-            {
-                context.BeginFigure(points[0], false, false);
-                for (int i = 1; i < points.Count; i++)
-                    context.LineTo(points[i], true, false);
-            }
-
-            if (geometry.CanFreeze)
-                geometry.Freeze();
-
-            return geometry;
+            return host.ResolveFinalPoint(session.HasCenter ? session.Center : (Point?)null, rawPoint);
         }
     }
 }
