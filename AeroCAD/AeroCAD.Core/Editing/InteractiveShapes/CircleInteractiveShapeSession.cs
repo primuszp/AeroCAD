@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public sealed class CircleInteractiveShapeSession
+    public sealed class CircleInteractiveShapeSession : IInteractiveShapeSession
     {
         public bool HasCenterPoint { get; private set; }
         public Point CenterPoint { get; private set; }

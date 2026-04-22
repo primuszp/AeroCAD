@@ -4,7 +4,7 @@ using Primusz.AeroCAD.Core.Drawing.Entities;
 
 namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public sealed class RectangleInteractiveShapeSession
+    public sealed class RectangleInteractiveShapeSession : IInteractiveShapeSession
     {
         public bool HasFirstCorner { get; private set; }
         public Point FirstCorner { get; private set; }

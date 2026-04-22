@@ -4,7 +4,7 @@ using Primusz.AeroCAD.Core.Drawing.Entities;
 
 namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public sealed class LineInteractiveShapeSession
+    public sealed class LineInteractiveShapeSession : IInteractiveShapeSession
     {
         private readonly List<Point> vertices = new List<Point>();
         private readonly List<Line> createdSegments = new List<Line>();

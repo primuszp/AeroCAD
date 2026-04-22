@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public sealed class PolygonInteractiveShapeSession
+    public sealed class PolygonInteractiveShapeSession : IInteractiveShapeSession
     {
         public int Sides { get; private set; }
         public bool HasSides { get; private set; }

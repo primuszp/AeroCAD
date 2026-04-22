@@ -4,7 +4,7 @@ using Primusz.AeroCAD.Core.Drawing.Entities;
 
 namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public sealed class PolylineInteractiveShapeSession
+    public sealed class PolylineInteractiveShapeSession : IInteractiveShapeSession
     {
         private readonly List<Point> points = new List<Point>();
 

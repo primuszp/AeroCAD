@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public sealed class ArcInteractiveShapeSession
+    public sealed class ArcInteractiveShapeSession : IInteractiveShapeSession
     {
         public enum ArcPhase
         {

@@ -63,6 +63,13 @@ namespace Primusz.AeroCAD.View.Editor
             if (string.IsNullOrWhiteSpace(commandName))
                 return false;
 
+            var activeInteractiveTool = toolRuntime?.GetActiveInteractiveTool();
+            if (activeInteractiveTool != null && !IsBuiltInCommand(commandName))
+            {
+                commandFeedbackService?.LogMessage("Finish or cancel the active command first.");
+                return false;
+            }
+
             var normalizedName = commandName.Trim().ToUpperInvariant();
             if (!commandExecutors.TryGetValue(normalizedName, out var executor))
             {
@@ -83,6 +90,25 @@ namespace Primusz.AeroCAD.View.Editor
                 return true;
 
             return executor();
+        }
+
+        private static bool IsBuiltInCommand(string commandName)
+        {
+            if (string.IsNullOrWhiteSpace(commandName))
+                return false;
+
+            switch (commandName.Trim().ToUpperInvariant())
+            {
+                case "CANCEL":
+                case "ESC":
+                case "STOP":
+                case "SELECT":
+                case "S":
+                case "SEL":
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public bool TryResolveAndExecute(string input)
