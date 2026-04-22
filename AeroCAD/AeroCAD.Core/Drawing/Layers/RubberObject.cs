@@ -222,37 +222,6 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
 
         #region Renders
 
-        private Geometry GetCurrentGeometry()
-        {
-            Geometry geometry = null;
-
-            switch (CurrentStyle)
-            {
-                case RubberStyle.Line:
-                    geometry = new LineGeometry(start, end);
-                    break;
-                case RubberStyle.Select:
-                case RubberStyle.Rectangle:
-                    geometry = new RectangleGeometry(new Rect(start, end));
-                    break;
-                case RubberStyle.Circle:
-                    double radius = (Start - End).Length;
-                    GeometryGroup group = new GeometryGroup();
-                    group.Children.Add(new LineGeometry(start, end));
-                    group.Children.Add(new EllipseGeometry(start, radius, radius));
-                    geometry = group;
-                    break;
-                case RubberStyle.CircleDiameter:
-                    double dRadius = (Start - End).Length / 2;
-                    GeometryGroup dGroup = new GeometryGroup();
-                    dGroup.Children.Add(new LineGeometry(start, end));
-                    dGroup.Children.Add(new EllipseGeometry(start, dRadius, dRadius));
-                    geometry = dGroup;
-                    break;
-            }
-            return geometry;
-        }
-
         protected override void OnRender(DrawingContext context)
         {
             base.OnRender(context);

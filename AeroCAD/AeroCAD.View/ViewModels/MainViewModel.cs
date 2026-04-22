@@ -398,7 +398,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             var worldPoint = viewport.Unproject(screenPoint);
             if ((editorStateService?.Mode ?? EditorMode.Idle) == EditorMode.Idle && !HasSelectedGrips())
                 viewport.GetRubberObject().SnapPoint = null;
-            var statusPoint = ResolveHoverStatusPoint(worldPoint);
+            var statusPoint = ResolveHoverStatusPoint();
 
             StatusText = FormatCoordinates(statusPoint ?? worldPoint);
         }
@@ -417,7 +417,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             StatusText = FormatCoordinates(pos);
         }
 
-        private Point? ResolveHoverStatusPoint(Point worldPoint)
+        private Point? ResolveHoverStatusPoint()
         {
             var snapResult = viewport.GetRubberObject()?.SnapPoint;
             return hoverFeedbackService.ResolveStatusPoint(editorStateService?.Mode ?? EditorMode.Idle, HasSelectedGrips(), snapResult);

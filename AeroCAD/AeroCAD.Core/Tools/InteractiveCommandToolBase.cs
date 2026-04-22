@@ -130,6 +130,9 @@ namespace Primusz.AeroCAD.Core.Tools
                 ? Drawing.CadCursorType.PickboxOnly
                 : Drawing.CadCursorType.CrosshairOnly;
 
+            if (step == null || step.InputMode != CommandInputMode.Selection)
+                ToolService.Viewport.GetRubberObject().SnapPoint = null;
+
             ToolService.Viewport.GetRubberObject()?.InvalidateVisual();
             (ToolService.Viewport as UIElement)?.InvalidateVisual();
         }
