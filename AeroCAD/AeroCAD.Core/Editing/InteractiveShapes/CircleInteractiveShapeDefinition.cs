@@ -18,23 +18,22 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 
         public CircleInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
         {
-            ControllerFactory = controllerFactory ?? throw new ArgumentNullException(nameof(controllerFactory));
+            Pipeline = new InteractiveShapePipeline(
+                name: "AeroCAD.Circle",
+                commandName: "CIRCLE",
+                controllerFactory: controllerFactory,
+                steps: DefaultSteps,
+                description: "Draw a circle.",
+                assignActiveLayer: true,
+                menuGroup: "Draw",
+                menuLabel: "_Circle");
         }
 
-        public string Name => "AeroCAD.Circle";
-        public string CommandName => "CIRCLE";
-        public CommandStep InitialStep => DefaultSteps[0];
-        public IReadOnlyList<CommandStep> Steps => DefaultSteps;
-        public string[] Aliases => Array.Empty<string>();
-        public string Description => "Draw a circle.";
-        public bool AssignActiveLayer => true;
-        public string MenuGroup => "Draw";
-        public string MenuLabel => "_Circle";
-        public Func<Func<Layer>, IInteractiveCommandController> ControllerFactory { get; }
-
-        public InteractiveCommandRegistration CreateCommandRegistration()
-        {
-            return new InteractiveCommandRegistration(CommandName, ControllerFactory, aliases: Aliases, description: Description, assignActiveLayer: AssignActiveLayer, menuGroup: MenuGroup, menuLabel: MenuLabel);
-        }
+        public IInteractiveShapePipeline Pipeline { get; }
+        public string Name => Pipeline.Name;
+        public string CommandName => Pipeline.CommandName;
+        public CommandStep InitialStep => Pipeline.InitialStep;
+        public IReadOnlyList<CommandStep> Steps => Pipeline.Steps;
+        public InteractiveCommandRegistration CreateCommandRegistration() => Pipeline.CreateCommandRegistration();
     }
 }

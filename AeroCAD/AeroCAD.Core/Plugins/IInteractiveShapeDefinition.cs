@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
 using Primusz.AeroCAD.Core.Editor;
-using Primusz.AeroCAD.Core.Drawing.Layers;
-using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.Core.Plugins
 {
@@ -12,16 +9,11 @@ namespace Primusz.AeroCAD.Core.Plugins
     /// </summary>
     public interface IInteractiveShapeDefinition
     {
+        IInteractiveShapePipeline Pipeline { get; }
         string Name { get; }
-
         string CommandName { get; }
-
         CommandStep InitialStep { get; }
-
         IReadOnlyList<CommandStep> Steps { get; }
-
-        Func<Func<Layer>, IInteractiveCommandController> ControllerFactory { get; }
-
         InteractiveCommandRegistration CreateCommandRegistration();
     }
 }

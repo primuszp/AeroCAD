@@ -17,23 +17,22 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 
         public RectangleInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
         {
-            ControllerFactory = controllerFactory ?? throw new ArgumentNullException(nameof(controllerFactory));
+            Pipeline = new InteractiveShapePipeline(
+                name: "AeroCAD.Rectangle",
+                commandName: "RECTANGLE",
+                controllerFactory: controllerFactory,
+                steps: DefaultSteps,
+                description: "Draw a rectangle.",
+                assignActiveLayer: true,
+                menuGroup: "Draw",
+                menuLabel: "_Rectangle");
         }
 
-        public string Name => "AeroCAD.Rectangle";
-        public string CommandName => "RECTANGLE";
-        public CommandStep InitialStep => DefaultSteps[0];
-        public IReadOnlyList<CommandStep> Steps => DefaultSteps;
-        public string[] Aliases => Array.Empty<string>();
-        public string Description => "Draw a rectangle.";
-        public bool AssignActiveLayer => true;
-        public string MenuGroup => "Draw";
-        public string MenuLabel => "_Rectangle";
-        public Func<Func<Layer>, IInteractiveCommandController> ControllerFactory { get; }
-
-        public InteractiveCommandRegistration CreateCommandRegistration()
-        {
-            return new InteractiveCommandRegistration(CommandName, ControllerFactory, aliases: Aliases, description: Description, assignActiveLayer: AssignActiveLayer, menuGroup: MenuGroup, menuLabel: MenuLabel);
-        }
+        public IInteractiveShapePipeline Pipeline { get; }
+        public string Name => Pipeline.Name;
+        public string CommandName => Pipeline.CommandName;
+        public CommandStep InitialStep => Pipeline.InitialStep;
+        public IReadOnlyList<CommandStep> Steps => Pipeline.Steps;
+        public InteractiveCommandRegistration CreateCommandRegistration() => Pipeline.CreateCommandRegistration();
     }
 }

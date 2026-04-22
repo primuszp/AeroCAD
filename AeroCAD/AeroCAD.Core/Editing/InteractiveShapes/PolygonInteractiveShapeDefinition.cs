@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Tools;
@@ -20,41 +17,38 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("SecondEdge", "Specify second endpoint of edge:")
         };
 
-        public PolygonInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
+        public PolygonInteractiveShapeDefinition(System.Func<System.Func<Primusz.AeroCAD.Core.Drawing.Layers.Layer>, IInteractiveCommandController> controllerFactory)
         {
-            ControllerFactory = controllerFactory ?? throw new ArgumentNullException(nameof(controllerFactory));
+            Pipeline = new InteractiveShapePipeline(
+                name: "AeroCAD.Polygon",
+                commandName: "POLYGON",
+                controllerFactory: controllerFactory,
+                steps: DefaultSteps,
+                aliases: new[] { "POL" },
+                description: "Draw a regular polygon.",
+                assignActiveLayer: true,
+                menuGroup: "Draw",
+                menuLabel: "_Polygon");
         }
 
-        public string Name => "AeroCAD.Polygon";
+        public IInteractiveShapePipeline Pipeline { get; }
 
-        public string CommandName => "POLYGON";
+        public string Name => Pipeline.Name;
 
-        public CommandStep InitialStep => DefaultSteps.FirstOrDefault();
+        public string CommandName => Pipeline.CommandName;
 
-        public IReadOnlyList<CommandStep> Steps => DefaultSteps;
+        public string Description => Pipeline.Description;
 
-        public string[] Aliases => new[] { "POL" };
+        public bool AssignActiveLayer => Pipeline.AssignActiveLayer;
 
-        public string Description => "Draw a regular polygon.";
+        public string MenuGroup => Pipeline.MenuGroup;
 
-        public bool AssignActiveLayer => true;
+        public string MenuLabel => Pipeline.MenuLabel;
 
-        public string MenuGroup => "Draw";
+        public CommandStep InitialStep => Pipeline.InitialStep;
 
-        public string MenuLabel => "_Polygon";
+        public IReadOnlyList<CommandStep> Steps => Pipeline.Steps;
 
-        public Func<Func<Layer>, IInteractiveCommandController> ControllerFactory { get; }
-
-        public InteractiveCommandRegistration CreateCommandRegistration()
-        {
-            return new InteractiveCommandRegistration(
-                CommandName,
-                ControllerFactory,
-                aliases: Aliases,
-                description: Description,
-                assignActiveLayer: AssignActiveLayer,
-                menuGroup: MenuGroup,
-                menuLabel: MenuLabel);
-        }
+        public InteractiveCommandRegistration CreateCommandRegistration() => Pipeline.CreateCommandRegistration();
     }
 }

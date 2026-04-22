@@ -18,23 +18,22 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 
         public ArcInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
         {
-            ControllerFactory = controllerFactory ?? throw new ArgumentNullException(nameof(controllerFactory));
+            Pipeline = new InteractiveShapePipeline(
+                name: "AeroCAD.Arc",
+                commandName: "ARC",
+                controllerFactory: controllerFactory,
+                steps: DefaultSteps,
+                description: "Draw an arc.",
+                assignActiveLayer: true,
+                menuGroup: "Draw",
+                menuLabel: "_Arc");
         }
 
-        public string Name => "AeroCAD.Arc";
-        public string CommandName => "ARC";
-        public CommandStep InitialStep => DefaultSteps[0];
-        public IReadOnlyList<CommandStep> Steps => DefaultSteps;
-        public string[] Aliases => Array.Empty<string>();
-        public string Description => "Draw an arc.";
-        public bool AssignActiveLayer => true;
-        public string MenuGroup => "Draw";
-        public string MenuLabel => "_Arc";
-        public Func<Func<Layer>, IInteractiveCommandController> ControllerFactory { get; }
-
-        public InteractiveCommandRegistration CreateCommandRegistration()
-        {
-            return new InteractiveCommandRegistration(CommandName, ControllerFactory, aliases: Aliases, description: Description, assignActiveLayer: AssignActiveLayer, menuGroup: MenuGroup, menuLabel: MenuLabel);
-        }
+        public IInteractiveShapePipeline Pipeline { get; }
+        public string Name => Pipeline.Name;
+        public string CommandName => Pipeline.CommandName;
+        public CommandStep InitialStep => Pipeline.InitialStep;
+        public IReadOnlyList<CommandStep> Steps => Pipeline.Steps;
+        public InteractiveCommandRegistration CreateCommandRegistration() => Pipeline.CreateCommandRegistration();
     }
 }
