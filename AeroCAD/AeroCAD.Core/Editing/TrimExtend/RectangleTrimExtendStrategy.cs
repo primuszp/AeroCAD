@@ -43,8 +43,10 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
                 return Array.Empty<Entity>();
 
             double clickedParameter = segmentIndex + clickParameter;
-            var left = intersections.LastOrDefault(item => item.Parameter < clickedParameter);
-            var right = intersections.FirstOrDefault(item => item.Parameter > clickedParameter);
+            var left = intersections.LastOrDefault(item => item.Parameter < clickedParameter)
+                ?? intersections.LastOrDefault();
+            var right = intersections.FirstOrDefault(item => item.Parameter > clickedParameter)
+                ?? intersections.FirstOrDefault();
             if (left == null || right == null || ReferenceEquals(left, right))
                 return Array.Empty<Entity>();
 
