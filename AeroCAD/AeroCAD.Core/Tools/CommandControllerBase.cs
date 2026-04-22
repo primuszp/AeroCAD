@@ -77,6 +77,12 @@ namespace Primusz.AeroCAD.Core.Tools
         /// </summary>
         protected void UpdateSnap(IInteractiveCommandHost host, Point rawPoint)
         {
+            if (host?.CurrentStep?.InputMode == CommandInputMode.Selection)
+            {
+                host.ToolService?.Viewport?.GetRubberObject().SnapPoint = null;
+                return;
+            }
+
             var snapEngine = host.ToolService.GetService<ISnapEngine>();
             if (snapEngine == null)
                 return;

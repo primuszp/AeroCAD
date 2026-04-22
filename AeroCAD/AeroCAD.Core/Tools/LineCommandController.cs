@@ -4,8 +4,8 @@ using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editor;
-using System.Collections.Generic;
 
 namespace Primusz.AeroCAD.Core.Tools
 {
@@ -24,11 +24,7 @@ namespace Primusz.AeroCAD.Core.Tools
             new CommandStep("NextPoint", "Specify next point:", keywords: new[] { CloseKeyword, UndoKeyword });
 
         private readonly System.Func<Layer> activeLayerResolver;
-        private readonly List<Point> vertices = new List<Point>();
-        private readonly List<Line> createdSegments = new List<Line>();
-        private bool drawing;
-        private Point startPoint;
-        private Point firstPoint;
+        private readonly LineInteractiveShapeSession session = new LineInteractiveShapeSession();
 
         public LineCommandController(System.Func<Layer> activeLayerResolver)
         {
@@ -43,25 +39,21 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override void OnActivated(IInteractiveCommandHost host)
         {
-            drawing = false;
-            startPoint = default(Point);
-            firstPoint = default(Point);
-            vertices.Clear();
-            createdSegments.Clear();
+            session.Reset();
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
         {
             UpdateSnap(host, rawPoint);
 
-            if (drawing)
-                host.ToolService.Viewport.GetRubberObject().SetMove(host.ResolveFinalPoint(startPoint, rawPoint));
+            if (session.Drawing)
+                host.ToolService.Viewport.GetRubberObject().SetMove(host.ResolveFinalPoint(session.StartPoint, rawPoint));
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            Point final = drawing
-                ? host.ResolveFinalPoint(startPoint, rawPoint)
+            Point final = session.Drawing
+                ? host.ResolveFinalPoint(session.StartPoint, rawPoint)
                 : host.ResolveFinalPoint(null, rawPoint);
 
             return SubmitResolvedPoint(host, final, true);
@@ -70,7 +62,7 @@ namespace Primusz.AeroCAD.Core.Tools
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
         {
             CommandKeywordOption keyword;
-            if (drawing && TryResolveKeyword(host, token, out keyword))
+            if (session.Drawing && TryResolveKeyword(host, token, out keyword))
             {
                 if (keyword == CloseKeyword)
                     return CloseLine(host);
@@ -80,7 +72,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             Point point;
-            if (!host.TryResolvePointInput(token, drawing ? startPoint : (Point?)null, out point))
+            if (!host.TryResolvePointInput(token, session.Drawing ? session.StartPoint : (Point?)null, out point))
                 return InteractiveCommandResult.Unhandled();
 
             return SubmitResolvedPoint(host, point, true);
@@ -102,22 +94,19 @@ namespace Primusz.AeroCAD.Core.Tools
             if (logInput)
                 feedback?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
-            if (!drawing)
+            if (!session.Drawing)
             {
-                drawing = true;
-                startPoint = point;
-                firstPoint = point;
-                vertices.Add(point);
+                session.Begin(point);
                 var rbo = host.ToolService.Viewport.GetRubberObject();
                 rbo.CurrentStyle = RubberStyle.Line;
-                rbo.SetStart(startPoint);
+                rbo.SetStart(session.StartPoint);
                 return InteractiveCommandResult.MoveToStep(NextPointStep);
             }
 
-            CreateLineSegment(host, startPoint, point);
-            startPoint = point;
-            vertices.Add(point);
-            host.ToolService.Viewport.GetRubberObject().SetStart(startPoint);
+            CreateLineSegment(host, session.StartPoint, point);
+            session.AddSegment(new Line(session.StartPoint, point));
+            session.AddVertex(point);
+            host.ToolService.Viewport.GetRubberObject().SetStart(session.StartPoint);
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
@@ -131,34 +120,32 @@ namespace Primusz.AeroCAD.Core.Tools
             var document = host.ToolService.GetService<ICadDocumentService>();
             var cmd = new AddEntityCommand(document, layer.Id, line);
             host.ToolService.GetService<IUndoRedoService>()?.Execute(cmd);
-            createdSegments.Add(line);
+            session.AddSegment(line);
         }
 
         private InteractiveCommandResult CloseLine(IInteractiveCommandHost host)
         {
-            if (createdSegments.Count < 2)
+            if (!session.CanClose())
                 return InteractiveCommandResult.MoveToStep(NextPointStep);
 
             host.ToolService.GetService<ICommandFeedbackService>()?.LogInput("Close");
-            CreateLineSegment(host, startPoint, firstPoint);
+            CreateLineSegment(host, session.StartPoint, session.FirstPoint);
             return Finish(host, "LINE ended.");
         }
 
         private InteractiveCommandResult UndoLastSegment(IInteractiveCommandHost host)
         {
-            if (createdSegments.Count == 0 || vertices.Count <= 1)
+            if (!session.CanUndo())
                 return InteractiveCommandResult.MoveToStep(NextPointStep);
 
             var document = host.ToolService.GetService<ICadDocumentService>();
             var undoRedo = host.ToolService.GetService<IUndoRedoService>();
-            var lastSegment = createdSegments[createdSegments.Count - 1];
+            var lastSegment = session.CreatedSegments.Count > 0 ? session.CreatedSegments[session.CreatedSegments.Count - 1] : null;
             undoRedo?.Execute(new RemoveEntitiesCommand(document, new Entity[] { lastSegment }, "Undo Line Segment"));
 
-            createdSegments.RemoveAt(createdSegments.Count - 1);
-            vertices.RemoveAt(vertices.Count - 1);
-            startPoint = vertices[vertices.Count - 1];
+            session.UndoLast(out _);
             host.ToolService.GetService<ICommandFeedbackService>()?.LogInput("Undo");
-            host.ToolService.Viewport.GetRubberObject().SetStart(startPoint);
+            host.ToolService.Viewport.GetRubberObject().SetStart(session.StartPoint);
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
@@ -169,9 +156,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            drawing = false;
-            vertices.Clear();
-            createdSegments.Clear();
+            session.Reset();
             return EndCommand(host, message);
         }
     }

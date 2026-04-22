@@ -2,6 +2,7 @@ using System.Windows;
 using Primusz.AeroCAD.Core.Commands;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Entities;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editing.Offsets;
 using Primusz.AeroCAD.Core.Editing.TransientPreviews;
 using Primusz.AeroCAD.Core.Editor;
@@ -11,14 +12,12 @@ namespace Primusz.AeroCAD.Core.Tools
 {
     public class OffsetCommandController : CommandControllerBase
     {
-        private static readonly CommandStep OffsetInputStep = new CommandStep("OffsetInput", "Specify offset distance or through point:");
+        private static readonly CommandStep OffsetInputStep = new CommandStep("OffsetInput", "Specify offset distance:");
         private static readonly CommandStep EntityStep = new CommandStep("Entity", "Select object to offset [Exit/Undo]:", inputMode: CommandInputMode.Selection);
         private static readonly CommandStep SidePointStep = new CommandStep("SidePoint", "Specify point on side to offset:");
 
-        private Entity sourceEntity;
-        private System.Guid sourceLayerId;
+        private readonly OffsetInteractiveShapeSession session = new OffsetInteractiveShapeSession();
         private System.Windows.Media.Color sourceColor;
-        private double? fixedDistance;
 
         public override string CommandName => "OFFSET";
 
@@ -30,44 +29,62 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
             var document = host.ToolService.GetService<ICadDocumentService>();
-            fixedDistance = null;
+            session.Reset();
 
-            sourceEntity = selectionManager?.SelectedEntities.Count == 1 ? selectionManager.SelectedEntities[0] : null;
-            UpdateSourceColor(document);
+            var sourceEntity = selectionManager?.SelectedEntities.Count == 1 ? selectionManager.SelectedEntities[0] : null;
+            if (sourceEntity != null)
+            {
+                var layer = document?.GetLayerForEntity(sourceEntity);
+                session.BeginSelection(sourceEntity, layer?.Id ?? System.Guid.Empty);
+                selectionManager?.Deselect(sourceEntity);
+            }
+
+            UpdateSourceColor(document, sourceEntity);
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
         {
             UpdateSnap(host, rawPoint);
 
-            if (sourceEntity == null)
+            if (!session.FixedDistance.HasValue)
+            {
+                host.ToolService.Viewport.GetRubberObject()?.ClearPreview();
+                return;
+            }
+
+            if (session.SourceEntity == null)
             {
                 HighlightPickCandidate(host, rawPoint);
                 return;
             }
 
             var previewPoint = host.ResolveFinalPoint(null, rawPoint);
-            var previewEntity = fixedDistance.HasValue
-                ? host.ToolService.GetService<IEntityOffsetService>()?.CreateOffsetByDistance(sourceEntity, fixedDistance.Value, previewPoint)
-                : host.ToolService.GetService<IEntityOffsetService>()?.CreateOffsetThroughPoint(sourceEntity, previewPoint);
+            var previewEntity = host.ToolService.GetService<IEntityOffsetService>()?.CreateOffsetByDistance(
+                session.SourceEntity,
+                session.FixedDistance.Value,
+                previewPoint);
 
             var rubberObject = host.ToolService.Viewport.GetRubberObject();
             var previewService = host.ToolService.GetService<ITransientEntityPreviewService>();
-            rubberObject.Preview = previewService?.CreatePreview(previewEntity, sourceColor);
+            rubberObject.Preview = session.BuildPreview(previewService, previewEntity, sourceColor);
             rubberObject.InvalidateVisual();
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            // In entity selection step: pick the source entity
-            if (sourceEntity == null || host.CurrentStep?.Id == EntityStep.Id)
+            if (!session.FixedDistance.HasValue)
+                return InteractiveCommandResult.HandledOnly();
+
+            if (host.CurrentStep?.Id == EntityStep.Id || session.SourceEntity == null)
             {
                 var picked = PickEntity(host, rawPoint);
                 if (picked == null)
                     return InteractiveCommandResult.HandledOnly();
 
-                sourceEntity = picked;
-                UpdateSourceColor(host.ToolService.GetService<ICadDocumentService>());
+                var document = host.ToolService.GetService<ICadDocumentService>();
+                var layer = document?.GetLayerForEntity(picked);
+                session.BeginSelection(picked, layer?.Id ?? System.Guid.Empty);
+                UpdateSourceColor(document, picked);
                 return InteractiveCommandResult.MoveToStep(SidePointStep);
             }
 
@@ -76,16 +93,15 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
         {
-            if (!fixedDistance.HasValue && host.CurrentStep?.Id == OffsetInputStep.Id)
+            if (!session.FixedDistance.HasValue && host.CurrentStep?.Id == OffsetInputStep.Id)
             {
                 double scalar;
                 if (host.TryResolveScalarInput(token, out scalar))
                 {
-                    fixedDistance = System.Math.Abs(scalar);
-                    host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(fixedDistance.Value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
+                    session.SetFixedDistance(scalar);
+                    host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(session.FixedDistance.Value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
 
-                    // If we already have a pre-selected entity, go directly to side point
-                    return sourceEntity != null
+                    return session.SourceEntity != null
                         ? InteractiveCommandResult.MoveToStep(SidePointStep)
                         : InteractiveCommandResult.MoveToStep(EntityStep);
                 }
@@ -113,27 +129,23 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult SubmitResolvedPoint(IInteractiveCommandHost host, Point point, bool logInput)
         {
-            if (sourceEntity == null || sourceLayerId == System.Guid.Empty)
+            if (!session.IsReady || !session.FixedDistance.HasValue)
                 return Finish(host, "Offset command ended.");
 
             if (logInput)
                 host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
             var offsetService = host.ToolService.GetService<IEntityOffsetService>();
-            var resultEntity = fixedDistance.HasValue
-                ? offsetService?.CreateOffsetByDistance(sourceEntity, fixedDistance.Value, point)
-                : offsetService?.CreateOffsetThroughPoint(sourceEntity, point);
+            var resultEntity = offsetService?.CreateOffsetByDistance(session.SourceEntity, session.FixedDistance.Value, point);
 
             if (resultEntity == null)
                 return InteractiveCommandResult.HandledOnly();
 
             var document = host.ToolService.GetService<ICadDocumentService>();
-            var command = new AddEntityCommand(document, sourceLayerId, resultEntity);
+            var command = new AddEntityCommand(document, session.SourceLayerId, resultEntity);
             host.ToolService.GetService<IUndoRedoService>()?.Execute(command);
 
-            // After offset: keep distance, reset entity, go back to entity selection
-            sourceEntity = null;
-            sourceLayerId = System.Guid.Empty;
+            session.ResetSelection();
             return InteractiveCommandResult.MoveToStep(EntityStep);
         }
 
@@ -154,18 +166,15 @@ namespace Primusz.AeroCAD.Core.Tools
             return pickResolver?.ResolvePrimary(hits, null) ?? System.Linq.Enumerable.FirstOrDefault(hits);
         }
 
-        private void UpdateSourceColor(ICadDocumentService document)
+        private void UpdateSourceColor(ICadDocumentService document, Entity sourceEntity)
         {
             var sourceLayer = document?.GetLayerForEntity(sourceEntity);
-            sourceLayerId = sourceLayer?.Id ?? System.Guid.Empty;
             sourceColor = sourceLayer?.Color ?? System.Windows.Media.Colors.White;
         }
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            sourceEntity = null;
-            sourceLayerId = System.Guid.Empty;
-            fixedDistance = null;
+            session.Reset();
             return EndCommand(host, message);
         }
     }

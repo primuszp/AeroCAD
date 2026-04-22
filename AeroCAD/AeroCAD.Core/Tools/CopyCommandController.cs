@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
 using Primusz.AeroCAD.Core.Commands;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Entities;
-using Primusz.AeroCAD.Core.Editing.GripPreviews;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editing.MovePreviews;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Selection;
@@ -17,10 +16,8 @@ namespace Primusz.AeroCAD.Core.Tools
         private static readonly CommandStep BasePointStep = new CommandStep("BasePoint", "Specify base point:");
         private static readonly CommandStep TargetPointStep = new CommandStep("TargetPoint", "Specify second point:");
 
-        private IReadOnlyList<Entity> selectedEntities = System.Array.Empty<Entity>();
+        private readonly MoveCopyInteractiveShapeSession session = new MoveCopyInteractiveShapeSession();
         private readonly Dictionary<System.Guid, System.Guid> sourceLayers = new Dictionary<System.Guid, System.Guid>();
-        private Point basePoint;
-        private bool hasBasePoint;
 
         public override string CommandName => "COPY";
 
@@ -30,50 +27,45 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override void OnActivated(IInteractiveCommandHost host)
         {
-            var selectionManager = host.ToolService.GetService<ISelectionManager>();
             var document = host.ToolService.GetService<ICadDocumentService>();
+            var selectionManager = host.ToolService.GetService<ISelectionManager>();
+            session.InitializeSelection(selectionManager);
 
-            selectedEntities = selectionManager != null
-                ? selectionManager.SelectedEntities.ToList().AsReadOnly()
-                : new List<Entity>().AsReadOnly();
+            if (selectionManager != null)
+            {
+                foreach (var entity in session.SelectedEntities)
+                    selectionManager.Deselect(entity);
+            }
 
             sourceLayers.Clear();
             if (document != null)
             {
-                foreach (var entity in selectedEntities)
+                foreach (var entity in session.SelectedEntities)
                 {
                     var layer = document.GetLayerForEntity(entity);
                     if (layer != null)
                         sourceLayers[entity.Id] = layer.Id;
                 }
             }
-
-            hasBasePoint = false;
-            basePoint = default(Point);
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
         {
             UpdateSnap(host, rawPoint);
 
-            if (!hasBasePoint)
+            if (!session.HasBasePoint)
                 return;
 
-            var finalPoint = host.ResolveFinalPoint(basePoint, rawPoint);
-            var displacement = finalPoint - basePoint;
-
-            var rbo = host.ToolService.Viewport.GetRubberObject();
-            rbo.CurrentStyle = Drawing.Layers.RubberStyle.Line;
-            rbo.SetStart(basePoint);
-            rbo.SetMove(finalPoint);
-            rbo.Preview = BuildPreview(host, displacement, finalPoint);
-            rbo.InvalidateVisual();
+            var finalPoint = host.ResolveFinalPoint(session.BasePoint, rawPoint);
+            host.ToolService.Viewport.GetRubberObject().Preview =
+                session.BuildPreview(host.ToolService.GetService<ISelectionMovePreviewService>(), finalPoint);
+            host.ToolService.Viewport.GetRubberObject().InvalidateVisual();
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            Point final = hasBasePoint
-                ? host.ResolveFinalPoint(basePoint, rawPoint)
+            Point final = session.HasBasePoint
+                ? host.ResolveFinalPoint(session.BasePoint, rawPoint)
                 : host.ResolveFinalPoint(null, rawPoint);
 
             return SubmitResolvedPoint(host, final, true);
@@ -82,7 +74,7 @@ namespace Primusz.AeroCAD.Core.Tools
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
         {
             Point point;
-            if (!host.TryResolvePointInput(token, hasBasePoint ? basePoint : (Point?)null, out point))
+            if (!host.TryResolvePointInput(token, session.HasBasePoint ? session.BasePoint : (Point?)null, out point))
                 return InteractiveCommandResult.Unhandled();
 
             return SubmitResolvedPoint(host, point, true);
@@ -103,21 +95,14 @@ namespace Primusz.AeroCAD.Core.Tools
             if (logInput)
                 host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
-            if (!hasBasePoint)
+            if (!session.HasBasePoint)
             {
-                hasBasePoint = true;
-                basePoint = point;
-                var rbo = host.ToolService.Viewport.GetRubberObject();
-                rbo.CurrentStyle = Drawing.Layers.RubberStyle.Line;
-                rbo.SetStart(basePoint);
+                session.BeginBasePoint(point);
                 return InteractiveCommandResult.MoveToStep(TargetPointStep);
             }
 
-            CommitCopy(host, point - basePoint);
-            var rubberObject = host.ToolService.Viewport.GetRubberObject();
-            rubberObject.SetStart(basePoint);
-            rubberObject.SetMove(point);
-            return InteractiveCommandResult.MoveToStep(TargetPointStep);
+            CommitCopy(host, point - session.BasePoint);
+            return ContinueCopy(host);
         }
 
         private void CommitCopy(IInteractiveCommandHost host, Vector displacement)
@@ -126,7 +111,7 @@ namespace Primusz.AeroCAD.Core.Tools
             if (document == null)
                 return;
 
-            var records = selectedEntities
+            var records = session.SelectedEntities
                 .Where(entity => entity != null && sourceLayers.ContainsKey(entity.Id))
                 .Select(entity =>
                 {
@@ -146,25 +131,35 @@ namespace Primusz.AeroCAD.Core.Tools
 
             host.ToolService.GetService<IUndoRedoService>()?.Execute(command);
             host.ToolService.GetService<Drawing.Layers.Overlay>()?.Update();
+            var rbo = host.ToolService.Viewport.GetRubberObject();
+            if (rbo != null)
+            {
+                rbo.ClearPreview();
+                rbo.SnapPoint = null;
+                rbo.InvalidateVisual();
+            }
         }
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            selectedEntities = System.Array.Empty<Entity>();
+            session.Reset();
             sourceLayers.Clear();
-            hasBasePoint = false;
-            basePoint = default(Point);
 
-            return EndCommand(host, message);
+            return EndCommand(host, message, returnToSelectionMode: false);
         }
 
-        private GripPreview BuildPreview(IInteractiveCommandHost host, Vector displacement, Point currentPoint)
+        private InteractiveCommandResult ContinueCopy(IInteractiveCommandHost host)
         {
-            var movePreviewService = host.ToolService.GetService<ISelectionMovePreviewService>();
-            var preview = movePreviewService?.CreatePreview(selectedEntities, displacement) ?? GripPreview.Empty;
-            var strokes = preview.Strokes.ToList();
-            strokes.Add(GripPreviewStroke.CreateScreenConstant(new LineGeometry(basePoint, currentPoint), Colors.Orange, 1.5d, DashStyles.Dash));
-            return new GripPreview(strokes);
+            var rbo = host.ToolService.Viewport.GetRubberObject();
+            if (rbo != null)
+            {
+                rbo.ClearPreview();
+                rbo.SnapPoint = null;
+                rbo.InvalidateVisual();
+            }
+
+            return InteractiveCommandResult.MoveToStep(TargetPointStep);
         }
+
     }
 }

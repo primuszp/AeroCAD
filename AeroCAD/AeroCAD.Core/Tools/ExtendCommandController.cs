@@ -4,6 +4,7 @@ using System.Windows;
 using Primusz.AeroCAD.Core.Commands;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Entities;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editing.TransientPreviews;
 using Primusz.AeroCAD.Core.Editing.TrimExtend;
 using Primusz.AeroCAD.Core.Editor;
@@ -16,9 +17,7 @@ namespace Primusz.AeroCAD.Core.Tools
         private static readonly CommandStep BoundaryStep = new CommandStep("Boundary", "Select boundary edges [Enter=confirm]:", inputMode: CommandInputMode.Selection);
         private static readonly CommandStep TargetStep = new CommandStep("Target", "Select object to extend [Enter=end]:", inputMode: CommandInputMode.Selection);
 
-        private readonly List<Entity> boundaryEntities = new List<Entity>();
-        private readonly List<Entity> highlightedBoundaries = new List<Entity>();
-        private Entity highlightedTargetEntity;
+        private readonly TrimExtendInteractiveShapeSession session = new TrimExtendInteractiveShapeSession();
 
         public override string CommandName => "EXTEND";
 
@@ -29,7 +28,7 @@ namespace Primusz.AeroCAD.Core.Tools
         public override void OnActivated(IInteractiveCommandHost host)
         {
             ClearAllBoundaryHighlights();
-            boundaryEntities.Clear();
+            session.Reset();
 
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
             if (selectionManager?.SelectedEntities.Count > 0)
@@ -39,7 +38,7 @@ namespace Primusz.AeroCAD.Core.Tools
                 {
                     foreach (var e in supported)
                     {
-                        boundaryEntities.Add(e);
+                        session.AddBoundary(e);
                         HighlightBoundary(e);
                     }
                     host.MoveToStep(TargetStep);
@@ -53,14 +52,14 @@ namespace Primusz.AeroCAD.Core.Tools
             var rubberObject = host.ToolService.Viewport.GetRubberObject();
             var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
 
-            if (boundaryEntities.Count == 0)
+            if (!session.HasBoundaries)
             {
                 ClearTargetHighlight(host);
                 rubberObject.ClearPreview();
                 return;
             }
 
-            var pick = PickEntity(host, rawPoint, entity => !boundaryEntities.Contains(entity) && (extendService?.CanExtend(boundaryEntities, entity) ?? false));
+            var pick = PickEntity(host, rawPoint, entity => !session.BoundaryEntities.Contains(entity) && (extendService?.CanExtend(session.BoundaryEntities, entity) ?? false));
             if (pick == null)
             {
                 ClearTargetHighlight(host);
@@ -69,11 +68,11 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             HighlightTarget(host, pick);
-            var results = extendService?.CreateExtended(boundaryEntities, pick, rawPoint);
+            var results = extendService?.CreateExtended(session.BoundaryEntities, pick, rawPoint);
             var previewEntity = results?.FirstOrDefault();
             var color = host.ToolService.GetService<ICadDocumentService>()?.GetLayerForEntity(pick)?.Color
                 ?? System.Windows.Media.Colors.White;
-            rubberObject.Preview = host.ToolService.GetService<ITransientEntityPreviewService>()?.CreatePreview(previewEntity, color);
+            rubberObject.Preview = session.BuildPreview(host.ToolService.GetService<ITransientEntityPreviewService>(), previewEntity, color);
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
@@ -85,11 +84,11 @@ namespace Primusz.AeroCAD.Core.Tools
             {
                 // Phase 1: pick boundary entities (multiple allowed, Enter confirms)
                 var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
-                if (picked != null && !boundaryEntities.Contains(picked))
+                if (picked != null && !session.BoundaryEntities.Contains(picked))
                 {
-                    if (ReferenceEquals(highlightedTargetEntity, picked))
-                        highlightedTargetEntity = null;
-                    boundaryEntities.Add(picked);
+                    if (ReferenceEquals(session.HighlightedTargetEntity, picked))
+                        session.RemoveTargetHighlight();
+                    session.AddBoundary(picked);
                     HighlightBoundary(picked);
                 }
                 return InteractiveCommandResult.HandledOnly();
@@ -97,11 +96,11 @@ namespace Primusz.AeroCAD.Core.Tools
 
             // Phase 2: extend target entities
             var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
-            var target = PickEntity(host, rawPoint, entity => !boundaryEntities.Contains(entity) && (extendService?.CanExtend(boundaryEntities, entity) ?? false));
+            var target = PickEntity(host, rawPoint, entity => !session.BoundaryEntities.Contains(entity) && (extendService?.CanExtend(session.BoundaryEntities, entity) ?? false));
             if (target == null)
                 return InteractiveCommandResult.HandledOnly();
 
-            var results = extendService?.CreateExtended(boundaryEntities, target, rawPoint);
+            var results = extendService?.CreateExtended(session.BoundaryEntities, target, rawPoint);
             if (results == null || results.Count == 0)
                 return InteractiveCommandResult.HandledOnly();
 
@@ -136,23 +135,23 @@ namespace Primusz.AeroCAD.Core.Tools
                 return Finish(host, "Extend command ended.");
 
             // Enter in boundary phase: if none selected, use all entities as boundary edges
-            if (boundaryEntities.Count == 0)
+            if (!session.HasBoundaries)
             {
                 var document = host.ToolService.GetService<ICadDocumentService>();
                 if (document != null)
                 {
                     foreach (var e in document.Entities)
                     {
-                        if (IsSupportedBoundary(e) && !boundaryEntities.Contains(e))
+                        if (IsSupportedBoundary(e) && !session.BoundaryEntities.Contains(e))
                         {
-                            boundaryEntities.Add(e);
+                            session.AddBoundary(e);
                             HighlightBoundary(e);
                         }
                     }
                 }
             }
 
-            if (boundaryEntities.Count > 0)
+            if (session.HasBoundaries)
             {
                 host.MoveToStep(TargetStep);
                 return InteractiveCommandResult.HandledOnly();
@@ -175,7 +174,7 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             ClearAllBoundaryHighlights();
             ClearTargetHighlight(host);
-            boundaryEntities.Clear();
+            session.Reset();
             return EndCommand(host, message);
         }
 
@@ -186,40 +185,40 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private void HighlightBoundary(Entity entity)
         {
-            if (entity == null || highlightedBoundaries.Contains(entity))
+            if (entity == null || session.HighlightedBoundaries.Contains(entity))
                 return;
 
-            highlightedBoundaries.Add(entity);
+            session.HighlightedBoundaries.Add(entity);
             entity.SetCommandHighlight(EntityCommandHighlightKind.Primary);
         }
 
         private void ClearAllBoundaryHighlights()
         {
-            foreach (var entity in highlightedBoundaries)
+            foreach (var entity in session.HighlightedBoundaries)
                 entity.ClearCommandHighlight();
-            highlightedBoundaries.Clear();
+            session.HighlightedBoundaries.Clear();
         }
 
         private void HighlightTarget(IInteractiveCommandHost host, Entity entity)
         {
-            if (ReferenceEquals(highlightedTargetEntity, entity))
+            if (ReferenceEquals(session.HighlightedTargetEntity, entity))
                 return;
 
             ClearTargetHighlight(host);
             if (entity == null)
                 return;
 
-            highlightedTargetEntity = entity;
+            session.SetTargetHighlight(entity);
             entity.SetCommandHighlight(EntityCommandHighlightKind.Hover);
         }
 
         private void ClearTargetHighlight(IInteractiveCommandHost host)
         {
-            if (highlightedTargetEntity == null)
+            if (session.HighlightedTargetEntity == null)
                 return;
 
-            var entity = highlightedTargetEntity;
-            highlightedTargetEntity = null;
+            var entity = session.HighlightedTargetEntity;
+            session.RemoveTargetHighlight();
             entity.ClearCommandHighlight();
         }
 

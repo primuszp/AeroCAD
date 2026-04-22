@@ -124,6 +124,9 @@ namespace Primusz.AeroCAD.Core.Tools
         /// </summary>
         protected Point GetFinalPoint(Point? basePoint, Point rawPos)
         {
+            if (ToolService?.Viewport?.ActiveCursorType == CadCursorType.PickboxOnly)
+                return rawPos;
+
             // Snap takes priority â€” if a snap candidate is active, use it directly
             var snapEngine = ToolService.GetService<ISnapEngine>();
             if (snapEngine?.CurrentSnap != null)
