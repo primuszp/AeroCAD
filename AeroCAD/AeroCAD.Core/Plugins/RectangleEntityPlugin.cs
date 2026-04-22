@@ -25,7 +25,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         {
             yield return new InteractiveCommandRegistration(
                 "RECTANGLE",
-                layerProvider => new Tools.RectangleCommandController(layerProvider),
+                () => new Tools.RectangleCommandController(),
                 aliases: new[] { "REC", "RECT" },
                 description: "Draw an axis-aligned rectangle.",
                 assignActiveLayer: true,

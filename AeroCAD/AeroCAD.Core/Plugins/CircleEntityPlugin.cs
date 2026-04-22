@@ -25,7 +25,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         {
             yield return new InteractiveCommandRegistration(
                 "CIRCLE",
-                layerProvider => new Tools.CircleCommandController(layerProvider),
+                () => new Tools.CircleCommandController(),
                 aliases: new[] { "C", "CI", "CIR" },
                 description: "Draw circles.",
                 assignActiveLayer: true,

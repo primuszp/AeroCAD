@@ -25,7 +25,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         {
             yield return new InteractiveCommandRegistration(
                 "PLINE",
-                layerProvider => new Tools.PolylineCommandController(layerProvider),
+                () => new Tools.PolylineCommandController(),
                 aliases: new[] { "PL", "P" },
                 description: "Draw polyline.",
                 assignActiveLayer: true,

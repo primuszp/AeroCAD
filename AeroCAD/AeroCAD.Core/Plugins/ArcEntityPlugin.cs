@@ -25,7 +25,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         {
             yield return new InteractiveCommandRegistration(
                 "ARC",
-                layerProvider => new Tools.ArcCommandController(layerProvider),
+                () => new Tools.ArcCommandController(),
                 aliases: new[] { "A", "AR" },
                 description: "Draw a 3-point arc.",
                 assignActiveLayer: true,

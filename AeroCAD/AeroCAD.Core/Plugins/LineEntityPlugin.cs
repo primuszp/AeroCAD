@@ -25,7 +25,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         {
             yield return new InteractiveCommandRegistration(
                 "LINE",
-                layerProvider => new Tools.LineCommandController(layerProvider),
+                () => new Tools.LineCommandController(),
                 aliases: new[] { "L" },
                 description: "Draw line segments.",
                 assignActiveLayer: true,
