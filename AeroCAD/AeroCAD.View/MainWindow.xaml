@@ -87,46 +87,21 @@
 
         <DataTemplate x:Key="LayerComboItemTemplate">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <!-- Visible indicator: bright dot = on, dim = off -->
-                <TextBlock Width="14" TextAlignment="Center" FontSize="10" VerticalAlignment="Center" Margin="0,0,2,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="●"/>
-                            <Setter Property="Foreground" Value="#FFFFFFFF"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsVisible}" Value="False">
-                                    <Setter Property="Foreground" Value="#FF444444"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <!-- Frozen indicator: snowflake = cyan if frozen, invisible if not -->
-                <TextBlock Width="14" Text="❄" TextAlignment="Center" FontSize="10" VerticalAlignment="Center" Margin="0,0,2,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="Transparent"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFrozen}" Value="True">
-                                    <Setter Property="Foreground" Value="#FF6BB5FF"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <!-- Lock indicator: padlock = gold if locked, invisible if not -->
-                <TextBlock Width="14" Text="🔒" TextAlignment="Center" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="Transparent"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsLocked}" Value="True">
-                                    <Setter Property="Foreground" Value="#FFFFD700"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                <ToggleButton Content="💡"
+                              ToolTip="Visible"
+                              IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                              Style="{DynamicResource LayerVisibleToggleButtonStyle}"
+                              Margin="0,0,2,0"/>
+                <ToggleButton Content="❄"
+                              ToolTip="Frozen"
+                              IsChecked="{Binding IsFrozen, Mode=TwoWay}"
+                              Style="{DynamicResource LayerFrozenToggleButtonStyle}"
+                              Margin="0,0,2,0"/>
+                <ToggleButton Content="🔒"
+                              ToolTip="Locked"
+                              IsChecked="{Binding IsLocked, Mode=TwoWay}"
+                              Style="{DynamicResource LayerLockedToggleButtonStyle}"
+                              Margin="0,0,4,0"/>
                 <!-- Color swatch -->
                 <Rectangle Width="12" Height="12"
                            Fill="{Binding ColorBrush}"
@@ -147,6 +122,120 @@
 
         <Style x:Key="LayerComboItemContainerStyle" TargetType="ComboBoxItem">
             <Setter Property="Padding" Value="4,2"/>
+        </Style>
+
+        <Style x:Key="LayerVisibleToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI Emoji"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#FFFFE08A"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"/>
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter Property="Foreground" Value="Gray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LayerFrozenToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI Emoji"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#FF6BB5FF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"/>
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter Property="Foreground" Value="Gray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LayerLockedToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI Emoji"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#FFFFD700"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"/>
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter Property="Foreground" Value="Gray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
     <DockPanel>
@@ -265,20 +354,6 @@
                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
                           BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
                           Padding="4,2"/>
-                <CheckBox Content="Visible"
-                          IsChecked="{Binding SelectedLayer.IsVisible, Mode=TwoWay}"
-                          Foreground="White"
-                          Margin="0,0,8,0"
-                          VerticalAlignment="Center"/>
-                <CheckBox Content="Frozen"
-                          IsChecked="{Binding SelectedLayer.IsFrozen, Mode=TwoWay}"
-                          Foreground="White"
-                          Margin="0,0,8,0"
-                          VerticalAlignment="Center"/>
-                <CheckBox Content="Locked"
-                          IsChecked="{Binding SelectedLayer.IsLocked, Mode=TwoWay}"
-                          Foreground="White"
-                          VerticalAlignment="Center"/>
             </ToolBar>
         </ToolBarTray>
 

@@ -519,7 +519,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             {
                 editorStateService?.SetActiveLayer(active.Layer);
                 if (!ReferenceEquals(SelectedLayer, active))
-                    SelectedLayer = active;
+                    SelectLayerWithoutSelectionSideEffects(active);
                 return;
             }
 
@@ -528,7 +528,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             {
                 editorStateService?.SetActiveLayer(null);
                 if (SelectedLayer != null)
-                    SelectedLayer = null;
+                    SelectLayerWithoutSelectionSideEffects(null);
                 return;
             }
 
