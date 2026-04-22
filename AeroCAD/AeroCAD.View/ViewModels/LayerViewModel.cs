@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows.Media;
+using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 
 namespace Primusz.AeroCAD.View.ViewModels
@@ -42,6 +43,20 @@ namespace Primusz.AeroCAD.View.ViewModels
                     return;
 
                 layer.Color = value;
+                NotifyColorChanged();
+            }
+        }
+
+        public byte ColorIndex
+        {
+            get => AciPalette.GetIndex(layer.Color);
+            set
+            {
+                var nextColor = AciPalette.GetColor(value);
+                if (layer.Color == nextColor)
+                    return;
+
+                layer.Color = nextColor;
                 NotifyColorChanged();
             }
         }
@@ -222,6 +237,7 @@ namespace Primusz.AeroCAD.View.ViewModels
         private void NotifyColorChanged()
         {
             OnPropertyChanged(nameof(Color));
+            OnPropertyChanged(nameof(ColorIndex));
             OnPropertyChanged(nameof(ColorText));
             RefreshColorBrush();
         }

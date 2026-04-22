@@ -29,6 +29,32 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
             return index != 0 || palette[0] == color;
         }
 
+        public static Color NormalizeColor(Color color)
+        {
+            if (TryGetIndex(color, out byte exactIndex))
+                return palette[exactIndex];
+
+            int bestDistance = int.MaxValue;
+            byte bestIndex = 7;
+
+            // Skip index 0 because it is the ByBlock placeholder, not a real selectable color.
+            for (byte i = 1; i < palette.Length; i++)
+            {
+                Color candidate = palette[i];
+                int dr = color.R - candidate.R;
+                int dg = color.G - candidate.G;
+                int db = color.B - candidate.B;
+                int distance = (dr * dr) + (dg * dg) + (db * db);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestIndex = i;
+                }
+            }
+
+            return palette[bestIndex];
+        }
+
         private static Color[] BuildPalette()
         {
             var colors = new Color[256];

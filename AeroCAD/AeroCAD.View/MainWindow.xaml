@@ -8,7 +8,8 @@
         Title="AeroCAD" Height="600" Width="900">
     <Window.Resources>
         <DataTemplate x:Key="LineWeightItemTemplate">
-            <TextBlock Text="{Binding StringFormat=LW {0:0.##}}" Foreground="White"/>
+            <TextBlock Text="{Binding StringFormat=LW {0:0.##}}"
+                       Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
         </DataTemplate>
         <Style x:Key="HorizontalBevelGrip" TargetType="{x:Type controls:DockPanelSplitter}">
             <Setter Property="Thickness" Value="6"/>
@@ -133,7 +134,10 @@
                            StrokeThickness="0.5"
                            Margin="0,0,6,0"/>
                 <!-- Layer name -->
-                <TextBlock Text="{Binding Name}" Foreground="White" FontWeight="SemiBold" MinWidth="80"/>
+                <TextBlock Text="{Binding Name}"
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+                           FontWeight="SemiBold"
+                           MinWidth="80"/>
                 <!-- Line weight -->
                 <TextBlock Text="{Binding LineWeight, StringFormat=LW {0:0.##}}"
                            Foreground="#FF9AA4B2"
@@ -206,15 +210,18 @@
                 </ItemsControl>
             </ToolBar>
             <ToolBar>
-                <TextBlock Text="Layer" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="White"/>
+                <TextBlock Text="Layer"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <ComboBox Width="260"
                           ItemsSource="{Binding Layers}"
                           SelectedItem="{Binding SelectedLayer, Mode=TwoWay}"
                           ItemTemplate="{StaticResource LayerComboItemTemplate}"
                           ItemContainerStyle="{StaticResource LayerComboItemContainerStyle}"
-                          Background="#FF12161C"
-                          Foreground="White"
-                          BorderBrush="#FF3B4657"
+                          Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                          Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+                          BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
                           Padding="4,2"
                           Margin="0,0,8,0"/>
                 <Button Content="New"
@@ -229,28 +236,34 @@
                         Command="{Binding RemoveLayerCommand}"
                         Margin="0,0,8,0"
                         Padding="10,2"/>
-                <TextBlock Text="LW" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#FF9AA4B2"/>
+                <TextBlock Text="LW"
+                           VerticalAlignment="Center"
+                           Margin="0,0,4,0"
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <ComboBox Width="90"
                           ItemsSource="{Binding LayerLineWeights}"
                           SelectedItem="{Binding SelectedLayer.LineWeight, Mode=TwoWay}"
                           ItemTemplate="{StaticResource LineWeightItemTemplate}"
                           Margin="0,0,8,0"
-                          Background="#FF12161C"
-                          Foreground="White"
-                          BorderBrush="#FF3B4657"
+                          Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                          Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+                          BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
                           Padding="4,2"/>
-                <TextBlock Text="Color" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#FF9AA4B2"/>
+                <TextBlock Text="Color"
+                           VerticalAlignment="Center"
+                           Margin="0,0,4,0"
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <controls2:AciColorPicker Width="32"
                                           Height="24"
-                                          SelectedColor="{Binding SelectedLayer.Color, Mode=TwoWay}"
+                                          SelectedColorIndex="{Binding SelectedLayer.ColorIndex, Mode=TwoWay}"
                                           Margin="0,0,8,0"/>
                 <ComboBox Width="110"
                           ItemsSource="{Binding LayerLineStyles}"
                           SelectedItem="{Binding SelectedLayer.LineStyle, Mode=TwoWay}"
                           Margin="0,0,8,0"
-                          Background="#FF12161C"
-                          Foreground="White"
-                          BorderBrush="#FF3B4657"
+                          Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                          Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+                          BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
                           Padding="4,2"/>
                 <CheckBox Content="Visible"
                           IsChecked="{Binding SelectedLayer.IsVisible, Mode=TwoWay}"

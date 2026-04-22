@@ -6,21 +6,59 @@
              Width="Auto">
     <UserControl.Resources>
         <converters:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
+        <Style x:Key="PickerButtonStyle" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Button x:Name="PickerButton"
                 Click="OpenPicker_Click"
-                Padding="4,2"
-                Background="{Binding SelectedColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource ColorToBrushConverter}}"
-                BorderBrush="#FF3B4657"
-                Width="28"
+                Style="{StaticResource PickerButtonStyle}"
+                Padding="0"
+                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                BorderThickness="1"
+                Width="32"
                 Height="24">
-            <Rectangle Width="16" Height="10" Stroke="#FF1A1F26" StrokeThickness="0.5"/>
+            <Grid Margin="3">
+                <Rectangle Fill="{Binding SelectedColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource ColorToBrushConverter}}"
+                           Stroke="#FF1A1F26"
+                           StrokeThickness="0.5"/>
+                <Border BorderBrush="#40FFFFFF"
+                        BorderThickness="1,1,0,0"
+                        IsHitTestVisible="False"/>
+            </Grid>
         </Button>
         <Popup x:Name="PickerPopup"
                PlacementTarget="{Binding ElementName=PickerButton}"
                Placement="Bottom"
                StaysOpen="False"
-               AllowsTransparency="True"/>
+               AllowsTransparency="True"
+               PopupAnimation="Fade"
+               HorizontalOffset="0"
+               VerticalOffset="2"/>
     </Grid>
 </UserControl>

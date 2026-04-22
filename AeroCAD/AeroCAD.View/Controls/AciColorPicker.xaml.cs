@@ -24,7 +24,6 @@ namespace Primusz.AeroCAD.View.Controls
 
         private bool paletteLoaded;
         private bool updatingColor;
-
         public AciColorPicker()
         {
             InitializeComponent();
@@ -45,7 +44,9 @@ namespace Primusz.AeroCAD.View.Controls
         private static void OnSelectedColorChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var picker = (AciColorPicker)d;
-            if (picker.updatingColor) return;
+            if (picker.updatingColor)
+                return;
+
             picker.updatingColor = true;
             try
             {
@@ -53,13 +54,18 @@ namespace Primusz.AeroCAD.View.Controls
                 if (picker.SelectedColorIndex != nextIndex)
                     picker.SelectedColorIndex = nextIndex;
             }
-            finally { picker.updatingColor = false; }
+            finally
+            {
+                picker.updatingColor = false;
+            }
         }
 
         private static void OnSelectedColorIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var picker = (AciColorPicker)d;
-            if (picker.updatingColor) return;
+            if (picker.updatingColor)
+                return;
+
             picker.updatingColor = true;
             try
             {
@@ -67,7 +73,10 @@ namespace Primusz.AeroCAD.View.Controls
                 if (picker.SelectedColor != nextColor)
                     picker.SelectedColor = nextColor;
             }
-            finally { picker.updatingColor = false; }
+            finally
+            {
+                picker.updatingColor = false;
+            }
         }
 
         private void OpenPicker_Click(object sender, RoutedEventArgs e)
@@ -84,7 +93,7 @@ namespace Primusz.AeroCAD.View.Controls
 
         private void BuildPalette()
         {
-            var stackPanel = new StackPanel { Width = 340 };
+            var stackPanel = new StackPanel { Width = 344 };
             stackPanel.Children.Add(new TextBlock
             {
                 Text = "ACI",
@@ -93,16 +102,16 @@ namespace Primusz.AeroCAD.View.Controls
                 Margin = new Thickness(0, 0, 0, 6)
             });
 
-            stackPanel.Children.Add(BuildColorRow(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 22));
+            stackPanel.Children.Add(BuildColorRow(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 22, true));
 
-            var grayRow = BuildColorRow(new byte[] { 250, 251, 252, 253, 254, 255 }, 22);
+            var grayRow = BuildColorRow(new byte[] { 250, 251, 252, 253, 254, 255 }, 22, true);
             grayRow.Margin = new Thickness(0, 4, 0, 0);
             stackPanel.Children.Add(grayRow);
 
             var fullGrid = new StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+            int[] starts = { 18, 16, 14, 12, 10, 11, 13, 15, 17, 19 };
             for (int r = 0; r < 10; r++)
             {
-                int[] starts = { 18, 16, 14, 12, 10, 11, 13, 15, 17, 19 };
                 var row = new WrapPanel();
                 for (int i = 0; i < 24; i++)
                 {
@@ -123,15 +132,15 @@ namespace Primusz.AeroCAD.View.Controls
             };
         }
 
-        private WrapPanel BuildColorRow(byte[] indices, int size)
+        private WrapPanel BuildColorRow(byte[] indices, int size, bool emphasize)
         {
             var row = new WrapPanel();
             foreach (var idx in indices)
-                row.Children.Add(CreateColorButton(idx, size));
+                row.Children.Add(CreateColorButton(idx, size, emphasize));
             return row;
         }
 
-        private Button CreateColorButton(byte index, int size)
+        private Button CreateColorButton(byte index, int size, bool emphasize = false)
         {
             var color = AciPalette.GetColor(index);
             var brush = new SolidColorBrush(color);
@@ -145,7 +154,7 @@ namespace Primusz.AeroCAD.View.Controls
                 Padding = new Thickness(0),
                 Background = brush,
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0x3B, 0x46, 0x57)),
-                BorderThickness = new Thickness(size == 22 ? 1 : 0.5),
+                BorderThickness = new Thickness(emphasize ? 1 : 0.5),
                 Tag = index
             };
             btn.Click += PaletteColor_Click;

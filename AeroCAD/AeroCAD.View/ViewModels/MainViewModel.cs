@@ -31,13 +31,13 @@ namespace Primusz.AeroCAD.View.ViewModels
         private static readonly string[] MenuGroupOrder = { "Edit", "Draw", "Modify", "View" };
         private static readonly Color[] DefaultLayerPalette =
         {
-            Colors.White,
-            Colors.Red,
-            Colors.Turquoise,
-            Colors.Gold,
-            Colors.LawnGreen,
-            Colors.Orange,
-            Colors.MediumPurple
+            AciPalette.GetColor(7),
+            AciPalette.GetColor(1),
+            AciPalette.GetColor(2),
+            AciPalette.GetColor(3),
+            AciPalette.GetColor(4),
+            AciPalette.GetColor(5),
+            AciPalette.GetColor(6)
         };
 
         private readonly ModelSpace modelSpace;
