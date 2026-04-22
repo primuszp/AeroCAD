@@ -51,7 +51,7 @@ namespace Primusz.AeroCAD.Core.Plugins
 
         public InteractiveCommandRegistration CreateCommandRegistration()
         {
-            return new InteractiveCommandRegistration(
+            var registration = new InteractiveCommandRegistration(
                 CommandName,
                 ControllerFactory,
                 aliases: Aliases,
@@ -59,11 +59,13 @@ namespace Primusz.AeroCAD.Core.Plugins
                 assignActiveLayer: AssignActiveLayer,
                 menuGroup: MenuGroup,
                 menuLabel: MenuLabel);
+
+            return registration;
         }
 
-        public IInteractiveCommandController CreateController(System.Func<Layer> activeLayerResolver)
+        public IInteractiveShapeRuntime CreateRuntime()
         {
-            return ControllerFactory(activeLayerResolver);
+            return new InteractiveShapeRuntime(CommandName, $"{CommandName}Tool", ControllerFactory, CreateCommandRegistration());
         }
     }
 }

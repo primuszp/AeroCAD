@@ -60,6 +60,27 @@ namespace Primusz.AeroCAD.Core.Tests.Tools
         }
 
         [Fact]
+        public void DistanceStep_LogsDistanceOnlyOnce()
+        {
+            var controller = new OffsetCommandController();
+            var feedback = new TestCommandFeedbackService();
+            var host = new TestHost(
+                new TestSelectionManager(Array.Empty<Entity>()),
+                new TestCadDocumentService(null, null),
+                feedback)
+            {
+                CurrentStep = controller.InitialStep
+            };
+
+            controller.OnActivated(host);
+
+            var result = controller.TrySubmitToken(host, CommandInputToken.Scalar("5", 5.0d));
+
+            Assert.True(result.Handled);
+            Assert.Empty(feedback.LoggedInputs);
+        }
+
+        [Fact]
         public void DistanceStep_DoesNotAcceptViewportPoint()
         {
             var controller = new OffsetCommandController();
@@ -90,6 +111,7 @@ namespace Primusz.AeroCAD.Core.Tests.Tools
                 var host = new TestHost(
                     new TestSelectionManager(new[] { entity }),
                     document,
+                    null,
                     new TestOffsetService(),
                     new TestUndoRedoService())
                 {
@@ -138,10 +160,11 @@ namespace Primusz.AeroCAD.Core.Tests.Tools
             public TestHost(
                 ISelectionManager selectionManager,
                 ICadDocumentService documentService,
+                ICommandFeedbackService feedbackService = null,
                 Primusz.AeroCAD.Core.Editing.Offsets.IEntityOffsetService offsetService = null,
                 Primusz.AeroCAD.Core.Commands.IUndoRedoService undoRedoService = null)
             {
-                ToolService = new TestToolService(selectionManager, documentService, offsetService, undoRedoService);
+                ToolService = new TestToolService(selectionManager, documentService, feedbackService, offsetService, undoRedoService);
             }
 
             public IToolService ToolService { get; }
@@ -180,11 +203,14 @@ namespace Primusz.AeroCAD.Core.Tests.Tools
             public TestToolService(
                 ISelectionManager selectionManager,
                 ICadDocumentService documentService,
+                ICommandFeedbackService feedbackService,
                 Primusz.AeroCAD.Core.Editing.Offsets.IEntityOffsetService offsetService,
                 Primusz.AeroCAD.Core.Commands.IUndoRedoService undoRedoService)
             {
                 services[typeof(ISelectionManager)] = selectionManager;
                 services[typeof(ICadDocumentService)] = documentService;
+                if (feedbackService != null)
+                    services[typeof(ICommandFeedbackService)] = feedbackService;
                 if (offsetService != null)
                     services[typeof(Primusz.AeroCAD.Core.Editing.Offsets.IEntityOffsetService)] = offsetService;
                 if (undoRedoService != null)
@@ -271,6 +297,27 @@ namespace Primusz.AeroCAD.Core.Tests.Tools
             public void Undo() { }
             public void Redo() { }
             public void Clear() { }
+        }
+
+        private sealed class TestCommandFeedbackService : ICommandFeedbackService
+        {
+            public string Prompt => string.Empty;
+            public string ActiveCommandName => string.Empty;
+            public bool HasActiveCommand => true;
+            public CommandPrompt ActivePrompt => CommandPrompt.Default;
+            public CommandSession ActiveSession => null;
+            public event EventHandler StateChanged { add { } remove { } }
+            public event EventHandler<CommandFeedbackMessageEventArgs> MessageLogged { add { } remove { } }
+            public List<string> LoggedInputs { get; } = new List<string>();
+            public CommandInputToken ParseInput(string rawInput) => CommandInputToken.Text(rawInput, rawInput);
+            public void BeginCommand(CommandSession session) { }
+            public void BeginCommand(string commandName, string prompt) { }
+            public void SetPrompt(CommandPrompt prompt) { }
+            public void SetPrompt(string prompt) { }
+            public void LogInput(CommandInputToken token) => LoggedInputs.Add(token?.FormatForDisplay());
+            public void LogInput(string input) => LoggedInputs.Add(input);
+            public void LogMessage(string message) { }
+            public void EndCommand(string closingMessage = null) { }
         }
     }
 }

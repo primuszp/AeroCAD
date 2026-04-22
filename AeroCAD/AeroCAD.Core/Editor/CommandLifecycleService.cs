@@ -19,13 +19,16 @@ namespace Primusz.AeroCAD.Core.Editor
 
         public bool TryHandleCommandLineInput(
             string input,
+            string commandLinePrompt,
             ICommandInteractiveTool activeInteractiveTool,
             Func<string, CommandInputToken> parseInput,
             Func<CommandInputToken, bool> submitToActiveTool,
             Func<string, bool> executeCommand,
             Func<string> activeCommandNameProvider,
+            Func<string, string> resolveCommandName,
             Action refreshViewport,
-            Action<string> logMessage)
+            Action<string> logMessage,
+            Action<string, string, string> logCommandInvocation)
         {
             var trimmedInput = (input ?? string.Empty).Trim();
             var normalized = trimmedInput.ToUpperInvariant();
@@ -61,6 +64,9 @@ namespace Primusz.AeroCAD.Core.Editor
 
             if (executeCommand != null && executeCommand(normalized))
             {
+                if (!string.IsNullOrWhiteSpace(trimmedInput))
+                    logCommandInvocation?.Invoke(commandLinePrompt, trimmedInput, resolveCommandName?.Invoke(trimmedInput) ?? normalized);
+
                 repeatCoordinator.RememberExecutedCommand(normalized);
                 refreshViewport?.Invoke();
                 return true;

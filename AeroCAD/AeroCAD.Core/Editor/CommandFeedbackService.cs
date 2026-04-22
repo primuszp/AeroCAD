@@ -48,6 +48,9 @@ namespace Primusz.AeroCAD.Core.Editor
             activeSession = session == null ? null : new CommandSession(session.CommandName, session.Prompt);
             activePrompt = activeSession?.Prompt ?? CommandPrompt.Default;
             StateChanged?.Invoke(this, EventArgs.Empty);
+
+            if (!string.IsNullOrWhiteSpace(activeSession?.CommandName))
+                LogMessage(activeSession.CommandName.Trim().ToUpperInvariant());
         }
 
         public void BeginCommand(string commandName, string prompt)

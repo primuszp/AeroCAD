@@ -99,8 +99,9 @@ namespace Primusz.AeroCAD.Core.Drawing
                 if (shape == null)
                     continue;
 
-                var registration = shape.CreateCommandRegistration();
-                toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
+                var runtime = shape.Pipeline.CreateRuntime();
+                var registration = runtime.CreateCommandRegistration();
+                toolService.RegisterTool(new RegisteredInteractiveShapeTool(runtime));
                 commandCatalog.Register(registration.CreateCommandDefinition());
             }
         }

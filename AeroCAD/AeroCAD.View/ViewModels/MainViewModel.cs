@@ -42,6 +42,7 @@ namespace Primusz.AeroCAD.View.ViewModels
 
         private readonly ModelSpace modelSpace;
         private readonly ICadDocumentService documentService;
+        private readonly IEditorCommandCatalog commandCatalog;
         private readonly IUndoRedoService undoRedoService;
         private readonly IEditorStateService editorStateService;
         private readonly ICommandFeedbackService commandFeedbackService;
@@ -74,6 +75,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             modelSpace.Initialize();
 
             documentService = modelSpace.GetService<ICadDocumentService>();
+            commandCatalog = modelSpace.GetService<IEditorCommandCatalog>();
             undoRedoService = modelSpace.GetService<IUndoRedoService>();
             editorStateService = modelSpace.GetService<IEditorStateService>();
             commandFeedbackService = modelSpace.GetService<ICommandFeedbackService>();
@@ -431,15 +433,27 @@ namespace Primusz.AeroCAD.View.ViewModels
         private void HandleCommandLineInput(string input)
         {
             var activeInteractiveTool = toolRuntime?.GetActiveInteractiveTool();
+            var commandLinePrompt = CommandLine?.Prompt;
             commandLifecycleService.TryHandleCommandLineInput(
                 input,
+                commandLinePrompt,
                 activeInteractiveTool,
                 trimmed => commandFeedbackService?.ParseInput(trimmed) ?? CommandInputToken.Text(trimmed, trimmed),
                 token => activeInteractiveTool?.TrySubmitToken(token) ?? false,
                 commandRuntime.Execute,
                 () => commandFeedbackService?.ActiveCommandName,
+                ResolveCommandNameForHistory,
                 RefreshViewportVisuals,
-                message => commandFeedbackService?.LogMessage(message));
+                message => commandFeedbackService?.LogMessage(message),
+                (prompt, rawInput, commandName) => CommandLine.WriteInvocation(prompt, rawInput, commandName));
+        }
+
+        private string ResolveCommandNameForHistory(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input) || commandCatalog == null)
+                return null;
+
+            return commandCatalog.TryResolve(input, out var definition) ? definition.Name : null;
         }
 
         private void CancelCurrentCommand()

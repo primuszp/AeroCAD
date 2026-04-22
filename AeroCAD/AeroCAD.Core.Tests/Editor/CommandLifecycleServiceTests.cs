@@ -18,13 +18,16 @@ namespace Primusz.AeroCAD.Core.Tests.Editor
 
             var handled = service.TryHandleCommandLineInput(
                 string.Empty,
+                "Command:",
                 activeTool,
                 token => CommandInputToken.Text(token, token),
                 token => false,
                 command => false,
                 () => "LINE",
+                input => input?.ToUpperInvariant(),
                 () => refreshCount++,
-                message => { });
+                message => { },
+                (_, __, ___) => { });
 
             Assert.True(handled);
             Assert.Equal(1, refreshCount);
@@ -42,13 +45,16 @@ namespace Primusz.AeroCAD.Core.Tests.Editor
 
             var handled = service.TryHandleCommandLineInput(
                 string.Empty,
+                "Command:",
                 activeTool,
                 token => CommandInputToken.Empty(),
                 token => activeTool.TrySubmitToken(token),
                 command => false,
                 () => "POLYGON",
+                input => input?.ToUpperInvariant(),
                 () => refreshCount++,
-                message => { });
+                message => { },
+                (_, __, ___) => { });
 
             Assert.True(handled);
             Assert.Equal(1, refreshCount);
@@ -65,13 +71,16 @@ namespace Primusz.AeroCAD.Core.Tests.Editor
 
             var handled = service.TryHandleCommandLineInput(
                 string.Empty,
+                "Command:",
                 null,
                 token => CommandInputToken.Text(token, token),
                 token => false,
                 command => false,
                 () => string.Empty,
+                input => input?.ToUpperInvariant(),
                 () => { },
-                message => { });
+                message => { },
+                (_, __, ___) => { });
 
             Assert.True(handled);
             Assert.Equal(string.Empty, repeat.LastExecutedCommand);
@@ -85,13 +94,16 @@ namespace Primusz.AeroCAD.Core.Tests.Editor
 
             var handled = service.TryHandleCommandLineInput(
                 "line",
+                "Command:",
                 null,
                 token => CommandInputToken.Text(token, token),
                 token => false,
                 command => command == "LINE",
                 () => string.Empty,
+                input => input?.ToUpperInvariant(),
                 () => { },
-                message => { });
+                message => { },
+                (_, __, ___) => { });
 
             Assert.True(handled);
             Assert.Equal("LINE", repeat.LastExecutedCommand);

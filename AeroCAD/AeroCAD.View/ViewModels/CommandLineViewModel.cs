@@ -50,18 +50,24 @@ namespace Primusz.AeroCAD.View.ViewModels
         public void SubmitCurrentInput()
         {
             var input = (CurrentInput ?? string.Empty).Trim();
-            if (input.Length > 0)
-            {
-                Messages.Add($"{Prompt} {input}");
+            if (input.Length > 0 && (commandHistory.Count == 0 || !string.Equals(commandHistory[commandHistory.Count - 1], input, StringComparison.OrdinalIgnoreCase)))
+                commandHistory.Add(input);
 
-                if (commandHistory.Count == 0 || !string.Equals(commandHistory[commandHistory.Count - 1], input, StringComparison.OrdinalIgnoreCase))
-                    commandHistory.Add(input);
-
-                historyIndex = commandHistory.Count;
-            }
-
+            historyIndex = commandHistory.Count;
             CurrentInput = string.Empty;
             submitAction(input);
+        }
+
+        public void WriteInvocation(string promptText, string input, string commandName = null)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return;
+
+            var promptPrefix = string.IsNullOrWhiteSpace(promptText) ? Prompt : promptText;
+            if (string.IsNullOrWhiteSpace(commandName))
+                Messages.Add($"{promptPrefix} {input}");
+            else
+                Messages.Add($"{promptPrefix} {input} {commandName}");
         }
 
         public void WriteMessage(string message)

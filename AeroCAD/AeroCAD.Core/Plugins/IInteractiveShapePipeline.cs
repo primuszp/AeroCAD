@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using Primusz.AeroCAD.Core.Editor;
-using Primusz.AeroCAD.Core.Drawing.Layers;
-using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.Core.Plugins
 {
@@ -17,6 +15,6 @@ namespace Primusz.AeroCAD.Core.Plugins
         string MenuLabel { get; }
         CommandStep InitialStep { get; }
         InteractiveCommandRegistration CreateCommandRegistration();
-        IInteractiveCommandController CreateController(System.Func<Layer> activeLayerResolver);
+        IInteractiveShapeRuntime CreateRuntime();
     }
 }

@@ -21,7 +21,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override string CommandName => "OFFSET";
 
-        public override CommandStep InitialStep => OffsetInputStep;
+        public override CommandStep InitialStep => null;
 
         public override EditorMode EditorMode => EditorMode.CommandInput;
 
@@ -40,6 +40,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             UpdateSourceColor(document, sourceEntity);
+            host.MoveToStep(OffsetInputStep);
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
@@ -99,8 +100,6 @@ namespace Primusz.AeroCAD.Core.Tools
                 if (host.TryResolveScalarInput(token, out scalar))
                 {
                     session.SetFixedDistance(scalar);
-                    host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(session.FixedDistance.Value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
-
                     return session.SourceEntity != null
                         ? InteractiveCommandResult.MoveToStep(SidePointStep)
                         : InteractiveCommandResult.MoveToStep(EntityStep);

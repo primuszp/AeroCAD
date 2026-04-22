@@ -166,8 +166,18 @@ namespace Primusz.AeroCAD.View.Editor
             if (selectionManager == null || selectionManager.SelectedEntities.Count == 0)
                 return false;
 
-            var entitiesToDelete = selectionManager.SelectedEntities.ToList();
+            var entitiesToDelete = selectionManager.SelectedEntities
+                .Where(CanDeleteEntity)
+                .ToList();
+            var skippedCount = selectionManager.SelectedEntities.Count - entitiesToDelete.Count;
             selectionManager.ClearSelection();
+
+            if (entitiesToDelete.Count == 0)
+            {
+                ActivateSelectionMode();
+                commandFeedbackService?.LogMessage("No deletable entities selected.");
+                return false;
+            }
 
             var command = new RemoveEntitiesCommand(
                 documentService,
@@ -181,7 +191,19 @@ namespace Primusz.AeroCAD.View.Editor
                     ? "1 entity deleted."
                     : $"{entitiesToDelete.Count} entities deleted.");
 
+            if (skippedCount > 0)
+                commandFeedbackService?.LogMessage($"{skippedCount} locked or hidden entity(s) skipped.");
+
             return true;
+        }
+
+        private bool CanDeleteEntity(Primusz.AeroCAD.Core.Drawing.Entities.Entity entity)
+        {
+            if (entity == null || documentService == null)
+                return false;
+
+            var layer = documentService.GetLayerForEntity(entity);
+            return layer == null || layer.IsEditable;
         }
 
         private void RegisterDefaultCommands()
