@@ -5,6 +5,7 @@ using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editor;
 
 namespace Primusz.AeroCAD.Core.Tools
@@ -18,8 +19,7 @@ namespace Primusz.AeroCAD.Core.Tools
             new CommandStep("OppositeCorner", "Specify opposite corner:");
 
         private readonly Func<Layer> activeLayerResolver;
-        private bool hasFirstCorner;
-        private Point firstCorner;
+        private readonly RectangleInteractiveShapeSession session = new RectangleInteractiveShapeSession();
 
         public RectangleCommandController(Func<Layer> activeLayerResolver)
         {
@@ -32,22 +32,21 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override void OnActivated(IInteractiveCommandHost host)
         {
-            hasFirstCorner = false;
-            firstCorner = default(Point);
+            session.Reset();
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
         {
             UpdateSnap(host, rawPoint);
 
-            if (hasFirstCorner)
-                host.ToolService.Viewport.GetRubberObject().SetMove(host.ResolveFinalPoint(firstCorner, rawPoint));
+            if (session.HasFirstCorner)
+                host.ToolService.Viewport.GetRubberObject().SetMove(host.ResolveFinalPoint(session.FirstCorner, rawPoint));
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            Point final = hasFirstCorner
-                ? host.ResolveFinalPoint(firstCorner, rawPoint)
+            Point final = session.HasFirstCorner
+                ? host.ResolveFinalPoint(session.FirstCorner, rawPoint)
                 : host.ResolveFinalPoint(null, rawPoint);
 
             return SubmitPoint(host, final);
@@ -56,7 +55,7 @@ namespace Primusz.AeroCAD.Core.Tools
         public override InteractiveCommandResult TrySubmitToken(IInteractiveCommandHost host, CommandInputToken token)
         {
             Point point;
-            if (!host.TryResolvePointInput(token, hasFirstCorner ? firstCorner : (Point?)null, out point))
+            if (!host.TryResolvePointInput(token, session.HasFirstCorner ? session.FirstCorner : (Point?)null, out point))
                 return InteractiveCommandResult.Unhandled();
 
             return SubmitPoint(host, point);
@@ -76,17 +75,16 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
-            if (!hasFirstCorner)
+            if (!session.HasFirstCorner)
             {
-                hasFirstCorner = true;
-                firstCorner = point;
+                session.Begin(point);
                 var rbo = host.ToolService.Viewport.GetRubberObject();
                 rbo.CurrentStyle = RubberStyle.Rectangle;
-                rbo.SetStart(firstCorner);
+                rbo.SetStart(session.FirstCorner);
                 return InteractiveCommandResult.MoveToStep(OppositeCornerStep);
             }
 
-            CreateRectangle(host, firstCorner, point);
+            CreateRectangle(host, session.FirstCorner, point);
             return Finish(host, "RECTANGLE created.");
         }
 

@@ -5,6 +5,7 @@ using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
+using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editor;
 
 namespace Primusz.AeroCAD.Core.Tools
@@ -17,8 +18,7 @@ namespace Primusz.AeroCAD.Core.Tools
         private static readonly CommandStep NextPointStep = new CommandStep("NextPoint", "Specify next point:", keywords: new[] { CloseKeyword, UndoKeyword });
 
         private readonly System.Func<Layer> activeLayerResolver;
-        private readonly List<Point> points = new List<Point>();
-        private Polyline currentPolyline;
+        private readonly PolylineInteractiveShapeSession session = new PolylineInteractiveShapeSession();
 
         public PolylineCommandController(System.Func<Layer> activeLayerResolver)
         {
@@ -33,25 +33,24 @@ namespace Primusz.AeroCAD.Core.Tools
 
         public override void OnActivated(IInteractiveCommandHost host)
         {
-            points.Clear();
-            currentPolyline = null;
+            session.Reset();
         }
 
         public override void OnPointerMove(IInteractiveCommandHost host, Point rawPoint)
         {
             UpdateSnap(host, rawPoint);
 
-            if (points.Count > 0)
+            if (session.HasStarted)
             {
-                Point lastPoint = points[points.Count - 1];
+                Point lastPoint = session.Points[session.Points.Count - 1];
                 host.ToolService.Viewport.GetRubberObject().SetMove(host.ResolveFinalPoint(lastPoint, rawPoint));
             }
         }
 
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
-            Point final = points.Count > 0
-                ? host.ResolveFinalPoint(points[points.Count - 1], rawPoint)
+            Point final = session.HasStarted
+                ? host.ResolveFinalPoint(session.Points[session.Points.Count - 1], rawPoint)
                 : host.ResolveFinalPoint(null, rawPoint);
 
             return SubmitResolvedPoint(host, final, true);
@@ -70,7 +69,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             Point point;
-            if (!host.TryResolvePointInput(token, points.Count > 0 ? points[points.Count - 1] : (Point?)null, out point))
+            if (!host.TryResolvePointInput(token, session.HasStarted ? session.Points[session.Points.Count - 1] : (Point?)null, out point))
                 return InteractiveCommandResult.Unhandled();
 
             return SubmitResolvedPoint(host, point, true);
@@ -88,32 +87,32 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult SubmitResolvedPoint(IInteractiveCommandHost host, Point point, bool logInput)
         {
-            points.Add(point);
+            session.AddPoint(point);
             if (logInput)
                 host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
             var rbo = host.ToolService.Viewport.GetRubberObject();
-            if (points.Count == 1)
+            if (session.Points.Count == 1)
             {
                 rbo.CurrentStyle = RubberStyle.Line;
                 rbo.SetStart(point);
             }
-            else if (points.Count == 2)
+            else if (session.Points.Count == 2)
             {
                 var layer = activeLayerResolver?.Invoke();
                 if (layer != null)
                 {
-                    currentPolyline = new Polyline(points);
+                    session.CreateCurrentPolyline();
                     var document = host.ToolService.GetService<ICadDocumentService>();
-                    var cmd = new AddEntityCommand(document, layer.Id, currentPolyline);
+                    var cmd = new AddEntityCommand(document, layer.Id, session.CurrentPolyline);
                     host.ToolService.GetService<IUndoRedoService>()?.Execute(cmd);
                 }
 
                 rbo.SetStart(point);
             }
-            else if (currentPolyline != null)
+            else if (session.CurrentPolyline != null)
             {
-                currentPolyline.AddPoint(point);
+                session.AppendToPolyline(point);
                 rbo.SetStart(point);
             }
 
@@ -122,57 +121,44 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult ClosePolyline(IInteractiveCommandHost host)
         {
-            if (points.Count < 2)
+            if (!session.CanClose())
                 return InteractiveCommandResult.Unhandled();
 
-            var firstPoint = points[0];
-            var lastPoint = points[points.Count - 1];
-            if (firstPoint != lastPoint)
-            {
-                points.Add(firstPoint);
-                currentPolyline?.AddPoint(firstPoint);
-                host.ToolService.Viewport.GetRubberObject().SetStart(firstPoint);
-            }
+            session.Close();
+            host.ToolService.Viewport.GetRubberObject().SetStart(session.Points[0]);
 
             return Finish(host, "PLINE created.");
         }
 
         private InteractiveCommandResult UndoLastPoint(IInteractiveCommandHost host)
         {
-            if (points.Count == 0)
+            if (!session.CanUndo())
                 return InteractiveCommandResult.Unhandled();
 
-            if (points.Count == 1)
+            if (session.Points.Count == 1)
             {
-                // First point only — no entity was created yet, just reset.
-                points.Clear();
-                currentPolyline = null;
+                session.Reset();
                 host.ToolService.Viewport.GetRubberObject().Cancel();
                 return InteractiveCommandResult.MoveToStep(FirstPointStep);
             }
 
-            if (points.Count == 2)
+            if (session.Points.Count == 2)
             {
                 // The polyline was added to the undo stack via AddEntityCommand.
-                // Undo that command to remove it cleanly from the document and undo stack.
                 host.ToolService.GetService<IUndoRedoService>()?.Undo();
-                currentPolyline = null;
-                points.RemoveAt(points.Count - 1);
-                host.ToolService.Viewport.GetRubberObject().SetStart(points[points.Count - 1]);
+                session.UndoLastPoint(out _);
+                host.ToolService.Viewport.GetRubberObject().SetStart(session.Points[0]);
                 return InteractiveCommandResult.MoveToStep(NextPointStep);
             }
 
-            // N > 2: polyline was mutated in-session — just remove the last point directly.
-            points.RemoveAt(points.Count - 1);
-            currentPolyline?.RemoveLastPoint();
-            host.ToolService.Viewport.GetRubberObject().SetStart(points[points.Count - 1]);
+            session.UndoLastPoint(out _);
+            host.ToolService.Viewport.GetRubberObject().SetStart(session.Points[session.Points.Count - 1]);
             return InteractiveCommandResult.MoveToStep(NextPointStep);
         }
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            points.Clear();
-            currentPolyline = null;
+            session.Reset();
             return EndCommand(host, message);
         }
     }
