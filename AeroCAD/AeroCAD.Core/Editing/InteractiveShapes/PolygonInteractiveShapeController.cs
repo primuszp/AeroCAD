@@ -7,13 +7,12 @@ using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
-using Primusz.AeroCAD.Core.Editing.InteractiveShapes;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Tools;
 
-namespace Primusz.AeroCAD.View.Tools
+namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 {
-    public class PolygonCommandController : CommandControllerBase
+    public sealed class PolygonInteractiveShapeController : CommandControllerBase
     {
         private static readonly CommandStep SidesStep = new CommandStep("Sides", "Enter number of sides [3-1024] <4>:");
         private static readonly CommandStep CenterModeStep = new CommandStep("CenterMode", "Enter an option [Inscribed in circle/Circumscribed about circle] <Inscribed in circle>:", keywords: new[] { InscribedKeyword, CircumscribedKeyword });
@@ -29,7 +28,7 @@ namespace Primusz.AeroCAD.View.Tools
         private readonly Func<Layer> activeLayerResolver;
         private readonly PolygonInteractiveShapeSession session = new PolygonInteractiveShapeSession();
 
-        public PolygonCommandController(Func<Layer> activeLayerResolver)
+        public PolygonInteractiveShapeController(Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
         }
@@ -241,7 +240,7 @@ namespace Primusz.AeroCAD.View.Tools
             }
 
             var transientPreviewService = host.ToolService.GetService<Primusz.AeroCAD.Core.Editing.TransientPreviews.ITransientEntityPreviewService>();
-            var color = activeLayerResolver?.Invoke()?.Color ?? System.Windows.Media.Colors.White;
+            var color = activeLayerResolver?.Invoke()?.Color ?? Colors.White;
             rubberObject.Preview = transientPreviewService?.CreatePreview(previewEntity, color);
         }
 
