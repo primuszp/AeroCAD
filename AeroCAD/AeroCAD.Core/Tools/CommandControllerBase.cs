@@ -64,6 +64,20 @@ namespace Primusz.AeroCAD.Core.Tools
         }
 
         /// <summary>
+        /// Clears only the preview/snap visualization without resetting rubber state.
+        /// </summary>
+        protected void ClearRubberPreview(IInteractiveCommandHost host)
+        {
+            var rubberObject = host?.ToolService?.Viewport?.GetRubberObject();
+            if (rubberObject == null)
+                return;
+
+            rubberObject.SnapPoint = null;
+            rubberObject.ClearPreview();
+            rubberObject.InvalidateVisual();
+        }
+
+        /// <summary>
         /// Ends an interactive command using the standard cleanup path.
         /// </summary>
         protected InteractiveCommandResult EndCommand(IInteractiveCommandHost host, string message, bool returnToSelectionMode = true)

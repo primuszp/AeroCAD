@@ -59,6 +59,18 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             FirstEdgePoint = default(Point);
         }
 
+        public void BeginCenterMode(Point center)
+        {
+            HasCenter = true;
+            Center = center;
+        }
+
+        public void BeginFirstEdgePoint(Point point)
+        {
+            HasFirstEdgePoint = true;
+            FirstEdgePoint = point;
+        }
+
         public void SetCenter(Point center)
         {
             HasCenter = true;
@@ -138,6 +150,14 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
 
             points = RegularPolygonGeometry.BuildClosedPolygon(Center, Sides, radius, rotationOffset, UseInscribed);
             return points != null && points.Count >= 4;
+        }
+
+        public bool TryBuildCurrentPolygon(Point point, out IReadOnlyList<Point> points)
+        {
+            if (UseEdgeMode)
+                return TryBuildEdgePolygon(point, out points);
+
+            return TryBuildCenterPolygon(point, out points);
         }
 
         public bool TryBuildEdgePolygon(Point secondPoint, out IReadOnlyList<Point> points)

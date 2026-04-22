@@ -184,18 +184,17 @@ namespace Primusz.AeroCAD.View.Tools
             {
                 if (!session.HasFirstEdgePoint)
                 {
-                    session.SetFirstEdgePoint(point);
+                    session.BeginFirstEdgePoint(point);
                     host.ToolService.Viewport.GetRubberObject().SetStart(session.FirstEdgePoint);
                     return InteractiveCommandResult.MoveToStep(SecondEdgeStep);
                 }
 
-                CreatePolygonFromEdge(host, session.FirstEdgePoint, point);
-                return Finish(host, "POLYGON created.");
+                return CreatePolygon(host, point);
             }
 
             if (!session.HasCenter)
             {
-                session.SetCenter(point);
+                session.BeginCenterMode(point);
                 var rbo = host.ToolService.Viewport.GetRubberObject();
                 rbo.ClearPreview();
                 rbo.SnapPoint = null;
@@ -203,32 +202,20 @@ namespace Primusz.AeroCAD.View.Tools
                 return InteractiveCommandResult.MoveToStep(CenterModeStep);
             }
 
-            CreatePolygonFromCenter(host, session.Center, point);
+            return CreatePolygon(host, point);
+        }
+
+        private InteractiveCommandResult CreatePolygon(IInteractiveCommandHost host, Point point)
+        {
+            var layer = activeLayerResolver?.Invoke();
+            if (layer == null)
+                return InteractiveCommandResult.HandledOnly();
+
+            if (!session.TryBuildCurrentPolygon(point, out var points))
+                return InteractiveCommandResult.HandledOnly();
+
+            AddPolygon(host, layer, points);
             return Finish(host, "POLYGON created.");
-        }
-
-        private void CreatePolygonFromCenter(IInteractiveCommandHost host, Point polygonCenter, Point radiusPoint)
-        {
-            var layer = activeLayerResolver?.Invoke();
-            if (layer == null)
-                return;
-
-            if (!session.TryBuildCenterPolygon(radiusPoint, out var points))
-                return;
-
-            AddPolygon(host, layer, points);
-        }
-
-        private void CreatePolygonFromEdge(IInteractiveCommandHost host, Point first, Point second)
-        {
-            var layer = activeLayerResolver?.Invoke();
-            if (layer == null)
-                return;
-
-            if (!session.TryBuildEdgePolygon(second, out var points))
-                return;
-
-            AddPolygon(host, layer, points);
         }
 
         private void AddPolygon(IInteractiveCommandHost host, Layer layer, IReadOnlyList<Point> points)

@@ -123,14 +123,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)
         {
-            var rbo = host.ToolService.Viewport.GetRubberObject();
-            if (rbo != null)
-            {
-                rbo.SnapPoint = null;
-                rbo.ClearPreview();
-                rbo.InvalidateVisual();
-            }
-
+            ClearRubberPreview(host);
             session.ActiveGrip?.Unselect();
             session.Reset();
             return EndCommand(host, message, returnToSelectionMode: false);
