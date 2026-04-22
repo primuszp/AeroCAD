@@ -28,6 +28,11 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
         private readonly Func<Layer> activeLayerResolver;
         private readonly PolygonInteractiveShapeSession session = new PolygonInteractiveShapeSession();
 
+        public PolygonInteractiveShapeController()
+            : this(null)
+        {
+        }
+
         public PolygonInteractiveShapeController(Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
@@ -240,7 +245,7 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             }
 
             var transientPreviewService = host.ToolService.GetService<Primusz.AeroCAD.Core.Editing.TransientPreviews.ITransientEntityPreviewService>();
-            var color = activeLayerResolver?.Invoke()?.Color ?? Colors.White;
+            var color = ResolveActiveLayer(host)?.Color ?? Colors.White;
             rubberObject.Preview = transientPreviewService?.CreatePreview(previewEntity, color);
         }
 
@@ -263,6 +268,19 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
                 return host.ResolveFinalPoint(session.HasFirstEdgePoint ? session.FirstEdgePoint : (Point?)null, rawPoint);
 
             return host.ResolveFinalPoint(session.HasCenter ? session.Center : (Point?)null, rawPoint);
+        }
+
+        private Layer ResolveActiveLayer(IInteractiveCommandHost host)
+        {
+            if (activeLayerResolver != null)
+                return activeLayerResolver();
+
+            var editorState = host?.ToolService?.GetService<IEditorStateService>();
+            if (editorState?.ActiveLayer != null)
+                return editorState.ActiveLayer;
+
+            var document = host?.ToolService?.GetService<ICadDocumentService>();
+            return document?.Layers?.Count > 0 ? document.Layers[0] : null;
         }
     }
 }

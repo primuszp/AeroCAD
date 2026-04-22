@@ -8,7 +8,7 @@ namespace Primusz.AeroCAD.Core.Plugins
     {
         string CommandName { get; }
         string ToolName { get; }
-        IInteractiveCommandController CreateController(Func<Layer> activeLayerResolver);
+        ITool CreateTool();
         InteractiveCommandRegistration CreateCommandRegistration();
     }
 }

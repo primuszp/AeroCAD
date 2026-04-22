@@ -9,7 +9,7 @@ namespace Primusz.AeroCAD.Core.Plugins
     {
         public InteractiveCommandRegistration(
             string commandName,
-            Func<Func<Drawing.Layers.Layer>, IInteractiveCommandController> controllerFactory,
+            Func<IInteractiveCommandController> controllerFactory,
             string toolName = null,
             IEnumerable<string> aliases = null,
             string description = null,
@@ -48,7 +48,21 @@ namespace Primusz.AeroCAD.Core.Plugins
 
         public string MenuLabel { get; }
 
-        public Func<Func<Drawing.Layers.Layer>, IInteractiveCommandController> ControllerFactory { get; }
+        public Func<IInteractiveCommandController> ControllerFactory { get; }
+
+        public InteractiveCommandRegistration(
+            string commandName,
+            Func<Func<Drawing.Layers.Layer>, IInteractiveCommandController> controllerFactory,
+            string toolName = null,
+            IEnumerable<string> aliases = null,
+            string description = null,
+            EditorCommandPolicy policy = null,
+            bool assignActiveLayer = false,
+            string menuGroup = null,
+            string menuLabel = null)
+            : this(commandName, () => controllerFactory?.Invoke(null), toolName, aliases, description, policy, assignActiveLayer, menuGroup, menuLabel)
+        {
+        }
 
         public EditorCommandDefinition CreateCommandDefinition()
         {

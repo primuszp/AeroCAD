@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Primusz.AeroCAD.Core.Editor;
-using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.Core.Plugins
@@ -11,7 +10,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         public InteractiveShapeDefinition(
             string name,
             string commandName,
-            System.Func<System.Func<Layer>, IInteractiveCommandController> controllerFactory,
+            System.Func<IInteractiveCommandController> controllerFactory,
             IEnumerable<CommandStep> steps,
             string[] aliases = null,
             string description = null,

@@ -101,7 +101,7 @@ namespace Primusz.AeroCAD.Core.Drawing
 
                 var runtime = shape.Pipeline.CreateRuntime();
                 var registration = runtime.CreateCommandRegistration();
-                toolService.RegisterTool(new RegisteredInteractiveShapeTool(runtime));
+                toolService.RegisterTool(runtime.CreateTool());
                 commandCatalog.Register(registration.CreateCommandDefinition());
             }
         }

@@ -20,6 +20,11 @@ namespace Primusz.AeroCAD.Core.Tools
         private readonly System.Func<Layer> activeLayerResolver;
         private readonly PolylineInteractiveShapeSession session = new PolylineInteractiveShapeSession();
 
+        public PolylineCommandController()
+            : this(null)
+        {
+        }
+
         public PolylineCommandController(System.Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
@@ -99,7 +104,7 @@ namespace Primusz.AeroCAD.Core.Tools
             }
             else if (session.Points.Count == 2)
             {
-                var layer = activeLayerResolver?.Invoke();
+                var layer = ResolveActiveLayer(host);
                 if (layer != null)
                 {
                     session.CreateCurrentPolyline();
@@ -154,6 +159,19 @@ namespace Primusz.AeroCAD.Core.Tools
             session.UndoLastPoint(out _);
             host.ToolService.Viewport.GetRubberObject().SetStart(session.Points[session.Points.Count - 1]);
             return InteractiveCommandResult.MoveToStep(NextPointStep);
+        }
+
+        private Layer ResolveActiveLayer(IInteractiveCommandHost host)
+        {
+            if (activeLayerResolver != null)
+                return activeLayerResolver();
+
+            var editorState = host?.ToolService?.GetService<IEditorStateService>();
+            if (editorState?.ActiveLayer != null)
+                return editorState.ActiveLayer;
+
+            var document = host?.ToolService?.GetService<ICadDocumentService>();
+            return document?.Layers?.Count > 0 ? document.Layers[0] : null;
         }
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)

@@ -15,7 +15,7 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("OppositeCorner", "Specify opposite corner:")
         };
 
-        public RectangleInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
+        public RectangleInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Rectangle",

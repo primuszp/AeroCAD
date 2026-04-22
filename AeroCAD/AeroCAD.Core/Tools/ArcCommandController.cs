@@ -33,6 +33,11 @@ namespace Primusz.AeroCAD.Core.Tools
         private readonly Func<Layer> activeLayerResolver;
         private readonly ArcInteractiveShapeSession session = new ArcInteractiveShapeSession();
 
+        public ArcCommandController()
+            : this(null)
+        {
+        }
+
         public ArcCommandController(Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
@@ -152,7 +157,7 @@ namespace Primusz.AeroCAD.Core.Tools
                         return InteractiveCommandResult.HandledOnly();
                     }
 
-                    var layer = activeLayerResolver?.Invoke();
+                    var layer = ResolveActiveLayer(host);
                     if (layer != null)
                     {
                         var document = host.ToolService.GetService<ICadDocumentService>();
@@ -172,6 +177,19 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             session.Reset();
             return EndCommand(host, message);
+        }
+
+        private Layer ResolveActiveLayer(IInteractiveCommandHost host)
+        {
+            if (activeLayerResolver != null)
+                return activeLayerResolver();
+
+            var editorState = host?.ToolService?.GetService<IEditorStateService>();
+            if (editorState?.ActiveLayer != null)
+                return editorState.ActiveLayer;
+
+            var document = host?.ToolService?.GetService<ICadDocumentService>();
+            return document?.Layers?.Count > 0 ? document.Layers[0] : null;
         }
     }
 }

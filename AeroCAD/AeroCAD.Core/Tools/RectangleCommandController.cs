@@ -21,6 +21,11 @@ namespace Primusz.AeroCAD.Core.Tools
         private readonly Func<Layer> activeLayerResolver;
         private readonly RectangleInteractiveShapeSession session = new RectangleInteractiveShapeSession();
 
+        public RectangleCommandController()
+            : this(null)
+        {
+        }
+
         public RectangleCommandController(Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
@@ -90,13 +95,26 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private void CreateRectangle(IInteractiveCommandHost host, Point corner1, Point corner2)
         {
-            var layer = activeLayerResolver?.Invoke();
+            var layer = ResolveActiveLayer(host);
             if (layer == null) return;
 
             var rectangle = new Rectangle(corner1, corner2);
             var document = host.ToolService.GetService<ICadDocumentService>();
             var cmd = new AddEntityCommand(document, layer.Id, rectangle);
             host.ToolService.GetService<IUndoRedoService>()?.Execute(cmd);
+        }
+
+        private Layer ResolveActiveLayer(IInteractiveCommandHost host)
+        {
+            if (activeLayerResolver != null)
+                return activeLayerResolver();
+
+            var editorState = host?.ToolService?.GetService<IEditorStateService>();
+            if (editorState?.ActiveLayer != null)
+                return editorState.ActiveLayer;
+
+            var document = host?.ToolService?.GetService<ICadDocumentService>();
+            return document?.Layers?.Count > 0 ? document.Layers[0] : null;
         }
 
         private InteractiveCommandResult Finish(IInteractiveCommandHost host, string message)

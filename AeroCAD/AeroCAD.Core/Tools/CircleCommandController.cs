@@ -18,6 +18,11 @@ namespace Primusz.AeroCAD.Core.Tools
         private readonly System.Func<Layer> activeLayerResolver;
         private readonly CircleInteractiveShapeSession session = new CircleInteractiveShapeSession();
 
+        public CircleCommandController()
+            : this(null)
+        {
+        }
+
         public CircleCommandController(System.Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
@@ -130,7 +135,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
             if (radius > double.Epsilon)
             {
-                var layer = activeLayerResolver?.Invoke();
+                var layer = ResolveActiveLayer(host);
                 if (layer != null)
                 {
                     var circle = new Circle(session.CenterPoint, radius);
@@ -157,6 +162,19 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             session.Reset();
             return EndCommand(host, message);
+        }
+
+        private Layer ResolveActiveLayer(IInteractiveCommandHost host)
+        {
+            if (activeLayerResolver != null)
+                return activeLayerResolver();
+
+            var editorState = host?.ToolService?.GetService<IEditorStateService>();
+            if (editorState?.ActiveLayer != null)
+                return editorState.ActiveLayer;
+
+            var document = host?.ToolService?.GetService<ICadDocumentService>();
+            return document?.Layers?.Count > 0 ? document.Layers[0] : null;
         }
     }
 }

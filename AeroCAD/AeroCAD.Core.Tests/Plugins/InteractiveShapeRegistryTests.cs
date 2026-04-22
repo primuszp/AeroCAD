@@ -14,7 +14,7 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             var definition = new InteractiveShapeDefinition(
                 "MyCompany.Polygon",
                 "POLYGON",
-                layerProvider => new StubController(),
+                () => new StubController(),
                 new[] { new CommandStep("Sides", "Sides") });
 
             var registry = new InteractiveShapeRegistry(new[] { definition });

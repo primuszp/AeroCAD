@@ -15,7 +15,7 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("NextPoint", "Specify next point:")
         };
 
-        public LineInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
+        public LineInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Line",

@@ -19,7 +19,7 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             })
         };
 
-        public PolylineInteractiveShapeDefinition(Func<Func<Layer>, IInteractiveCommandController> controllerFactory)
+        public PolylineInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Polyline",

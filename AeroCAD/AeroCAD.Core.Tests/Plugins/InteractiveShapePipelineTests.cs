@@ -15,7 +15,7 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             var pipeline = new InteractiveShapePipeline(
                 name: "MyCompany.Polygon",
                 commandName: "polygon",
-                controllerFactory: layerProvider => new StubController(),
+                controllerFactory: () => new StubController(),
                 steps: new[] { step },
                 aliases: new[] { "POL" },
                 description: "Draw a polygon.",
@@ -25,6 +25,7 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
 
             var runtime = pipeline.CreateRuntime();
             var registration = runtime.CreateCommandRegistration();
+            var tool = runtime.CreateTool();
 
             Assert.Equal("MyCompany.Polygon", pipeline.Name);
             Assert.Equal("POLYGON", pipeline.CommandName);
@@ -32,6 +33,7 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             Assert.Single(pipeline.Steps);
             Assert.Equal("POLYGON", runtime.CommandName);
             Assert.Equal("POLYGONTool", runtime.ToolName);
+            Assert.Equal("POLYGONTool", tool.Name);
             Assert.Equal("POLYGON", registration.CommandName);
             Assert.Equal("Draw a polygon.", registration.Description);
             Assert.True(registration.AssignActiveLayer);

@@ -26,6 +26,11 @@ namespace Primusz.AeroCAD.Core.Tools
         private readonly System.Func<Layer> activeLayerResolver;
         private readonly LineInteractiveShapeSession session = new LineInteractiveShapeSession();
 
+        public LineCommandController()
+            : this(null)
+        {
+        }
+
         public LineCommandController(System.Func<Layer> activeLayerResolver)
         {
             this.activeLayerResolver = activeLayerResolver;
@@ -112,7 +117,7 @@ namespace Primusz.AeroCAD.Core.Tools
 
         private void CreateLineSegment(IInteractiveCommandHost host, Point from, Point to)
         {
-            var layer = activeLayerResolver?.Invoke();
+            var layer = ResolveActiveLayer(host);
             if (layer == null)
                 return;
 
@@ -121,6 +126,19 @@ namespace Primusz.AeroCAD.Core.Tools
             var cmd = new AddEntityCommand(document, layer.Id, line);
             host.ToolService.GetService<IUndoRedoService>()?.Execute(cmd);
             session.AddSegment(line);
+        }
+
+        private Layer ResolveActiveLayer(IInteractiveCommandHost host)
+        {
+            if (activeLayerResolver != null)
+                return activeLayerResolver();
+
+            var editorState = host?.ToolService?.GetService<IEditorStateService>();
+            if (editorState?.ActiveLayer != null)
+                return editorState.ActiveLayer;
+
+            var document = host?.ToolService?.GetService<ICadDocumentService>();
+            return document?.Layers?.Count > 0 ? document.Layers[0] : null;
         }
 
         private InteractiveCommandResult CloseLine(IInteractiveCommandHost host)

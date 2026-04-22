@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Tools;
 
@@ -14,7 +13,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         public InteractiveShapePipeline(
             string name,
             string commandName,
-            Func<Func<Layer>, IInteractiveCommandController> controllerFactory,
+            Func<IInteractiveCommandController> controllerFactory,
             IEnumerable<CommandStep> steps,
             string[] aliases = null,
             string description = null,
@@ -47,7 +46,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         public string MenuGroup { get; }
         public string MenuLabel { get; }
         public CommandStep InitialStep => steps.FirstOrDefault();
-        public Func<Func<Layer>, IInteractiveCommandController> ControllerFactory { get; }
+        public Func<IInteractiveCommandController> ControllerFactory { get; }
 
         public InteractiveCommandRegistration CreateCommandRegistration()
         {
@@ -65,7 +64,7 @@ namespace Primusz.AeroCAD.Core.Plugins
 
         public IInteractiveShapeRuntime CreateRuntime()
         {
-            return new InteractiveShapeRuntime(CommandName, $"{CommandName}Tool", ControllerFactory, CreateCommandRegistration());
+            return new InteractiveShapeRuntime(CreateCommandRegistration());
         }
     }
 }

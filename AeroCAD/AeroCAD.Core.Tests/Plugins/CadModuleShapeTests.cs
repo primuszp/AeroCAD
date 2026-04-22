@@ -16,7 +16,7 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             var shape = new InteractiveShapeDefinition(
                 name: "MyCompany.Polygon",
                 commandName: "POLYGON",
-                controllerFactory: layerProvider => new StubController(),
+                controllerFactory: () => new StubController(),
                 steps: new[] { step },
                 aliases: new[] { "POL" },
                 description: "Draw a polygon.");

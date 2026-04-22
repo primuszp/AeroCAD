@@ -24,7 +24,7 @@ namespace Primusz.AeroCAD.Core.Tests.Drawing
                 var shape = new InteractiveShapeDefinition(
                     "MyCompany.Polygon",
                     "POLYGON",
-                    layerProvider => new StubController(),
+                    () => new StubController(),
                     new[] { new CommandStep("Sides", "Enter number of sides <4>:") },
                     aliases: new[] { "POL" });
 

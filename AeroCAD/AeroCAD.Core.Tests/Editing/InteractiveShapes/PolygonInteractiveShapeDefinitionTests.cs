@@ -8,7 +8,7 @@ namespace Primusz.AeroCAD.Core.Tests.Editing.InteractiveShapes
         [Fact]
         public void PolygonDefinition_ExposesExpectedCommandMetadata()
         {
-            var definition = new PolygonInteractiveShapeDefinition(layerProvider => null);
+            var definition = new PolygonInteractiveShapeDefinition(() => null);
 
             Assert.Equal("AeroCAD.Polygon", definition.Name);
             Assert.Equal("POLYGON", definition.CommandName);
