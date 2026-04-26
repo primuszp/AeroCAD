@@ -18,6 +18,7 @@ namespace Primusz.AeroCAD.SamplePlugin
                     .Create("AeroCAD.SamplePlugin.XMarker")
                     .WithRenderStrategy(new XMarkerRenderStrategy())
                     .WithBoundsStrategy(new XMarkerBoundsStrategy())
+                    .WithGripPreviewStrategy(new XMarkerGripPreviewStrategy())
                     .WithInteractiveCommand(CreateXMarkerCommand())
                     .BuildPlugin();
             }
