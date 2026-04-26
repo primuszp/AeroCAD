@@ -8,7 +8,12 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
     {
         public static bool IsSupportedBoundary(Entity boundary)
         {
-            return boundary is Line || boundary is Circle || boundary is Polyline || boundary is Arc || boundary is Rectangle;
+            return boundary is Line
+                || boundary is Circle
+                || boundary is Polyline
+                || boundary is Arc
+                || boundary is Rectangle
+                || boundary is ITrimExtendBoundaryGeometry;
         }
 
         public static IEnumerable<Entity> GetSupportedBoundaries(IReadOnlyList<Entity> boundaries)

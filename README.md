@@ -51,6 +51,10 @@ yield return EntityPluginBuilder
 
 See `AeroCAD/Samples/AeroCAD.SamplePlugin` for a buildable external plugin that registers the `XMARK` command and a custom `XMarkerEntity`.
 
+External commands can use `InteractiveCommandContext` for common operations such as `AddEntity`, `PickEntity`, `SetEntityPreview`, `SetPreview`, `ClearPreview`, `TryResolvePoint`, and `TryResolveScalar`.
+
+External entities that should act as TRIM/EXTEND boundaries for built-in target entities can implement `ITrimExtendBoundaryGeometry`. This lets built-in trim strategies ask the external entity for line and circular intersections instead of relying only on built-in boundary types.
+
 ## Rights
 
 Copyright (c) Primusz Peter. All rights reserved.

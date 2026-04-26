@@ -40,6 +40,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
             if (boundary is Rectangle boundaryRect)
                 return GetRectangleLineIntersections(target, boundaryRect, restrictTargetToSegment);
 
+            if (boundary is ITrimExtendBoundaryGeometry boundaryGeometry)
+                return boundaryGeometry.GetLineIntersections(target, restrictTargetToSegment) ?? Array.Empty<LineIntersectionPoint>();
+
             return Array.Empty<LineIntersectionPoint>();
         }
 
@@ -70,6 +73,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
             if (boundary is Rectangle boundaryRect)
                 return GetRectangleCircleIntersections(center, radius, boundaryRect);
+
+            if (boundary is ITrimExtendBoundaryGeometry boundaryGeometry)
+                return boundaryGeometry.GetCircularIntersections(center, radius) ?? Array.Empty<CircularIntersectionPoint>();
 
             return Array.Empty<CircularIntersectionPoint>();
         }
@@ -274,7 +280,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
         }
     }
 
-    internal sealed class LineIntersectionPoint
+    public sealed class LineIntersectionPoint
     {
         public LineIntersectionPoint(Point point, double parameter)
         {
@@ -287,7 +293,7 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
         public double Parameter { get; }
     }
 
-    internal sealed class CircularIntersectionPoint
+    public sealed class CircularIntersectionPoint
     {
         public CircularIntersectionPoint(Point point, double angle)
         {

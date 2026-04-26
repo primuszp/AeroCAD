@@ -364,8 +364,8 @@ namespace Primusz.AeroCAD.View.ViewModels
                 {
                     canExecuteMap.TryGetValue(definition.Name, out var canExec);
                     ICommand command = canExec != null
-                        ? new RelayCommand(() => commandRuntime.Execute(definition.Name), canExec)
-                        : new RelayCommand(() => commandRuntime.Execute(definition.Name));
+                        ? new RelayCommand(() => HandleCommandLineInput(definition.Name), canExec)
+                        : new RelayCommand(() => HandleCommandLineInput(definition.Name));
                     return new MenuItemViewModel(definition.MenuLabel ?? definition.Description, command);
                 }).ToList();
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Tools;
 
@@ -94,6 +95,40 @@ namespace Primusz.AeroCAD.Core.Plugins
         public InteractiveCommandRegistrationBuilder OnPoint(Func<InteractiveCommandContext, System.Windows.Point, InteractiveCommandResult> callback)
         {
             onViewportPoint = callback;
+            return this;
+        }
+
+        public InteractiveCommandRegistrationBuilder CreateEntityOnPoint(Func<InteractiveCommandContext, System.Windows.Point, Entity> factory, string createdMessage = null)
+        {
+            if (factory == null)
+                throw new ArgumentNullException(nameof(factory));
+
+            onViewportPoint = (context, point) =>
+            {
+                var entity = factory(context, point);
+                if (entity == null)
+                    return context.Handled();
+
+                context.LogInput(point);
+                context.AddEntity(entity);
+                return context.End(createdMessage ?? $"{commandName} created.");
+            };
+
+            onToken = (context, token) =>
+            {
+                System.Windows.Point point;
+                if (!context.TryResolvePoint(token, null, out point))
+                    return context.Unhandled();
+
+                var entity = factory(context, point);
+                if (entity == null)
+                    return context.Handled();
+
+                context.LogInput(point);
+                context.AddEntity(entity);
+                return context.End(createdMessage ?? $"{commandName} created.");
+            };
+
             return this;
         }
 

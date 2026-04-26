@@ -34,22 +34,7 @@ namespace Primusz.AeroCAD.SamplePlugin
                 .WithDescription("Draw a sample external X marker.")
                 .WithInitialStep(centerStep)
                 .InMenu("Draw", "_X Marker")
-                .OnPoint((context, point) =>
-                {
-                    context.LogInput(point);
-                    context.AddEntity(new XMarkerEntity(point, 10d));
-                    return context.End("XMARK created.");
-                })
-                .OnToken((context, token) =>
-                {
-                    System.Windows.Point point;
-                    if (!context.TryResolvePoint(token, null, out point))
-                        return context.Unhandled();
-
-                    context.LogInput(point);
-                    context.AddEntity(new XMarkerEntity(point, 10d));
-                    return context.End("XMARK created.");
-                })
+                .CreateEntityOnPoint((context, point) => new XMarkerEntity(point, 10d), "XMARK created.")
                 .Build();
         }
     }

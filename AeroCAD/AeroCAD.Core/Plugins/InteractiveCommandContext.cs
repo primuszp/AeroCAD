@@ -8,7 +8,10 @@ using Primusz.AeroCAD.Core.Drawing;
 using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
+using Primusz.AeroCAD.Core.Editing.GripPreviews;
+using Primusz.AeroCAD.Core.Editing.TransientPreviews;
 using Primusz.AeroCAD.Core.Selection;
+using Primusz.AeroCAD.Core.Spatial;
 using Primusz.AeroCAD.Core.Tools;
 
 namespace Primusz.AeroCAD.Core.Plugins
@@ -39,6 +42,11 @@ namespace Primusz.AeroCAD.Core.Plugins
         public IEditorStateService EditorState => ToolService?.GetService<IEditorStateService>();
 
         public Layer ActiveLayer => EditorState?.ActiveLayer ?? Document?.Layers?.FirstOrDefault();
+
+        public T GetService<T>() where T : class
+        {
+            return ToolService?.GetService<T>();
+        }
 
         public bool TryResolvePoint(CommandInputToken token, Point? basePoint, out Point point)
         {
@@ -93,6 +101,37 @@ namespace Primusz.AeroCAD.Core.Plugins
                 command.Execute();
 
             return true;
+        }
+
+        public Entity PickEntity(Point worldPoint, Func<Entity, bool> predicate = null)
+        {
+            var spatial = GetService<ISpatialQueryService>();
+            var pickSettings = GetService<IPickSettingsService>();
+            double pickRadius = pickSettings?.GetPickRadiusWorld(Viewport?.Zoom ?? 1.0d) ?? (4.0d / (Viewport?.Zoom ?? 1.0d));
+            var candidates = spatial?.QueryNearby(worldPoint, pickRadius);
+            var hits = Viewport?.QueryHitEntities(worldPoint, pickRadius, candidates) ?? Array.Empty<Entity>();
+            var resolver = GetService<IPickResolutionService>();
+            return resolver?.ResolvePrimary(hits, predicate) ?? hits.FirstOrDefault(entity => predicate == null || predicate(entity));
+        }
+
+        public void SetPreview(GripPreview preview)
+        {
+            var rubberObject = Viewport?.GetRubberObject();
+            if (rubberObject == null)
+                return;
+
+            rubberObject.Preview = preview ?? GripPreview.Empty;
+            rubberObject.InvalidateVisual();
+        }
+
+        public void SetEntityPreview(Entity entity, System.Windows.Media.Color color)
+        {
+            SetPreview(GetService<ITransientEntityPreviewService>()?.CreatePreview(entity, color) ?? GripPreview.Empty);
+        }
+
+        public void ClearPreview()
+        {
+            SetPreview(GripPreview.Empty);
         }
 
         public InteractiveCommandResult MoveToStep(CommandStep step)

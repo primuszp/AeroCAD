@@ -74,7 +74,11 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
         public override InteractiveCommandResult TrySubmitViewportPoint(IInteractiveCommandHost host, Point rawPoint)
         {
             if (!session.UseEdgeMode && host.CurrentStep == CenterModeStep)
-                return InteractiveCommandResult.HandledOnly();
+            {
+                session.ChooseCenterMode(true);
+                Point radiusPoint = ResolvePoint(host, rawPoint);
+                return SubmitPoint(host, radiusPoint);
+            }
 
             Point final = ResolvePoint(host, rawPoint);
             return SubmitPoint(host, final);
@@ -206,12 +210,15 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
                 return InteractiveCommandResult.MoveToStep(CenterModeStep);
             }
 
+            if (!session.HasCenterModeChoice)
+                return InteractiveCommandResult.HandledOnly();
+
             return CreatePolygon(host, point);
         }
 
         private InteractiveCommandResult CreatePolygon(IInteractiveCommandHost host, Point point)
         {
-            var layer = activeLayerResolver?.Invoke();
+            var layer = ResolveActiveLayer(host);
             if (layer == null)
                 return InteractiveCommandResult.HandledOnly();
 

@@ -135,24 +135,6 @@ namespace Primusz.AeroCAD.Core.Tools
             if (IsInTargetPhase(host))
                 return Finish(host, "Extend command ended.");
 
-            // Enter in boundary phase: if none selected, use all entities as boundary edges
-            if (!session.HasBoundaries)
-            {
-                var document = host.ToolService.GetService<ICadDocumentService>();
-                var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
-                if (document != null)
-                {
-                    foreach (var e in document.Entities)
-                    {
-                        if ((extendService?.CanUseAsBoundary(e) ?? false) && !session.Boundaries.Contains(e))
-                        {
-                            session.AddBoundary(e);
-                            HighlightBoundary(e);
-                        }
-                    }
-                }
-            }
-
             if (session.HasBoundaries)
             {
                 host.MoveToStep(TargetStep);
