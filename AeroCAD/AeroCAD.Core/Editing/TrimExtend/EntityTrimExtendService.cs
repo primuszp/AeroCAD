@@ -3,18 +3,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Primusz.AeroCAD.Core.Drawing.Entities;
+using Primusz.AeroCAD.Core.Plugins;
 
 namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 {
     public class EntityTrimExtendService : IEntityTrimExtendService
     {
         private readonly IReadOnlyList<IEntityTrimExtendStrategy> strategies;
+        private readonly IReadOnlyList<EntityPluginDescriptor> descriptors;
 
         public EntityTrimExtendService(IEnumerable<IEntityTrimExtendStrategy> strategies)
+            : this(strategies, null)
+        {
+        }
+
+        public EntityTrimExtendService(IEnumerable<IEntityTrimExtendStrategy> strategies, IEnumerable<EntityPluginDescriptor> descriptors)
         {
             this.strategies = (strategies ?? Enumerable.Empty<IEntityTrimExtendStrategy>())
                 .ToList()
                 .AsReadOnly();
+            this.descriptors = (descriptors ?? Enumerable.Empty<EntityPluginDescriptor>())
+                .Where(descriptor => descriptor?.TrimExtendStrategy != null)
+                .ToList()
+                .AsReadOnly();
+        }
+
+        public bool CanUseAsBoundary(Entity entity)
+        {
+            return entity != null && descriptors.Any(descriptor =>
+                (descriptor.BoundsStrategy?.CanHandle(entity) ?? false) ||
+                (descriptor.RenderStrategy?.CanHandle(entity) ?? false));
         }
 
         public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)

@@ -76,7 +76,9 @@ namespace Primusz.AeroCAD.Core.Drawing
             var selectionMovePreviewService = new SelectionMovePreviewService(pluginDescriptors.Select(descriptor => descriptor.SelectionMovePreviewStrategy).Where(strategy => strategy != null).ToArray());
             var transientEntityPreviewService = new TransientEntityPreviewService(pluginDescriptors.Select(descriptor => descriptor.TransientEntityPreviewStrategy).Where(strategy => strategy != null).ToArray());
             var entityOffsetService = new EntityOffsetService(pluginDescriptors.Select(descriptor => descriptor.OffsetStrategy).Where(strategy => strategy != null).ToArray());
-            var entityTrimExtendService = new EntityTrimExtendService(pluginDescriptors.Select(descriptor => descriptor.TrimExtendStrategy).Where(strategy => strategy != null).ToArray());
+            var entityTrimExtendService = new EntityTrimExtendService(
+                pluginDescriptors.Select(descriptor => descriptor.TrimExtendStrategy).Where(strategy => strategy != null).ToArray(),
+                pluginDescriptors);
             var snapDescriptorService = new SnapDescriptorService(new ISnapDescriptorProvider[]
             {
                 new EntitySnapDescriptorProvider(),

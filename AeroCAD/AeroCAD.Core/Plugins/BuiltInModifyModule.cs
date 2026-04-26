@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Tools;
 
@@ -41,12 +40,7 @@ namespace Primusz.AeroCAD.Core.Plugins
                     "OFFSET",
                     CreateControllerFactory(() => new OffsetCommandController()),
                     aliases: new[] { "O", "OF" },
-                    description: "Offset a selected line, polyline, circle, arc or rectangle.",
-                    policy: new EditorCommandPolicy(
-                        CommandSelectionRequirement.Single,
-                        new[] { typeof(Line), typeof(Polyline), typeof(Circle), typeof(Arc), typeof(Rectangle) },
-                        "OFFSET requires exactly one preselected entity.",
-                        "OFFSET currently supports line, polyline, circle, arc and rectangle."),
+                    description: "Offset a selected entity.",
                     menuGroup: "Modify",
                     menuLabel: "_Offset");
 

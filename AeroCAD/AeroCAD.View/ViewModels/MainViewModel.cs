@@ -71,7 +71,8 @@ namespace Primusz.AeroCAD.View.ViewModels
             this.viewport = viewport;
             modelSpace = new ModelSpace(viewport)
                 .RegisterModule(new RectangleModule())
-                .RegisterModule(new ViewInteractiveEntityModule());
+                .RegisterModule(new ViewInteractiveEntityModule())
+                .LoadExtensionsFromDirectory(System.IO.Path.Combine(AppContext.BaseDirectory, "Extensions"));
             modelSpace.Initialize();
 
             documentService = modelSpace.GetService<ICadDocumentService>();

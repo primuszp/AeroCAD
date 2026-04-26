@@ -32,6 +32,13 @@ namespace Primusz.AeroCAD.Core.Tools
             session.Reset();
 
             var sourceEntity = selectionManager?.SelectedEntities.Count == 1 ? selectionManager.SelectedEntities[0] : null;
+            var offsetService = host.ToolService.GetService<IEntityOffsetService>();
+            if (sourceEntity != null && offsetService != null && !offsetService.CanOffset(sourceEntity))
+            {
+                host.ToolService.GetService<ICommandFeedbackService>()?.LogMessage("OFFSET is not supported for the selected entity.");
+                sourceEntity = null;
+            }
+
             if (sourceEntity != null)
             {
                 var layer = document?.GetLayerForEntity(sourceEntity);
@@ -60,7 +67,14 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             var previewPoint = host.ResolveFinalPoint(null, rawPoint);
-            var previewEntity = host.ToolService.GetService<IEntityOffsetService>()?.CreateOffsetByDistance(
+            var offsetService = host.ToolService.GetService<IEntityOffsetService>();
+            if (!(offsetService?.CanOffset(session.SourceEntity) ?? false))
+            {
+                host.ToolService.Viewport.GetRubberObject()?.ClearPreview();
+                return;
+            }
+
+            var previewEntity = offsetService.CreateOffsetByDistance(
                 session.SourceEntity,
                 session.FixedDistance.Value,
                 previewPoint);
@@ -78,7 +92,8 @@ namespace Primusz.AeroCAD.Core.Tools
 
             if (host.CurrentStep?.Id == EntityStep.Id || session.SourceEntity == null)
             {
-                var picked = PickEntity(host, rawPoint);
+                var offsetService = host.ToolService.GetService<IEntityOffsetService>();
+                var picked = PickEntity(host, rawPoint, entity => offsetService?.CanOffset(entity) ?? false);
                 if (picked == null)
                     return InteractiveCommandResult.HandledOnly();
 
@@ -135,7 +150,14 @@ namespace Primusz.AeroCAD.Core.Tools
                 host.ToolService.GetService<ICommandFeedbackService>()?.LogInput(InteractiveCommandToolBase.FormatPoint(point));
 
             var offsetService = host.ToolService.GetService<IEntityOffsetService>();
-            var resultEntity = offsetService?.CreateOffsetByDistance(session.SourceEntity, session.FixedDistance.Value, point);
+            if (!(offsetService?.CanOffset(session.SourceEntity) ?? false))
+            {
+                host.ToolService.GetService<ICommandFeedbackService>()?.LogMessage("OFFSET is not supported for the selected entity.");
+                session.ResetSelection();
+                return InteractiveCommandResult.MoveToStep(EntityStep);
+            }
+
+            var resultEntity = offsetService.CreateOffsetByDistance(session.SourceEntity, session.FixedDistance.Value, point);
 
             if (resultEntity == null)
                 return InteractiveCommandResult.HandledOnly();
@@ -154,7 +176,7 @@ namespace Primusz.AeroCAD.Core.Tools
             host.ToolService.Viewport.GetRubberObject()?.ClearPreview();
         }
 
-        private static Entity PickEntity(IInteractiveCommandHost host, Point point)
+        private static Entity PickEntity(IInteractiveCommandHost host, Point point, System.Func<Entity, bool> predicate)
         {
             var spatial = host.ToolService.GetService<ISpatialQueryService>();
             var pickSettings = host.ToolService.GetService<IPickSettingsService>();
@@ -162,7 +184,7 @@ namespace Primusz.AeroCAD.Core.Tools
             var candidates = spatial?.QueryNearby(point, pickRadius) ?? System.Array.Empty<Entity>();
             var hits = host.ToolService.Viewport.QueryHitEntities(point, pickRadius, candidates);
             var pickResolver = host.ToolService.GetService<Selection.IPickResolutionService>();
-            return pickResolver?.ResolvePrimary(hits, null) ?? System.Linq.Enumerable.FirstOrDefault(hits);
+            return pickResolver?.ResolvePrimary(hits, predicate) ?? System.Linq.Enumerable.FirstOrDefault(hits, entity => predicate == null || predicate(entity));
         }
 
         private void UpdateSourceColor(ICadDocumentService document, Entity sourceEntity)

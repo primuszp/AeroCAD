@@ -33,7 +33,8 @@ namespace Primusz.AeroCAD.Core.Tools
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
             if (selectionManager?.SelectedEntities.Count > 0)
             {
-                var supported = selectionManager.SelectedEntities.Where(IsSupportedBoundary).ToList();
+                var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
+                var supported = selectionManager.SelectedEntities.Where(entity => extendService?.CanUseAsBoundary(entity) ?? false).ToList();
                 if (supported.Count > 0)
                 {
                     foreach (var e in supported)
@@ -79,11 +80,12 @@ namespace Primusz.AeroCAD.Core.Tools
         {
             var documentService = host.ToolService.GetService<ICadDocumentService>();
             var selectionManager = host.ToolService.GetService<Selection.ISelectionManager>();
+            var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
 
             if (!IsInTargetPhase(host))
             {
                 // Phase 1: pick boundary entities (multiple allowed, Enter confirms)
-                var picked = PickEntity(host, rawPoint, IsSupportedBoundary);
+                var picked = PickEntity(host, rawPoint, entity => extendService?.CanUseAsBoundary(entity) ?? false);
                 if (picked != null && !session.Boundaries.Contains(picked))
                 {
                     if (ReferenceEquals(session.HighlightedTargetEntity, picked))
@@ -95,7 +97,6 @@ namespace Primusz.AeroCAD.Core.Tools
             }
 
             // Phase 2: extend target entities
-            var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
             var target = PickEntity(host, rawPoint, entity => !session.Boundaries.Contains(entity) && (extendService?.CanExtend(session.Boundaries, entity) ?? false));
             if (target == null)
                 return InteractiveCommandResult.HandledOnly();
@@ -138,11 +139,12 @@ namespace Primusz.AeroCAD.Core.Tools
             if (!session.HasBoundaries)
             {
                 var document = host.ToolService.GetService<ICadDocumentService>();
+                var extendService = host.ToolService.GetService<IEntityTrimExtendService>();
                 if (document != null)
                 {
                     foreach (var e in document.Entities)
                     {
-                        if (IsSupportedBoundary(e) && !session.Boundaries.Contains(e))
+                        if ((extendService?.CanUseAsBoundary(e) ?? false) && !session.Boundaries.Contains(e))
                         {
                             session.AddBoundary(e);
                             HighlightBoundary(e);
@@ -176,11 +178,6 @@ namespace Primusz.AeroCAD.Core.Tools
             ClearTargetHighlight(host);
             session.Reset();
             return EndCommand(host, message);
-        }
-
-        private static bool IsSupportedBoundary(Entity entity)
-        {
-            return entity is Line || entity is Polyline || entity is Circle || entity is Arc || entity is Rectangle;
         }
 
         private void HighlightBoundary(Entity entity)

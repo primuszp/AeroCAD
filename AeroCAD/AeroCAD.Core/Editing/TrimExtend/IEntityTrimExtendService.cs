@@ -6,6 +6,8 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 {
     public interface IEntityTrimExtendService
     {
+        bool CanUseAsBoundary(Entity entity) => false;
+
         bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target);
 
         bool CanExtend(IReadOnlyList<Entity> boundaries, Entity target);

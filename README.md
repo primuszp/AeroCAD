@@ -9,6 +9,7 @@ Command-driven 2D CAD editor built with WPF on .NET 8.
 - object snap, grip edit, ortho, adaptive grid
 - undo/redo
 - modify commands: `MOVE`, `COPY`, `OFFSET`, `TRIM`, `EXTEND`
+- extension loading from `Extensions/*.dll` next to the WPF executable
 
 ## Structure
 
@@ -22,6 +23,10 @@ Command-driven 2D CAD editor built with WPF on .NET 8.
 ```powershell
 dotnet build .\AeroCAD\AeroCAD.sln -p:UseSharedCompilation=false
 ```
+
+## External entity plugins
+
+External assemblies can expose `ICadModule` or `IEntityPlugin` implementations with public parameterless constructors. Put the compiled DLL in the app's `Extensions` folder before startup. Entity behavior is discovered from the plugin descriptor: render and bounds are required; grip preview, move preview, transient preview, offset, trim/extend, tools, and command-line registrations are optional capabilities.
 
 ## Rights
 
