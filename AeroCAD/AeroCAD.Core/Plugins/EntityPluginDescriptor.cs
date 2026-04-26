@@ -78,9 +78,9 @@ namespace Primusz.AeroCAD.Core.Plugins
             if (transientEntityPreviewStrategy != null) capabilities |= EntityPluginCapability.TransientPreview;
             if (offsetStrategy != null) capabilities |= EntityPluginCapability.Offset;
             if (trimExtendStrategy != null) capabilities |= EntityPluginCapability.TrimExtend;
-            if (tools != null) capabilities |= EntityPluginCapability.Tool;
-            if (interactiveCommands != null) capabilities |= EntityPluginCapability.InteractiveCommand;
-            if (commands != null) capabilities |= EntityPluginCapability.Command;
+            if (tools?.Any() == true) capabilities |= EntityPluginCapability.Tool;
+            if (interactiveCommands?.Any() == true) capabilities |= EntityPluginCapability.InteractiveCommand;
+            if (commands?.Any() == true) capabilities |= EntityPluginCapability.Command;
             return capabilities;
         }
     }

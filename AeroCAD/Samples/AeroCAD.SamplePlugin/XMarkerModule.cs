@@ -1,0 +1,55 @@
+using System.Collections.Generic;
+using Primusz.AeroCAD.Core.Editor;
+using Primusz.AeroCAD.Core.Plugins;
+
+namespace Primusz.AeroCAD.SamplePlugin
+{
+    public sealed class XMarkerModule : CadModuleBase
+    {
+        public override string Name => "AeroCAD.SamplePlugin.XMarker";
+
+        public override string Version => "1.0.0";
+
+        public override IEnumerable<IEntityPlugin> Plugins
+        {
+            get
+            {
+                yield return EntityPluginBuilder
+                    .Create("AeroCAD.SamplePlugin.XMarker")
+                    .WithRenderStrategy(new XMarkerRenderStrategy())
+                    .WithBoundsStrategy(new XMarkerBoundsStrategy())
+                    .WithInteractiveCommand(CreateXMarkerCommand())
+                    .BuildPlugin();
+            }
+        }
+
+        private static InteractiveCommandRegistration CreateXMarkerCommand()
+        {
+            var centerStep = new CommandStep("Center", "Specify X marker center:");
+
+            return InteractiveCommandRegistrationBuilder
+                .Create("XMARK")
+                .WithAliases("XM")
+                .WithDescription("Draw a sample external X marker.")
+                .WithInitialStep(centerStep)
+                .InMenu("Draw", "_X Marker")
+                .OnPoint((context, point) =>
+                {
+                    context.LogInput(point);
+                    context.AddEntity(new XMarkerEntity(point, 10d));
+                    return context.End("XMARK created.");
+                })
+                .OnToken((context, token) =>
+                {
+                    System.Windows.Point point;
+                    if (!context.TryResolvePoint(token, null, out point))
+                        return context.Unhandled();
+
+                    context.LogInput(point);
+                    context.AddEntity(new XMarkerEntity(point, 10d));
+                    return context.End("XMARK created.");
+                })
+                .Build();
+        }
+    }
+}

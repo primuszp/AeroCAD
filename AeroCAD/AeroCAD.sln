@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroCAD.Core.Tests", "AeroC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroCAD.View.Tests", "AeroCAD.View.Tests\AeroCAD.View.Tests.csproj", "{5E449920-A91A-489D-84FB-3BEEAD087C1A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{5D20AA90-6969-D8BD-9DCD-8634F4692FDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroCAD.SamplePlugin", "Samples\AeroCAD.SamplePlugin\AeroCAD.SamplePlugin.csproj", "{702AA10C-F607-4C11-A600-6E1571B745B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,8 +73,23 @@ Global
 		{5E449920-A91A-489D-84FB-3BEEAD087C1A}.Release|x64.Build.0 = Release|Any CPU
 		{5E449920-A91A-489D-84FB-3BEEAD087C1A}.Release|x86.ActiveCfg = Release|Any CPU
 		{5E449920-A91A-489D-84FB-3BEEAD087C1A}.Release|x86.Build.0 = Release|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Debug|x64.Build.0 = Debug|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Debug|x86.Build.0 = Debug|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Release|x64.ActiveCfg = Release|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Release|x64.Build.0 = Release|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Release|x86.ActiveCfg = Release|Any CPU
+		{702AA10C-F607-4C11-A600-6E1571B745B0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{702AA10C-F607-4C11-A600-6E1571B745B0} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal
