@@ -14,6 +14,7 @@ namespace Primusz.AeroCAD.Core.Plugins
                 yield return new PolylineEntityPlugin();
                 yield return new CircleEntityPlugin();
                 yield return new ArcEntityPlugin();
+                yield return new PointEntityPlugin();
             }
         }
     }

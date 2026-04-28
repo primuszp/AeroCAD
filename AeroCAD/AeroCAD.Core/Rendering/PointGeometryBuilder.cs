@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace Primusz.AeroCAD.SamplePlugin
+namespace Primusz.AeroCAD.Core.Rendering
 {
     public static class PointGeometryBuilder
     {
@@ -13,36 +13,29 @@ namespace Primusz.AeroCAD.SamplePlugin
             double effectiveSize = size > 1e-6 ? size : 5d;
             double half = effectiveSize / 2d;
             var group = new GeometryGroup();
-
             int baseMode = pdMode & 31;
+
             if (baseMode == 0)
-            {
                 group.Children.Add(new EllipseGeometry(center, 0.75d, 0.75d));
-            }
-            else
+            else if (baseMode == 2)
+                AddPlus(group, center, half);
+            else if (baseMode == 3)
             {
-                if (baseMode == 2 || baseMode == 3)
-                    AddPlus(group, center, half);
-
-                if (baseMode == 3)
-                    AddCross(group, center, half);
-
-                if (baseMode == 4)
-                    group.Children.Add(new EllipseGeometry(center, half, half));
-
-                if (baseMode != 2 && baseMode != 3 && baseMode != 4)
-                    group.Children.Add(new EllipseGeometry(center, 0.75d, 0.75d));
+                AddPlus(group, center, half);
+                AddCross(group, center, half);
             }
+            else if (baseMode == 4)
+                group.Children.Add(new EllipseGeometry(center, half, half));
+            else
+                group.Children.Add(new EllipseGeometry(center, 0.75d, 0.75d));
 
             if ((pdMode & 32) == 32)
                 group.Children.Add(new EllipseGeometry(center, half, half));
-
             if ((pdMode & 64) == 64)
-                AddSquare(group, center, half);
+                group.Children.Add(new RectangleGeometry(new Rect(new Point(center.X - half, center.Y - half), new Point(center.X + half, center.Y + half))));
 
             if (group.CanFreeze)
                 group.Freeze();
-
             return group;
         }
 
@@ -56,13 +49,6 @@ namespace Primusz.AeroCAD.SamplePlugin
         {
             group.Children.Add(new LineGeometry(new Point(center.X - half, center.Y - half), new Point(center.X + half, center.Y + half)));
             group.Children.Add(new LineGeometry(new Point(center.X - half, center.Y + half), new Point(center.X + half, center.Y - half)));
-        }
-
-        private static void AddSquare(GeometryGroup group, Point center, double half)
-        {
-            group.Children.Add(new RectangleGeometry(new Rect(
-                new Point(center.X - half, center.Y - half),
-                new Point(center.X + half, center.Y + half))));
         }
     }
 }

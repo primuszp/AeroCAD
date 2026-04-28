@@ -1,11 +1,9 @@
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Media;
-using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Drawing.Handles;
 using Primusz.AeroCAD.Core.Snapping;
 
-namespace Primusz.AeroCAD.SamplePlugin
+namespace Primusz.AeroCAD.Core.Drawing.Entities
 {
     public sealed class PointEntity : Entity
     {
@@ -18,10 +16,7 @@ namespace Primusz.AeroCAD.SamplePlugin
 
         public override int GripCount => 1;
 
-        public override Point GetGripPoint(int index)
-        {
-            return Location;
-        }
+        public override Point GetGripPoint(int index) => Location;
 
         public override void MoveGrip(int index, Point newPosition)
         {
@@ -29,10 +24,7 @@ namespace Primusz.AeroCAD.SamplePlugin
             InvalidateGeometry();
         }
 
-        public override GripKind GetGripKind(int index)
-        {
-            return GripKind.Node;
-        }
+        public override GripKind GetGripKind(int index) => GripKind.Node;
 
         public override IEnumerable<GripDescriptor> GetGripDescriptors()
         {
@@ -51,10 +43,7 @@ namespace Primusz.AeroCAD.SamplePlugin
             return clone;
         }
 
-        public override Entity Duplicate()
-        {
-            return new PointEntity(Location) { Thickness = Thickness };
-        }
+        public override Entity Duplicate() => new PointEntity(Location) { Thickness = Thickness };
 
         public override void RestoreState(Entity sourceState)
         {

@@ -8,13 +8,36 @@ namespace Primusz.AeroCAD.Core.Editor
         public const string PdMode = "PDMODE";
         public const string PdSize = "PDSIZE";
 
-        private readonly Dictionary<string, object> values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+        private readonly Dictionary<string, SystemVariableDefinition> definitions = new Dictionary<string, SystemVariableDefinition>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object> values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+        public SystemVariableService()
         {
-            [PdMode] = 0,
-            [PdSize] = 0d
-        };
+            Register(new SystemVariableDefinition(
+                PdMode,
+                typeof(int),
+                0,
+                "Controls point object display geometry.",
+                value => Math.Max(0, Convert.ToInt32(value))));
+            Register(new SystemVariableDefinition(
+                PdSize,
+                typeof(double),
+                0d,
+                "Controls point object display size.",
+                value => Convert.ToDouble(value)));
+        }
 
         public event EventHandler<SystemVariableChangedEventArgs> VariableChanged;
+
+        public void Register(SystemVariableDefinition definition)
+        {
+            if (definition == null)
+                return;
+
+            definitions[definition.Name] = definition;
+            if (!values.ContainsKey(definition.Name))
+                values[definition.Name] = Sanitize(definition, definition.DefaultValue);
+        }
 
         public bool TryGet<T>(string name, out T value)
         {
@@ -50,7 +73,11 @@ namespace Primusz.AeroCAD.Core.Editor
                 return;
 
             var key = name.Trim().ToUpperInvariant();
-            var sanitized = Sanitize(key, value);
+            if (!definitions.TryGetValue(key, out var definition))
+                Register(new SystemVariableDefinition(key, typeof(T), value));
+
+            definition = definitions[key];
+            var sanitized = Sanitize(definition, value);
             if (values.TryGetValue(key, out var existing) && Equals(existing, sanitized))
                 return;
 
@@ -58,18 +85,10 @@ namespace Primusz.AeroCAD.Core.Editor
             VariableChanged?.Invoke(this, new SystemVariableChangedEventArgs(key, sanitized));
         }
 
-        private static object Sanitize<T>(string key, T value)
+        private static object Sanitize(SystemVariableDefinition definition, object value)
         {
-            if (string.Equals(key, PdMode, StringComparison.OrdinalIgnoreCase))
-            {
-                var mode = Convert.ToInt32(value);
-                return mode < 0 ? 0 : mode;
-            }
-
-            if (string.Equals(key, PdSize, StringComparison.OrdinalIgnoreCase))
-                return Convert.ToDouble(value);
-
-            return value;
+            var sanitized = definition.Sanitize != null ? definition.Sanitize(value) : value;
+            return sanitized == null ? null : Convert.ChangeType(sanitized, definition.ValueType);
         }
     }
 }

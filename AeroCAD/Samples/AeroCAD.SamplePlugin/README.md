@@ -1,17 +1,16 @@
 # AeroCAD Sample Plugin
 
-This project demonstrates an external AutoCAD-like `POINT` entity and command.
+This project demonstrates an external `ROADPLAN` entity and command.
 
-- `PointEntity` is a custom external entity with one `Node` grip/snap point.
-- `PointRenderStrategy` draws the point using the current `PDMODE` and `PDSIZE` values.
-- `PointBoundsStrategy` integrates it with picking/spatial queries.
-- `PointGripPreviewStrategy` adds drag preview while moving the point grip.
-- `PointModule` registers `POINT`, `PO`, `PUNKT`, `PDMODE`, and `PDSIZE`.
+- `RoadPlanEntity` stores alignment vertices and per-vertex curve parameters.
+- `RoadPlanRenderStrategy` renders straight segments with circular fillets at curved vertices.
+- `RoadPlanBoundsStrategy` integrates the entity with picking/spatial queries.
+- `RoadPlanModule` registers `ROADPLAN` / `RP`.
 
-Commands:
+Current scope:
 
-- `POINT` / `PO` / `PUNKT`: prompts `Specify a point:` and creates a point object.
-- `PDMODE`: sets point display mode. Supported base modes: `0` dot, `1` hidden, `2` plus, `3` asterisk, `4` circle. Flags `32` and `64` add surrounding circle/square shapes.
-- `PDSIZE`: sets point display size. `0` uses 5 percent of drawing height, positive values are absolute sizes, negative values are treated as a viewport-height percentage.
+- The model stores radius plus in/out transition lengths for future clothoid support.
+- Rendering currently draws the circular arc portion between adjacent tangents.
+- The command creates a demo alignment from an insertion point, using the sample coordinates from the road-plan scenario.
 
 The View project builds this plugin automatically and copies `AeroCAD.SamplePlugin.dll` to the WPF app's `Extensions` folder next to `AeroCAD.View.exe`.
