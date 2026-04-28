@@ -30,9 +30,9 @@ namespace Primusz.AeroCAD.Core.Editing.TrimExtend
 
         public bool CanUseAsBoundary(Entity entity)
         {
-            return entity != null && descriptors.Any(descriptor =>
+            return entity is ITrimExtendBoundaryGeometry || (entity != null && descriptors.Any(descriptor =>
                 (descriptor.BoundsStrategy?.CanHandle(entity) ?? false) ||
-                (descriptor.RenderStrategy?.CanHandle(entity) ?? false));
+                (descriptor.RenderStrategy?.CanHandle(entity) ?? false)));
         }
 
         public bool CanTrim(IReadOnlyList<Entity> boundaries, Entity target)

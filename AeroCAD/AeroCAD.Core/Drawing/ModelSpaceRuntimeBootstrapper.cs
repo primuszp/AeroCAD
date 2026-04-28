@@ -65,6 +65,17 @@ namespace Primusz.AeroCAD.Core.Drawing
             selectionManager.SelectionChanged += (s, e) => overlay.Update();
             documentService.EntityRemoved += (s, e) => selectionManager.Deselect(e.Entity);
             editorStateService.StateChanged += (s, e) => overlay.Update();
+            var systemVariables = toolService.GetService<ISystemVariableService>();
+            if (systemVariables != null)
+                systemVariables.VariableChanged += (s, e) => RefreshViewportRendering();
+        }
+
+        private void RefreshViewportRendering()
+        {
+            foreach (var layer in viewport.GetLayers())
+                layer.RefreshEntities();
+
+            viewport.RefreshView();
         }
 
         private void RegisterDefaultTools()

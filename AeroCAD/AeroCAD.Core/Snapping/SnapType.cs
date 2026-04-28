@@ -6,6 +6,7 @@
         Midpoint,
         Center,
         Quadrant,
+        Node,
         Nearest
     }
 }

@@ -54,6 +54,8 @@ namespace Primusz.AeroCAD.Core.Drawing
             var interactiveCommandRegistry = new InteractiveCommandRegistry(entityPlugins, modules);
             var shapeRegistry = new InteractiveShapeRegistry(modules.SelectMany(module => module?.Shapes ?? Enumerable.Empty<IInteractiveShapeDefinition>()));
             var pluginDiscoveryService = new PluginDiscoveryService();
+            var systemVariables = new SystemVariableService();
+            InjectSystemVariables(pluginDescriptors, systemVariables);
             var selectionManager = new SelectionManager();
             var gripService = new GripService(selectionManager);
             var markerAppearance = new MarkerAppearanceService();
@@ -90,7 +92,8 @@ namespace Primusz.AeroCAD.Core.Drawing
                     SnapType.Endpoint,
                     SnapType.Midpoint,
                     SnapType.Center,
-                    SnapType.Quadrant
+                    SnapType.Quadrant,
+                    SnapType.Node
                 },
                 new[]
                 {
@@ -98,6 +101,7 @@ namespace Primusz.AeroCAD.Core.Drawing
                     SnapType.Midpoint,
                     SnapType.Center,
                     SnapType.Quadrant,
+                    SnapType.Node,
                     SnapType.Nearest
                 });
             var snapEngine = new SnapEngine(snapModePolicy);
@@ -159,6 +163,8 @@ namespace Primusz.AeroCAD.Core.Drawing
                 { typeof(EntityTrimExtendService), entityTrimExtendService },
                 { typeof(IOrthoService), orthoService },
                 { typeof(OrthoService), orthoService },
+                { typeof(ISystemVariableService), systemVariables },
+                { typeof(SystemVariableService), systemVariables },
                 { typeof(IGridSettingsService), gridSettings },
                 { typeof(GridSettingsService), gridSettings },
                 { typeof(IPickSettingsService), pickSettings },
@@ -174,6 +180,25 @@ namespace Primusz.AeroCAD.Core.Drawing
             };
 
             return Services;
+        }
+
+        private static void InjectSystemVariables(IEnumerable<EntityPluginDescriptor> pluginDescriptors, ISystemVariableService systemVariables)
+        {
+            foreach (var descriptor in pluginDescriptors ?? Enumerable.Empty<EntityPluginDescriptor>())
+            {
+                SetSystemVariables(descriptor?.RenderStrategy, systemVariables);
+                SetSystemVariables(descriptor?.BoundsStrategy, systemVariables);
+                SetSystemVariables(descriptor?.GripPreviewStrategy, systemVariables);
+                SetSystemVariables(descriptor?.SelectionMovePreviewStrategy, systemVariables);
+                SetSystemVariables(descriptor?.TransientEntityPreviewStrategy, systemVariables);
+                SetSystemVariables(descriptor?.OffsetStrategy, systemVariables);
+                SetSystemVariables(descriptor?.TrimExtendStrategy, systemVariables);
+            }
+        }
+
+        private static void SetSystemVariables(object candidate, ISystemVariableService systemVariables)
+        {
+            (candidate as ISystemVariableConsumer)?.SetSystemVariableService(systemVariables);
         }
 
         public void Bootstrap()

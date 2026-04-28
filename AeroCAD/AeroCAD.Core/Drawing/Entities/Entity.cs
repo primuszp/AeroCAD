@@ -124,6 +124,36 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
                 .Select(index => new GripDescriptor(this, index, GetGripKind(index), () => GetGripPoint(index)));
         }
 
+        /// <summary>
+        /// Returns lightweight preview geometry for generic MOVE/COPY/GRIP feedback.
+        /// Override this in external entities when grip-derived preview does not represent the entity shape well.
+        /// </summary>
+        public virtual System.Windows.Media.Geometry GetPreviewGeometry()
+        {
+            var points = GetGripDescriptors()
+                .Select(grip => grip.GetPoint())
+                .ToList();
+
+            if (points.Count == 0)
+                return null;
+
+            var group = new System.Windows.Media.GeometryGroup();
+            const double markerRadius = 1.75d;
+            foreach (var point in points)
+                group.Children.Add(new System.Windows.Media.EllipseGeometry(point, markerRadius, markerRadius));
+
+            if (points.Count > 1)
+            {
+                for (int index = 0; index < points.Count - 1; index++)
+                    group.Children.Add(new System.Windows.Media.LineGeometry(points[index], points[index + 1]));
+            }
+
+            if (group.CanFreeze)
+                group.Freeze();
+
+            return group;
+        }
+
         protected void CopyIdentityTo(Entity clone)
         {
             clone.Id = Id;
@@ -206,6 +236,9 @@ namespace Primusz.AeroCAD.Core.Drawing.Entities
                     return true;
                 case GripKind.Endpoint:
                     snapType = SnapType.Endpoint;
+                    return true;
+                case GripKind.Node:
+                    snapType = SnapType.Node;
                     return true;
                 default:
                     snapType = default;

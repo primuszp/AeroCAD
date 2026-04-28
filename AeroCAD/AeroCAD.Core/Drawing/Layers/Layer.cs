@@ -172,6 +172,11 @@ namespace Primusz.AeroCAD.Core.Drawing.Layers
             RenderService?.Render(entity, this, visual);
         }
 
+        public void RefreshEntities()
+        {
+            RefreshEntityVisuals();
+        }
+
         #region HitTest
 
         /// <summary>

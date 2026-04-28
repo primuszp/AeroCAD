@@ -13,6 +13,7 @@ namespace Primusz.AeroCAD.Core.Drawing
         private Dictionary<Type, object> services;
         private readonly ModelSpaceComposition composition;
         private readonly List<ICadModule> modules = new List<ICadModule>();
+        private readonly List<PluginDiscoveryIssue> extensionDiscoveryIssues = new List<PluginDiscoveryIssue>();
 
         public ModelSpace(Viewport viewport)
         {
@@ -25,6 +26,8 @@ namespace Primusz.AeroCAD.Core.Drawing
         /// Registered modules, available after Initialize() for diagnostics or UI (e.g. "About" dialogs).
         /// </summary>
         public IReadOnlyList<ICadModule> Modules => modules.AsReadOnly();
+
+        public IReadOnlyList<PluginDiscoveryIssue> ExtensionDiscoveryIssues => extensionDiscoveryIssues.AsReadOnly();
 
         public ModelSpace RegisterPlugin(IEntityPlugin plugin)
         {
@@ -43,6 +46,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             foreach (var plugin in result.Plugins)
                 RegisterPlugin(plugin);
 
+            extensionDiscoveryIssues.AddRange(result.Issues);
             return this;
         }
 
@@ -58,8 +62,9 @@ namespace Primusz.AeroCAD.Core.Drawing
                     {
                         return Assembly.LoadFrom(path);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        extensionDiscoveryIssues.Add(new PluginDiscoveryIssue(path, "Extension assembly could not be loaded.", ex));
                         return null;
                     }
                 })

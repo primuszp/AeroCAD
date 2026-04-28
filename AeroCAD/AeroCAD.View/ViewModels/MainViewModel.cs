@@ -121,6 +121,7 @@ namespace Primusz.AeroCAD.View.ViewModels
             CommandLine = new CommandLineViewModel(
                 input => HandleCommandLineInput(input),
                 () => CancelCurrentCommand());
+            ReportExtensionDiagnostics();
             AddLayerCommand = new RelayCommand(AddDefaultLayer);
             RemoveLayerCommand = new RelayCommand(RemoveSelectedLayer, CanRemoveSelectedLayer);
             MoveSelectionToLayerCommand = new RelayCommand(() => MoveSelectedEntitiesToSelectedLayer(SelectedLayer), CanMoveSelectedEntitiesToSelectedLayer);
@@ -374,6 +375,12 @@ namespace Primusz.AeroCAD.View.ViewModels
             }
 
             return result.AsReadOnly();
+        }
+
+        private void ReportExtensionDiagnostics()
+        {
+            foreach (var issue in modelSpace.ExtensionDiscoveryIssues)
+                CommandLine.WriteMessage($"Extension warning: {issue}");
         }
 
         private void InitializeKeyboardShortcuts()

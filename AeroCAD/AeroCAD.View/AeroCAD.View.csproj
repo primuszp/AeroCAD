@@ -14,4 +14,18 @@
   <ItemGroup>
     <ProjectReference Include="..\AeroCAD.Core\AeroCAD.Core.csproj" />
   </ItemGroup>
+
+  <Target Name="BuildAndCopySamplePlugins" AfterTargets="Build">
+    <MSBuild Projects="..\Samples\AeroCAD.SamplePlugin\AeroCAD.SamplePlugin.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+    <ItemGroup>
+      <SamplePluginFiles Include="..\Samples\AeroCAD.SamplePlugin\bin\$(Configuration)\net8.0-windows\AeroCAD.SamplePlugin.dll" />
+      <SamplePluginFiles Include="..\Samples\AeroCAD.SamplePlugin\bin\$(Configuration)\net8.0-windows\AeroCAD.SamplePlugin.pdb" Condition="Exists('..\Samples\AeroCAD.SamplePlugin\bin\$(Configuration)\net8.0-windows\AeroCAD.SamplePlugin.pdb')" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)Extensions" />
+    <Copy SourceFiles="@(SamplePluginFiles)"
+          DestinationFolder="$(OutDir)Extensions"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

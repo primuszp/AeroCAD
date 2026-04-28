@@ -5,7 +5,8 @@
         Endpoint,
         Midpoint,
         Quadrant,
-        Center
+        Center,
+        Node
     }
 }
 

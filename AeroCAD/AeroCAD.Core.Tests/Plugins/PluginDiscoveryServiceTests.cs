@@ -23,6 +23,15 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             Assert.Contains(result.Plugins, plugin => plugin.Descriptor.Name == "Test.Discovery.Plugin");
         }
 
+        [Fact]
+        public void Discover_ReportsPluginTypesWithoutParameterlessConstructor()
+        {
+            var service = new PluginDiscoveryService();
+            var result = service.Discover(new[] { typeof(PluginWithoutDefaultConstructor).GetTypeInfo().Assembly });
+
+            Assert.Contains(result.Issues, issue => issue.Source.Contains(nameof(PluginWithoutDefaultConstructor)));
+        }
+
         public sealed class TestDiscoveryModule : CadModuleBase
         {
             public override string Name => "Test.Discovery.Module";
@@ -37,6 +46,18 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
         {
             public EntityPluginDescriptor Descriptor { get; } = new EntityPluginDescriptor(
                 "Test.Discovery.Plugin",
+                new NoOpRenderStrategy(),
+                new NoOpBoundsStrategy());
+        }
+
+        public sealed class PluginWithoutDefaultConstructor : IEntityPlugin
+        {
+            public PluginWithoutDefaultConstructor(string dependency)
+            {
+            }
+
+            public EntityPluginDescriptor Descriptor { get; } = new EntityPluginDescriptor(
+                "Test.Bad.Plugin",
                 new NoOpRenderStrategy(),
                 new NoOpBoundsStrategy());
         }
