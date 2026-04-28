@@ -172,6 +172,16 @@ namespace Primusz.AeroCAD.SamplePlugin
             return new Point((segment.Start.X + segment.End.X) / 2.0, (segment.Start.Y + segment.End.Y) / 2.0);
         }
 
+        public static Point GetDirectionPoint(Point anchor, Point throughPoint, double distance)
+        {
+            Vector direction = throughPoint - anchor;
+            if (direction.LengthSquared < 1e-9)
+                return anchor;
+
+            direction.Normalize();
+            return anchor + direction * distance;
+        }
+
         private static RoadPlanVertex CreateVertex(Point location, IReadOnlyList<RoadPlanVertex> sourceVertices, int index)
         {
             if (sourceVertices == null || index < 0 || index >= sourceVertices.Count)

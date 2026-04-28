@@ -11,7 +11,13 @@ namespace Primusz.AeroCAD.SamplePlugin
         public Rect GetBounds(Entity entity)
         {
             var roadPlan = entity as RoadPlanEntity;
-            return roadPlan == null ? Rect.Empty : RoadPlanGeometryBuilder.GetBounds(roadPlan.Vertices);
+            if (roadPlan == null)
+                return Rect.Empty;
+
+            var axisBounds = RoadPlanGeometryBuilder.GetBounds(roadPlan.Vertices);
+            var controlBounds = RoadPlanGeometryBuilder.GetControlBounds(roadPlan.ControlSegments);
+            axisBounds.Union(controlBounds);
+            return axisBounds;
         }
     }
 }

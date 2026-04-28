@@ -18,6 +18,7 @@ namespace Primusz.AeroCAD.SamplePlugin
                     .Create("AeroCAD.SamplePlugin.RoadPlan")
                     .WithRenderStrategy(new RoadPlanRenderStrategy())
                     .WithBoundsStrategy(new RoadPlanBoundsStrategy())
+                    .WithGripPreviewStrategy(new RoadPlanGripPreviewStrategy())
                     .WithInteractiveCommand(CreateRoadPlanCommand())
                     .BuildPlugin();
             }
