@@ -45,6 +45,47 @@ namespace Primusz.AeroCAD.Core.Tests.Drawing
             Assert.NotNull(registry);
         }
 
+        [Fact]
+        public void Initialize_SkipsPluginCommandWhenShapeExplicitlyReplacesIt()
+        {
+            var exception = Record.Exception(() =>
+            {
+                var threadException = default(System.Exception);
+                var thread = new Thread(() =>
+                {
+                    try
+                    {
+                        var model = new ModelSpace(new Viewport());
+                        model.RegisterModule(new TestModule(new[]
+                        {
+                            new InteractiveShapeDefinition(
+                                new InteractiveShapePipeline(
+                                    "Replacement.Line",
+                                    "LINE",
+                                    () => new StubController(),
+                                    new[] { new CommandStep("Start", "Specify start:") },
+                                    replaceExistingCommand: true))
+                        }));
+
+                        model.Initialize();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        threadException = ex;
+                    }
+                });
+
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
+
+                if (threadException != null)
+                    throw threadException;
+            });
+
+            Assert.Null(exception);
+        }
+
         private sealed class TestModule : CadModuleBase
         {
             private readonly IEnumerable<IInteractiveShapeDefinition> shapes;

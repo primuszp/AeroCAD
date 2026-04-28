@@ -17,7 +17,7 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("SecondEdge", "Specify second endpoint of edge:")
         };
 
-        public PolygonInteractiveShapeDefinition(System.Func<IInteractiveCommandController> controllerFactory)
+        public PolygonInteractiveShapeDefinition(System.Func<IInteractiveCommandController> controllerFactory, bool replaceExistingCommand = false)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Polygon",
@@ -28,7 +28,8 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
                 description: "Draw a regular polygon.",
                 assignActiveLayer: true,
                 menuGroup: "Draw",
-                menuLabel: "_Polygon");
+                menuLabel: "_Polygon",
+                replaceExistingCommand: replaceExistingCommand);
         }
 
         public IInteractiveShapePipeline Pipeline { get; }

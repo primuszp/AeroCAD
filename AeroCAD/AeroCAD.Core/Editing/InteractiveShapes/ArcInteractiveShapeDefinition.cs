@@ -16,17 +16,19 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("EndPoint", "Specify end point:")
         };
 
-        public ArcInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory)
+        public ArcInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory, bool replaceExistingCommand = false)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Arc",
                 commandName: "ARC",
                 controllerFactory: controllerFactory,
                 steps: DefaultSteps,
+                aliases: new[] { "A" },
                 description: "Draw an arc.",
                 assignActiveLayer: true,
                 menuGroup: "Draw",
-                menuLabel: "_Arc");
+                menuLabel: "_Arc",
+                replaceExistingCommand: replaceExistingCommand);
         }
 
         public IInteractiveShapePipeline Pipeline { get; }

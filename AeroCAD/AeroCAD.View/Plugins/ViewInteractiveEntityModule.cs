@@ -21,12 +21,13 @@ namespace Primusz.AeroCAD.View.Plugins
             get
             {
                 yield return new PolygonInteractiveShapeDefinition(
-                    () => new PolygonInteractiveShapeController());
-                yield return new LineInteractiveShapeDefinition(() => new LineCommandController());
-                yield return new CircleInteractiveShapeDefinition(() => new CircleCommandController());
-                yield return new ArcInteractiveShapeDefinition(() => new ArcCommandController());
-                yield return new RectangleInteractiveShapeDefinition(() => new RectangleCommandController());
-                yield return new PolylineInteractiveShapeDefinition(() => new PolylineCommandController());
+                    () => new PolygonInteractiveShapeController(),
+                    replaceExistingCommand: true);
+                yield return new LineInteractiveShapeDefinition(() => new LineCommandController(), replaceExistingCommand: true);
+                yield return new CircleInteractiveShapeDefinition(() => new CircleCommandController(), replaceExistingCommand: true);
+                yield return new ArcInteractiveShapeDefinition(() => new ArcCommandController(), replaceExistingCommand: true);
+                yield return new RectangleInteractiveShapeDefinition(() => new RectangleCommandController(), replaceExistingCommand: true);
+                yield return new PolylineInteractiveShapeDefinition(() => new PolylineCommandController(), replaceExistingCommand: true);
             }
         }
 

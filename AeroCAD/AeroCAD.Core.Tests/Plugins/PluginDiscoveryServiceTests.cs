@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 using Primusz.AeroCAD.Core.Drawing.Entities;
-using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Rendering;
 using Primusz.AeroCAD.Core.Spatial;

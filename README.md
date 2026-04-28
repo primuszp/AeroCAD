@@ -53,6 +53,13 @@ See `AeroCAD/Samples/AeroCAD.SamplePlugin` for a buildable external plugin that 
 
 External commands can use `InteractiveCommandContext` for common operations such as `AddEntity`, `PickEntity`, `SetEntityPreview`, `SetPreview`, `ClearPreview`, `TryResolvePoint`, and `TryResolveScalar`.
 
+For multi-step commands, prefer the prompt helpers on `InteractiveCommandRegistrationBuilder` before writing a custom controller:
+
+- `PromptPoint(...)` handles typed coordinates and viewport clicks.
+- `PromptDistance(...)` handles typed scalar distances and click distances measured from a base point.
+
+Plugin loading and validation are explicit. `ModelSpace.ExtensionDiscoveryIssues` contains assembly load, type discovery, and constructor diagnostics. During initialization AeroCAD validates duplicate module names, duplicate entity plugin names, command/alias collisions, and plugin manifests that require a newer AeroCAD Core version. Modules can expose a manifest by deriving from `CadModuleBase` and overriding `Manifest`, or by implementing `IPluginManifestProvider`.
+
 External entities that should act as TRIM/EXTEND boundaries for built-in target entities can implement `ITrimExtendBoundaryGeometry`. This lets built-in trim strategies ask the external entity for line and circular intersections instead of relying only on built-in boundary types.
 
 ## Rights

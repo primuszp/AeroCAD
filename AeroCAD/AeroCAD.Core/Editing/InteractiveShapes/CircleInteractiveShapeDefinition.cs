@@ -16,17 +16,19 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("DiameterPoint", "Specify diameter:")
         };
 
-        public CircleInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory)
+        public CircleInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory, bool replaceExistingCommand = false)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Circle",
                 commandName: "CIRCLE",
                 controllerFactory: controllerFactory,
                 steps: DefaultSteps,
+                aliases: new[] { "C" },
                 description: "Draw a circle.",
                 assignActiveLayer: true,
                 menuGroup: "Draw",
-                menuLabel: "_Circle");
+                menuLabel: "_Circle",
+                replaceExistingCommand: replaceExistingCommand);
         }
 
         public IInteractiveShapePipeline Pipeline { get; }

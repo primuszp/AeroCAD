@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -82,7 +81,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             if (module == null) return this;
             modules.Add(module);
             composition.RegisterModule(module);
-            foreach (var plugin in module.Plugins ?? System.Linq.Enumerable.Empty<IEntityPlugin>())
+            foreach (var plugin in module.Plugins ?? Enumerable.Empty<IEntityPlugin>())
                 RegisterPlugin(plugin);
             return this;
         }
@@ -103,7 +102,7 @@ namespace Primusz.AeroCAD.Core.Drawing
             where TConcrete : class, TInterface
         {
             if (services == null)
-                throw new System.InvalidOperationException("Call Initialize() before registering additional services.");
+                throw new InvalidOperationException("Call Initialize() before registering additional services.");
 
             services[typeof(TInterface)] = instance;
             services[typeof(TConcrete)] = instance;
@@ -116,7 +115,7 @@ namespace Primusz.AeroCAD.Core.Drawing
         public ModelSpace RegisterService<TConcrete>(TConcrete instance) where TConcrete : class
         {
             if (services == null)
-                throw new System.InvalidOperationException("Call Initialize() before registering additional services.");
+                throw new InvalidOperationException("Call Initialize() before registering additional services.");
 
             services[typeof(TConcrete)] = instance;
             return this;

@@ -19,7 +19,8 @@ namespace Primusz.AeroCAD.Core.Plugins
             string description = null,
             bool assignActiveLayer = true,
             string menuGroup = null,
-            string menuLabel = null)
+            string menuLabel = null,
+            bool replaceExistingCommand = false)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Shape name is required.", nameof(name));
@@ -35,6 +36,7 @@ namespace Primusz.AeroCAD.Core.Plugins
             AssignActiveLayer = assignActiveLayer;
             MenuGroup = menuGroup;
             MenuLabel = menuLabel;
+            ReplaceExistingCommand = replaceExistingCommand;
         }
 
         public string Name { get; }
@@ -45,6 +47,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         public bool AssignActiveLayer { get; }
         public string MenuGroup { get; }
         public string MenuLabel { get; }
+        public bool ReplaceExistingCommand { get; }
         public CommandStep InitialStep => steps.FirstOrDefault();
         public Func<IInteractiveCommandController> ControllerFactory { get; }
 
@@ -57,7 +60,8 @@ namespace Primusz.AeroCAD.Core.Plugins
                 description: Description,
                 assignActiveLayer: AssignActiveLayer,
                 menuGroup: MenuGroup,
-                menuLabel: MenuLabel);
+                menuLabel: MenuLabel,
+                replaceExistingCommand: ReplaceExistingCommand);
 
             return registration;
         }

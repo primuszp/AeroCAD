@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Primusz.AeroCAD.Core.Documents;
 using Primusz.AeroCAD.Core.Drawing.Layers;
 using Primusz.AeroCAD.Core.Editor;
@@ -96,11 +97,40 @@ namespace Primusz.AeroCAD.Core.Drawing
 
         private void RegisterPluginInteractiveCommands()
         {
+            var replacedShapeAliases = GetReplacedShapeAliases();
             foreach (var registration in interactiveCommandRegistry.Registrations)
             {
+                if (IsReplacedByShape(registration, replacedShapeAliases))
+                    continue;
+
                 toolService.RegisterTool(new RegisteredInteractiveCommandTool(registration.ControllerFactory, registration.ToolName));
                 commandCatalog.Register(registration.CreateCommandDefinition());
             }
+        }
+
+        private HashSet<string> GetReplacedShapeAliases()
+        {
+            var aliases = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
+            foreach (var shape in shapeRegistry?.Definitions ?? System.Linq.Enumerable.Empty<IInteractiveShapeDefinition>())
+            {
+                var registration = shape?.CreateCommandRegistration();
+                if (registration?.ReplaceExistingCommand != true)
+                    continue;
+
+                foreach (var alias in registration.CreateCommandDefinition().Aliases)
+                    aliases.Add(alias);
+            }
+
+            return aliases;
+        }
+
+        private static bool IsReplacedByShape(InteractiveCommandRegistration registration, HashSet<string> replacedShapeAliases)
+        {
+            if (registration == null || replacedShapeAliases == null || replacedShapeAliases.Count == 0)
+                return false;
+
+            return registration.CreateCommandDefinition().Aliases.Any(alias => replacedShapeAliases.Contains(alias));
         }
 
         private void RegisterModuleShapes()

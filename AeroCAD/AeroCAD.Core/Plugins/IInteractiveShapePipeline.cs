@@ -13,6 +13,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         bool AssignActiveLayer { get; }
         string MenuGroup { get; }
         string MenuLabel { get; }
+        bool ReplaceExistingCommand { get; }
         CommandStep InitialStep { get; }
         InteractiveCommandRegistration CreateCommandRegistration();
         IInteractiveShapeRuntime CreateRuntime();

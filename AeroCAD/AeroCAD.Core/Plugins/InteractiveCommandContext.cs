@@ -58,6 +58,26 @@ namespace Primusz.AeroCAD.Core.Plugins
             return Host.TryResolveScalarInput(token, out scalar);
         }
 
+        public bool TryResolveDistance(CommandInputToken token, Point? basePoint, out double distance)
+        {
+            if (TryResolveScalar(token, out distance))
+                return true;
+
+            if (basePoint.HasValue && TryResolvePoint(token, basePoint, out var point))
+            {
+                distance = (point - basePoint.Value).Length;
+                return true;
+            }
+
+            distance = 0d;
+            return false;
+        }
+
+        public double ResolveDistance(Point basePoint, Point point)
+        {
+            return (point - basePoint).Length;
+        }
+
         public Point ResolveFinalPoint(Point? basePoint, Point rawPoint)
         {
             return Host.ResolveFinalPoint(basePoint, rawPoint);

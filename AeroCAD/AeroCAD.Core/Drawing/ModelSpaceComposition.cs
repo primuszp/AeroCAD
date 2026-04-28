@@ -48,6 +48,11 @@ namespace Primusz.AeroCAD.Core.Drawing
         public Dictionary<Type, object> BuildServices()
         {
             var entityPlugins = plugins.AsReadOnly();
+            var validationService = new PluginValidationService();
+            var validationResult = validationService.Validate(entityPlugins, modules.AsReadOnly());
+            if (validationResult.HasErrors)
+                throw new PluginValidationException(validationResult);
+
             var pluginDescriptors = entityPlugins.Select(plugin => plugin.Descriptor).ToArray();
             var pluginCatalog = new EntityPluginCatalog(entityPlugins);
             var moduleCatalog = new CadModuleCatalog(modules);
@@ -137,6 +142,8 @@ namespace Primusz.AeroCAD.Core.Drawing
                 { typeof(EntityPluginCatalog), pluginCatalog },
                 { typeof(IPluginDiscoveryService), pluginDiscoveryService },
                 { typeof(PluginDiscoveryService), pluginDiscoveryService },
+                { typeof(PluginValidationService), validationService },
+                { typeof(PluginValidationResult), validationResult },
                 { typeof(ICadModuleCatalog), moduleCatalog },
                 { typeof(CadModuleCatalog), moduleCatalog },
                 { typeof(IInteractiveCommandRegistry), interactiveCommandRegistry },

@@ -15,6 +15,7 @@ namespace Primusz.AeroCAD.Core.Plugins
         private string description;
         private EditorCommandPolicy policy;
         private bool assignActiveLayer = true;
+        private bool replaceExistingCommand;
         private string menuGroup;
         private string menuLabel;
         private Action<InteractiveCommandContext> onActivated;
@@ -73,6 +74,12 @@ namespace Primusz.AeroCAD.Core.Plugins
             return this;
         }
 
+        public InteractiveCommandRegistrationBuilder ReplaceExistingCommand(bool replace = true)
+        {
+            replaceExistingCommand = replace;
+            return this;
+        }
+
         public InteractiveCommandRegistrationBuilder InMenu(string group, string label)
         {
             menuGroup = group;
@@ -95,6 +102,65 @@ namespace Primusz.AeroCAD.Core.Plugins
         public InteractiveCommandRegistrationBuilder OnPoint(Func<InteractiveCommandContext, System.Windows.Point, InteractiveCommandResult> callback)
         {
             onViewportPoint = callback;
+            return this;
+        }
+
+        public InteractiveCommandRegistrationBuilder PromptPoint(
+            CommandStep step,
+            Func<InteractiveCommandContext, System.Windows.Point, InteractiveCommandResult> callback,
+            Func<InteractiveCommandContext, System.Windows.Point?> basePoint = null)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            initialStep = step ?? initialStep;
+            onViewportPoint = (context, point) =>
+            {
+                context.LogInput(point);
+                return callback(context, point);
+            };
+            onToken = (context, token) =>
+            {
+                if (!context.TryResolvePoint(token, basePoint?.Invoke(context), out var point))
+                    return context.Unhandled();
+
+                context.LogInput(point);
+                return callback(context, point);
+            };
+
+            return this;
+        }
+
+        public InteractiveCommandRegistrationBuilder PromptDistance(
+            CommandStep step,
+            Func<InteractiveCommandContext, double, InteractiveCommandResult> callback,
+            Func<InteractiveCommandContext, System.Windows.Point?> basePoint)
+        {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            if (basePoint == null)
+                throw new ArgumentNullException(nameof(basePoint));
+
+            initialStep = step ?? initialStep;
+            onViewportPoint = (context, point) =>
+            {
+                var origin = basePoint(context);
+                if (!origin.HasValue)
+                    return context.Unhandled();
+
+                var distance = context.ResolveDistance(origin.Value, point);
+                context.LogInput(distance);
+                return callback(context, distance);
+            };
+            onToken = (context, token) =>
+            {
+                if (!context.TryResolveDistance(token, basePoint(context), out var distance))
+                    return context.Unhandled();
+
+                context.LogInput(distance);
+                return callback(context, distance);
+            };
+
             return this;
         }
 
@@ -161,7 +227,8 @@ namespace Primusz.AeroCAD.Core.Plugins
                 policy,
                 assignActiveLayer,
                 menuGroup,
-                menuLabel);
+                menuLabel,
+                replaceExistingCommand);
         }
 
         private IInteractiveCommandController CreateController()

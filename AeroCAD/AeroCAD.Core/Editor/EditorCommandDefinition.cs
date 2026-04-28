@@ -15,7 +15,8 @@ namespace Primusz.AeroCAD.Core.Editor
             bool assignActiveLayer = false,
             string menuGroup = null,
             string menuLabel = null,
-            string modalToolName = null)
+            string modalToolName = null,
+            bool replaceExistingCommand = false)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Command name is required.", nameof(name));
@@ -35,6 +36,7 @@ namespace Primusz.AeroCAD.Core.Editor
             AssignActiveLayer = assignActiveLayer;
             MenuGroup = string.IsNullOrWhiteSpace(menuGroup) ? null : menuGroup.Trim();
             MenuLabel = string.IsNullOrWhiteSpace(menuLabel) ? description : menuLabel;
+            ReplaceExistingCommand = replaceExistingCommand;
         }
 
         public string Name { get; }
@@ -50,6 +52,8 @@ namespace Primusz.AeroCAD.Core.Editor
         public string ModalToolName { get; }
 
         public bool AssignActiveLayer { get; }
+
+        public bool ReplaceExistingCommand { get; }
 
         /// <summary>
         /// The menu group this command belongs to (e.g. "Draw", "Modify", "Edit", "View").

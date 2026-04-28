@@ -8,10 +8,11 @@ namespace Primusz.AeroCAD.Core.Plugins
     /// Base class for CAD modules. Version defaults to "1.0.0".
     /// Subclasses implement Name and Plugins; everything else is optional.
     /// </summary>
-    public abstract class CadModuleBase : ICadModule
+    public abstract class CadModuleBase : ICadModule, IPluginManifestProvider
     {
         public abstract string Name { get; }
         public virtual string Version => "1.0.0";
+        public virtual PluginManifest Manifest => PluginManifest.FromModule(this);
         public abstract IEnumerable<IEntityPlugin> Plugins { get; }
         public virtual IEnumerable<IInteractiveShapeDefinition> Shapes => Enumerable.Empty<IInteractiveShapeDefinition>();
         public virtual IEnumerable<InteractiveCommandRegistration> InteractiveCommands => Enumerable.Empty<InteractiveCommandRegistration>();

@@ -15,17 +15,19 @@ namespace Primusz.AeroCAD.Core.Editing.InteractiveShapes
             new CommandStep("NextPoint", "Specify next point:")
         };
 
-        public LineInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory)
+        public LineInteractiveShapeDefinition(Func<IInteractiveCommandController> controllerFactory, bool replaceExistingCommand = false)
         {
             Pipeline = new InteractiveShapePipeline(
                 name: "AeroCAD.Line",
                 commandName: "LINE",
                 controllerFactory: controllerFactory,
                 steps: DefaultSteps,
+                aliases: new[] { "L" },
                 description: "Draw a line.",
                 assignActiveLayer: true,
                 menuGroup: "Draw",
-                menuLabel: "_Line");
+                menuLabel: "_Line",
+                replaceExistingCommand: replaceExistingCommand);
         }
 
         public IInteractiveShapePipeline Pipeline { get; }

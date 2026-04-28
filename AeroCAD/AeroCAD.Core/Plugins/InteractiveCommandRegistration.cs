@@ -16,7 +16,8 @@ namespace Primusz.AeroCAD.Core.Plugins
             EditorCommandPolicy policy = null,
             bool assignActiveLayer = false,
             string menuGroup = null,
-            string menuLabel = null)
+            string menuLabel = null,
+            bool replaceExistingCommand = false)
         {
             if (string.IsNullOrWhiteSpace(commandName))
                 throw new ArgumentException("Command name is required.", nameof(commandName));
@@ -30,6 +31,7 @@ namespace Primusz.AeroCAD.Core.Plugins
             AssignActiveLayer = assignActiveLayer;
             MenuGroup = menuGroup;
             MenuLabel = menuLabel;
+            ReplaceExistingCommand = replaceExistingCommand;
         }
 
         public string CommandName { get; }
@@ -48,6 +50,8 @@ namespace Primusz.AeroCAD.Core.Plugins
 
         public string MenuLabel { get; }
 
+        public bool ReplaceExistingCommand { get; }
+
         public Func<IInteractiveCommandController> ControllerFactory { get; }
 
         public InteractiveCommandRegistration(
@@ -59,8 +63,9 @@ namespace Primusz.AeroCAD.Core.Plugins
             EditorCommandPolicy policy = null,
             bool assignActiveLayer = false,
             string menuGroup = null,
-            string menuLabel = null)
-            : this(commandName, () => controllerFactory?.Invoke(null), toolName, aliases, description, policy, assignActiveLayer, menuGroup, menuLabel)
+            string menuLabel = null,
+            bool replaceExistingCommand = false)
+            : this(commandName, () => controllerFactory?.Invoke(null), toolName, aliases, description, policy, assignActiveLayer, menuGroup, menuLabel, replaceExistingCommand)
         {
         }
 
@@ -75,7 +80,8 @@ namespace Primusz.AeroCAD.Core.Plugins
                 assignActiveLayer: AssignActiveLayer,
                 menuGroup: MenuGroup,
                 menuLabel: MenuLabel,
-                modalToolName: ToolName);
+                modalToolName: ToolName,
+                replaceExistingCommand: ReplaceExistingCommand);
         }
     }
 }

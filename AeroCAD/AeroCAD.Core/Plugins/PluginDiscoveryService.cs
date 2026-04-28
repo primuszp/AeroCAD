@@ -49,8 +49,9 @@ namespace Primusz.AeroCAD.Core.Plugins
             catch (ReflectionTypeLoadException ex)
             {
                 types = ex.Types.Where(type => type != null).ToArray();
+                issues.Add(new PluginDiscoveryIssue(assembly.FullName, "Some plugin types could not be loaded.", ex));
                 foreach (var loaderException in ex.LoaderExceptions ?? Array.Empty<Exception>())
-                    issues.Add(new PluginDiscoveryIssue(assembly.FullName, "Some plugin types could not be loaded.", loaderException));
+                    issues.Add(new PluginDiscoveryIssue(assembly.FullName, "A plugin dependency could not be loaded.", loaderException));
             }
             catch (Exception ex)
             {
