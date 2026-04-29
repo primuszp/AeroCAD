@@ -6,6 +6,7 @@ This project demonstrates an external `ROADPLAN` entity and command.
 - `RoadPlanRenderStrategy` renders straight segments with circular fillets at curved vertices through `EntityRenderStrategy<RoadPlanEntity>`.
 - `RoadPlanBoundsStrategy` integrates the entity with picking/spatial queries through `EntityBoundsStrategy<RoadPlanEntity>`.
 - `RoadPlanGripPreviewStrategy` uses `GripPreviewStrategy<RoadPlanEntity>` so the sample stays type-safe without repeated casts.
+- `RoadPlanCommandController` uses `PointSequenceCommandControllerBase` so point collection, undo, completion, cancellation, and AddEntityCommand routing stay in the SDK layer.
 - `RoadPlanModule` registers `ROADPLAN` / `RP`.
 
 Current scope:

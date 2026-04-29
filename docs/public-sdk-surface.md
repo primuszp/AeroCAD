@@ -58,9 +58,12 @@ These classes adapt typed plugin code to the engine interfaces and remove repeat
 - `Primusz.AeroCAD.Core.Editor.CommandKeywordOption`
 - `Primusz.AeroCAD.Core.Editor.EditorCommandPolicy`
 - `Primusz.AeroCAD.Core.Tools.InteractiveCommandResult`
+- `Primusz.AeroCAD.Core.Tools.PointSequenceCommandControllerBase`
 
 Plugin commands should prefer `InteractiveCommandRegistrationBuilder` and
 `InteractiveCommandContext` over deriving directly from the internal controller stack.
+For command flows that collect multiple points before creating an entity, prefer
+`PointSequenceCommandControllerBase` over deriving directly from `CommandControllerBase`.
 
 ## Internal Engine Details
 
