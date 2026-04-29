@@ -1,17 +1,13 @@
 using System.Windows;
-using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Editing.GripPreviews;
 
 namespace Primusz.AeroCAD.SamplePlugin
 {
-    public sealed class RoadPlanGripPreviewStrategy : IGripPreviewStrategy
+    public sealed class RoadPlanGripPreviewStrategy : GripPreviewStrategy<RoadPlanEntity>
     {
-        public bool CanHandle(Entity entity) => entity is RoadPlanEntity;
-
-        public GripPreview CreatePreview(Entity entity, int gripIndex, Point newPosition)
+        protected override GripPreview CreatePreview(RoadPlanEntity roadPlan, int gripIndex, Point newPosition)
         {
-            var roadPlan = entity as RoadPlanEntity;
-            return roadPlan?.CreateGripPreview(gripIndex, newPosition) ?? GripPreview.Empty;
+            return roadPlan.CreateGripPreview(gripIndex, newPosition);
         }
     }
 }

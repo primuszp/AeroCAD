@@ -10,8 +10,8 @@ namespace Primusz.AeroCAD.SamplePlugin
             End = end;
         }
 
-        public Point Start { get; set; }
+        public Point Start { get; internal set; }
 
-        public Point End { get; set; }
+        public Point End { get; internal set; }
     }
 }

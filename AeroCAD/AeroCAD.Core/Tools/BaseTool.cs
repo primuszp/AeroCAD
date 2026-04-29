@@ -151,6 +151,16 @@ namespace Primusz.AeroCAD.Core.Tools
 
             if (token.Kind == CommandInputTokenKind.Point && token.PointValue.HasValue)
             {
+                if (token.RawText?.TrimStart().StartsWith("@", StringComparison.Ordinal) == true)
+                {
+                    if (!basePoint.HasValue)
+                        return false;
+
+                    var relative = token.PointValue.Value;
+                    point = basePoint.Value + new Vector(relative.X, relative.Y);
+                    return true;
+                }
+
                 point = token.PointValue.Value;
                 return true;
             }

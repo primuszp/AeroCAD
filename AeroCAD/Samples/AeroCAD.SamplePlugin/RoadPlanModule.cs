@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Windows;
+using Primusz.AeroCAD.Core.Editor;
 using Primusz.AeroCAD.Core.Plugins;
 
 namespace Primusz.AeroCAD.SamplePlugin
@@ -26,26 +26,16 @@ namespace Primusz.AeroCAD.SamplePlugin
 
         private static InteractiveCommandRegistration CreateRoadPlanCommand()
         {
-            return InteractiveCommandRegistrationBuilder
-                .Create("ROADPLAN")
-                .WithAliases("RP")
-                .WithDescription("Create sample road alignment.")
-                .InMenu("Draw", "_Road Plan")
-                .CreateEntityOnPoint((context, insertionPoint) => CreateDemoRoadPlan(insertionPoint), "ROADPLAN created.")
-                .Build();
+            return new InteractiveCommandRegistration(
+                "ROADPLAN",
+                () => new RoadPlanCommandController(),
+                aliases: new[] { "RP" },
+                description: "Create road alignment.",
+                policy: EditorCommandPolicy.Default,
+                assignActiveLayer: true,
+                menuGroup: "Draw",
+                menuLabel: "_Road Plan");
         }
 
-        private static RoadPlanEntity CreateDemoRoadPlan(Point origin)
-        {
-            return new RoadPlanEntity(new[]
-            {
-                new RoadPlanVertex(origin + new Vector(0, 120)),
-                new RoadPlanVertex(origin + new Vector(200, 0), 100, 50, 50),
-                new RoadPlanVertex(origin + new Vector(500, 420), 250, 70, 70),
-                new RoadPlanVertex(origin + new Vector(830, 450), 100, 50, 50),
-                new RoadPlanVertex(origin + new Vector(1000, 100), 500, 0, 0),
-                new RoadPlanVertex(origin + new Vector(1300, 0))
-            });
-        }
     }
 }

@@ -19,5 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AeroCAD.Core\AeroCAD.Core.csproj" />
+    <ProjectReference Include="..\Samples\AeroCAD.SamplePlugin\AeroCAD.SamplePlugin.csproj" />
   </ItemGroup>
 </Project>

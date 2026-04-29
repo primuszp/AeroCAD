@@ -1,19 +1,12 @@
 using System.Windows.Media;
-using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Rendering;
 
 namespace Primusz.AeroCAD.SamplePlugin
 {
-    public sealed class RoadPlanRenderStrategy : IEntityRenderStrategy
+    public sealed class RoadPlanRenderStrategy : EntityRenderStrategy<RoadPlanEntity>
     {
-        public bool CanHandle(Entity entity) => entity is RoadPlanEntity;
-
-        public void Render(Entity entity, DrawingContext drawingContext, EntityRenderContext context)
+        protected override void Render(RoadPlanEntity roadPlan, DrawingContext drawingContext, EntityRenderContext context)
         {
-            var roadPlan = entity as RoadPlanEntity;
-            if (roadPlan == null)
-                return;
-
             var geometry = RoadPlanGeometryBuilder.BuildGeometry(roadPlan.Vertices);
             var tangentGeometry = RoadPlanGeometryBuilder.BuildTangentGeometry(roadPlan.ControlSegments);
             var tangentPen = CreateFrozenPen(Colors.White, 1.0d / (roadPlan.Scale > 1e-6 ? roadPlan.Scale : 1.0d));

@@ -49,7 +49,7 @@ yield return EntityPluginBuilder
     .BuildPlugin();
 ```
 
-See `AeroCAD/Samples/AeroCAD.SamplePlugin` for a buildable external plugin that registers the `XMARK` command and a custom `XMarkerEntity`.
+See `AeroCAD/Samples/AeroCAD.SamplePlugin` for a buildable external plugin that registers the `ROADPLAN` command and a custom `RoadPlanEntity`.
 
 External commands can use `InteractiveCommandContext` for common operations such as `AddEntity`, `PickEntity`, `SetEntityPreview`, `SetPreview`, `ClearPreview`, `TryResolvePoint`, and `TryResolveScalar`.
 
@@ -61,6 +61,19 @@ For multi-step commands, prefer the prompt helpers on `InteractiveCommandRegistr
 Plugin loading and validation are explicit. `ModelSpace.ExtensionDiscoveryIssues` contains assembly load, type discovery, and constructor diagnostics. During initialization AeroCAD validates duplicate module names, duplicate entity plugin names, command/alias collisions, and plugin manifests that require a newer AeroCAD Core version. Modules can expose a manifest by deriving from `CadModuleBase` and overriding `Manifest`, or by implementing `IPluginManifestProvider`.
 
 External entities that should act as TRIM/EXTEND boundaries for built-in target entities can implement `ITrimExtendBoundaryGeometry`. This lets built-in trim strategies ask the external entity for line and circular intersections instead of relying only on built-in boundary types.
+
+The public plugin SDK surface is documented in `docs/public-sdk-surface.md`. It is hosted inside `AeroCAD.Core` for now; no separate SDK assembly is required yet.
+
+For custom entity behavior, prefer the typed strategy base classes instead of repeating `CanHandle` and casts in every implementation:
+
+- `CustomEntityBase`
+- `EntityRenderStrategy<TEntity>`
+- `EntityBoundsStrategy<TEntity>`
+- `GripPreviewStrategy<TEntity>`
+- `SelectionMovePreviewStrategy<TEntity>`
+- `TransientEntityPreviewStrategy<TEntity>`
+- `EntityOffsetStrategy<TEntity>`
+- `EntityTrimExtendStrategy<TEntity>`
 
 ## Rights
 

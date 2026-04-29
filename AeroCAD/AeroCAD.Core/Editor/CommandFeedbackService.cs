@@ -108,7 +108,11 @@ namespace Primusz.AeroCAD.Core.Editor
             if (string.IsNullOrWhiteSpace(input))
                 return false;
 
-            var normalized = input.Trim().Replace(';', ',');
+            var normalized = input.Trim();
+            if (normalized.StartsWith("@", StringComparison.Ordinal))
+                normalized = normalized.Substring(1);
+
+            normalized = normalized.Replace(';', ',');
             string[] parts = normalized.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
             if (parts.Length != 2)

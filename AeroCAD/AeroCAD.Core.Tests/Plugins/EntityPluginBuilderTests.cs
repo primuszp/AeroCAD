@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 using Primusz.AeroCAD.Core.Drawing.Entities;
+using Primusz.AeroCAD.Core.Editing.GripPreviews;
 using Primusz.AeroCAD.Core.Plugins;
 using Primusz.AeroCAD.Core.Rendering;
 using Primusz.AeroCAD.Core.Spatial;
@@ -35,6 +36,21 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             Assert.False(plugin.Descriptor.Capabilities.HasFlag(EntityPluginCapability.Tool));
         }
 
+        [Fact]
+        public void TypedStrategies_HandleOnlyTheirEntityType()
+        {
+            var entity = new TestEntity();
+            var other = new OtherEntity();
+            var renderStrategy = new TypedRenderStrategy();
+            var boundsStrategy = new TypedBoundsStrategy();
+            var previewStrategy = new TypedGripPreviewStrategy();
+
+            Assert.True(renderStrategy.CanHandle(entity));
+            Assert.False(renderStrategy.CanHandle(other));
+            Assert.Equal(new Rect(1, 2, 3, 4), boundsStrategy.GetBounds(entity));
+            Assert.Same(GripPreview.Empty, previewStrategy.CreatePreview(entity, 0, new Point(5, 6)));
+        }
+
         private sealed class NoOpRenderStrategy : IEntityRenderStrategy
         {
             public bool CanHandle(Entity entity) => entity is TestEntity;
@@ -56,6 +72,32 @@ namespace Primusz.AeroCAD.Core.Tests.Plugins
             public override Entity Duplicate() => new TestEntity();
             public override void RestoreState(Entity sourceState) { }
             public override void Translate(Vector delta) { }
+        }
+
+        private sealed class OtherEntity : Entity
+        {
+            public override int GripCount => 0;
+            public override Point GetGripPoint(int index) => default;
+            public override void MoveGrip(int index, Point newPosition) { }
+            public override Entity Clone() => new OtherEntity();
+            public override Entity Duplicate() => new OtherEntity();
+            public override void RestoreState(Entity sourceState) { }
+            public override void Translate(Vector delta) { }
+        }
+
+        private sealed class TypedRenderStrategy : EntityRenderStrategy<TestEntity>
+        {
+            protected override void Render(TestEntity entity, DrawingContext drawingContext, EntityRenderContext context) { }
+        }
+
+        private sealed class TypedBoundsStrategy : EntityBoundsStrategy<TestEntity>
+        {
+            protected override Rect GetBounds(TestEntity entity) => new Rect(1, 2, 3, 4);
+        }
+
+        private sealed class TypedGripPreviewStrategy : GripPreviewStrategy<TestEntity>
+        {
+            protected override GripPreview CreatePreview(TestEntity entity, int gripIndex, Point newPosition) => null;
         }
     }
 }

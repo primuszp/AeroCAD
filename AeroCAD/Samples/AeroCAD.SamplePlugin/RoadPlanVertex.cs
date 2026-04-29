@@ -12,12 +12,12 @@ namespace Primusz.AeroCAD.SamplePlugin
             OutTransition = outTransition;
         }
 
-        public Point Location { get; set; }
+        public Point Location { get; }
 
-        public double Radius { get; set; }
+        public double Radius { get; }
 
-        public double InTransition { get; set; }
+        public double InTransition { get; }
 
-        public double OutTransition { get; set; }
+        public double OutTransition { get; }
     }
 }

@@ -1,19 +1,12 @@
 using System.Windows;
-using Primusz.AeroCAD.Core.Drawing.Entities;
 using Primusz.AeroCAD.Core.Spatial;
 
 namespace Primusz.AeroCAD.SamplePlugin
 {
-    public sealed class RoadPlanBoundsStrategy : IEntityBoundsStrategy
+    public sealed class RoadPlanBoundsStrategy : EntityBoundsStrategy<RoadPlanEntity>
     {
-        public bool CanHandle(Entity entity) => entity is RoadPlanEntity;
-
-        public Rect GetBounds(Entity entity)
+        protected override Rect GetBounds(RoadPlanEntity roadPlan)
         {
-            var roadPlan = entity as RoadPlanEntity;
-            if (roadPlan == null)
-                return Rect.Empty;
-
             var axisBounds = RoadPlanGeometryBuilder.GetBounds(roadPlan.Vertices);
             var controlBounds = RoadPlanGeometryBuilder.GetControlBounds(roadPlan.ControlSegments);
             axisBounds.Union(controlBounds);

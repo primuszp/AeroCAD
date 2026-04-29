@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -8,7 +10,7 @@ using Primusz.AeroCAD.Core.Editing.GripPreviews;
 
 namespace Primusz.AeroCAD.SamplePlugin
 {
-    public sealed class RoadPlanEntity : Entity
+    public sealed class RoadPlanEntity : CustomEntityBase
     {
         private const double IntersectionOverhang = 20.0d;
 
@@ -34,12 +36,21 @@ namespace Primusz.AeroCAD.SamplePlugin
         }
 
         private readonly List<RoadPlanControlSegment> controlSegments = new List<RoadPlanControlSegment>();
+        private readonly ReadOnlyCollection<RoadPlanControlSegment> readOnlyControlSegments;
+        private readonly ReadOnlyCollection<RoadPlanVertex> readOnlyVertices;
         private readonly List<RoadPlanVertex> vertices = new List<RoadPlanVertex>();
 
+        private RoadPlanEntity()
+        {
+            readOnlyControlSegments = controlSegments.AsReadOnly();
+            readOnlyVertices = this.vertices.AsReadOnly();
+        }
+
         public RoadPlanEntity(IEnumerable<RoadPlanVertex> vertices)
+            : this()
         {
             if (vertices == null)
-                return;
+                throw new ArgumentNullException(nameof(vertices));
 
             var sourceVertices = vertices
                 .Select(v => new RoadPlanVertex(v.Location, v.Radius, v.InTransition, v.OutTransition))
@@ -50,9 +61,9 @@ namespace Primusz.AeroCAD.SamplePlugin
             RebuildDerivedGeometry();
         }
 
-        public IReadOnlyList<RoadPlanVertex> Vertices => vertices.AsReadOnly();
+        public IReadOnlyList<RoadPlanVertex> Vertices => readOnlyVertices;
 
-        public IReadOnlyList<RoadPlanControlSegment> ControlSegments => controlSegments.AsReadOnly();
+        public IReadOnlyList<RoadPlanControlSegment> ControlSegments => readOnlyControlSegments;
 
         public override int GripCount => BuildGripMap().Count;
 
@@ -159,37 +170,21 @@ namespace Primusz.AeroCAD.SamplePlugin
             return new GripPreview(strokes);
         }
 
-        public override Entity Clone()
+        protected override CustomEntityBase CreateInstanceCore()
         {
-            var clone = new RoadPlanEntity(vertices) { Thickness = Thickness };
-            clone.controlSegments.Clear();
-            clone.controlSegments.AddRange(controlSegments.Select(segment => new RoadPlanControlSegment(segment.Start, segment.End)));
-            clone.RebuildDerivedGeometry();
-            CopyIdentityTo(clone);
-            return clone;
+            return new RoadPlanEntity();
         }
 
-        public override Entity Duplicate()
+        protected override void CopyGeometryTo(CustomEntityBase target)
         {
-            var duplicate = new RoadPlanEntity(vertices) { Thickness = Thickness };
-            duplicate.controlSegments.Clear();
-            duplicate.controlSegments.AddRange(controlSegments.Select(segment => new RoadPlanControlSegment(segment.Start, segment.End)));
-            duplicate.RebuildDerivedGeometry();
-            return duplicate;
+            if (target is RoadPlanEntity roadPlan)
+                roadPlan.ReplaceGeometryFrom(this);
         }
 
-        public override void RestoreState(Entity sourceState)
+        protected override void CopyGeometryFrom(CustomEntityBase source)
         {
-            var source = sourceState as RoadPlanEntity;
-            if (source == null)
-                return;
-
-            controlSegments.Clear();
-            controlSegments.AddRange(source.controlSegments.Select(segment => new RoadPlanControlSegment(segment.Start, segment.End)));
-            vertices.Clear();
-            vertices.AddRange(source.vertices.Select(v => new RoadPlanVertex(v.Location, v.Radius, v.InTransition, v.OutTransition)));
-            RestoreBaseFrom(source);
-            InvalidateGeometry();
+            if (source is RoadPlanEntity roadPlan)
+                ReplaceGeometryFrom(roadPlan);
         }
 
         public override void Translate(Vector delta)
@@ -263,16 +258,6 @@ namespace Primusz.AeroCAD.SamplePlugin
             controlSegments[segmentIndex].End = newPosition;
         }
 
-        private void ApplyLocalPreviewSegments(Geometry previewGeometry, IReadOnlyList<RoadPlanControlSegment> previewSegments)
-        {
-            if (previewSegments == null || previewSegments.Count != controlSegments.Count)
-                return;
-
-            controlSegments.Clear();
-            controlSegments.AddRange(previewSegments.Select(segment => new RoadPlanControlSegment(segment.Start, segment.End)));
-            RebuildDerivedGeometry();
-        }
-
         private Point GetIntersectionGripLocation(int intersectionIndex)
         {
             if (intersectionIndex < 0 || intersectionIndex >= controlSegments.Count - 1)
@@ -316,18 +301,16 @@ namespace Primusz.AeroCAD.SamplePlugin
             NormalizeIntersections(preservedGrip);
             vertices.Clear();
             vertices.AddRange(RoadPlanGeometryBuilder.SolveVerticesFromSegments(controlSegments, sourceVertices));
-            InvalidateGeometry();
+            InvalidateEntityGeometry();
         }
 
-        private void RebuildDerivedGeometryWithoutNormalizing()
+        private void ReplaceGeometryFrom(RoadPlanEntity source)
         {
-            var sourceVertices = vertices.Count > 0
-                ? vertices.Select(v => new RoadPlanVertex(v.Location, v.Radius, v.InTransition, v.OutTransition)).ToList()
-                : null;
+            controlSegments.Clear();
+            controlSegments.AddRange(source.controlSegments.Select(segment => new RoadPlanControlSegment(segment.Start, segment.End)));
 
             vertices.Clear();
-            vertices.AddRange(RoadPlanGeometryBuilder.SolveVerticesFromSegments(controlSegments, sourceVertices));
-            InvalidateGeometry();
+            vertices.AddRange(source.vertices.Select(v => new RoadPlanVertex(v.Location, v.Radius, v.InTransition, v.OutTransition)));
         }
 
         private void NormalizeIntersections(ControlGrip? preservedGrip = null)

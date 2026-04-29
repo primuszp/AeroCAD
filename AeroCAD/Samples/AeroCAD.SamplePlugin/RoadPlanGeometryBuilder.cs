@@ -85,7 +85,6 @@ namespace Primusz.AeroCAD.SamplePlugin
                 if (TryIntersectLines(current.Start, current.End, next.Start, next.End, out var intersection))
                     location = intersection;
 
-                var template = sourceVertices != null && i + 1 < sourceVertices.Count ? sourceVertices[i + 1] : null;
                 solved.Add(CreateVertex(location, sourceVertices, i + 1));
             }
 
@@ -189,13 +188,6 @@ namespace Primusz.AeroCAD.SamplePlugin
 
             var source = sourceVertices[index];
             return new RoadPlanVertex(location, source.Radius, source.InTransition, source.OutTransition);
-        }
-
-        private static double GetRadius(IReadOnlyList<RoadPlanVertex> sourceVertices, int index)
-        {
-            if (sourceVertices == null || index < 0 || index >= sourceVertices.Count)
-                return 0d;
-            return sourceVertices[index].Radius;
         }
 
         private readonly struct Fillet
